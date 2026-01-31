@@ -24,4 +24,4 @@ target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 include (CTest)
 include (Catch)
-#catch_discover_tests (${PROJECT_NAME})
+catch_discover_tests (${PROJECT_NAME})

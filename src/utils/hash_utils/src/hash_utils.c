@@ -93,7 +93,7 @@ bool ADUC_HashUtils_IsValidHashAlgorithm(SHAversion sha)
     return sha >= SHA256;
 }
 
-static bool ADUC_HashUtils_GetIndexStrongestValidHash(
+bool ADUC_HashUtils_GetIndexStrongestValidHash(
     const ADUC_Hash* hashes, size_t hashCount, size_t* outIndexStrongestAlgorithm, SHAversion* outBestShaVersion)
 {
     if (outIndexStrongestAlgorithm == NULL || outBestShaVersion == NULL)
@@ -101,13 +101,14 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
         return false;
     }
 
-    size_t strongestIndex = SIZE_MAX; // Assume hashes array is not sorted by strength ordering.
+    bool foundStrongest = false;
+    size_t strongestIndex; // Assume hashes array is not sorted by strength ordering.
     SHAversion curBestAlg = SHA1;
 
     for (size_t i = 0; i < hashCount; ++i)
     {
         SHAversion algVersion = SHA1;
-        char* hashType = ADUC_HashUtils_GetHashType(hashes, hashCount, (size_t)i);
+        char* hashType = ADUC_HashUtils_GetHashType(hashes, hashCount, i);
         if (!ADUC_HashUtils_GetShaVersionForTypeString(hashType, &algVersion))
         {
             Log_Error("Unsupported algorithm: %s", hashType);
@@ -124,12 +125,13 @@ static bool ADUC_HashUtils_GetIndexStrongestValidHash(
 
         if (algVersion > curBestAlg)
         {
-            strongestIndex = (int)i;
+            foundStrongest = true;
+            strongestIndex = i;
             curBestAlg = algVersion;
         }
     }
 
-    if (strongestIndex != SIZE_MAX)
+    if (foundStrongest)
     {
         *outIndexStrongestAlgorithm = strongestIndex;
         *outBestShaVersion = curBestAlg;

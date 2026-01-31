@@ -22,6 +22,8 @@ TEST_CASE("ADUC_ReportingUtils_StringHandleFromVectorInt32")
         ADUC::StringUtils::STRING_HANDLE_wrapper wrapped{ delimited_str };
         CHECK(!wrapped.is_null());
         CHECK_THAT(STRING_c_str(wrapped.get()), Equals(""));
+
+        VECTOR_destroy(extended_result_codes);
     }
 
     SECTION("one element")
@@ -36,6 +38,8 @@ TEST_CASE("ADUC_ReportingUtils_StringHandleFromVectorInt32")
         ADUC::StringUtils::STRING_HANDLE_wrapper wrapped{ delimited_str };
         CHECK(!wrapped.is_null());
         CHECK_THAT(STRING_c_str(wrapped.get()), Equals(",00000001"));
+
+        VECTOR_destroy(extended_result_codes);
     }
 
     SECTION("2 elements")
@@ -53,6 +57,8 @@ TEST_CASE("ADUC_ReportingUtils_StringHandleFromVectorInt32")
         ADUC::StringUtils::STRING_HANDLE_wrapper wrapped{ delimited_str };
         CHECK(!wrapped.is_null());
         CHECK_THAT(STRING_c_str(wrapped.get()), Equals(",00000001,00000002"));
+
+        VECTOR_destroy(extended_result_codes);
     }
 
     SECTION("max 1")
@@ -70,6 +76,8 @@ TEST_CASE("ADUC_ReportingUtils_StringHandleFromVectorInt32")
         ADUC::StringUtils::STRING_HANDLE_wrapper wrapped{ delimited_str };
         CHECK(!wrapped.is_null());
         CHECK_THAT(STRING_c_str(wrapped.get()), Equals(",00000001"));
+
+        VECTOR_destroy(extended_result_codes);
     }
 
     SECTION("max 2")
@@ -90,5 +98,7 @@ TEST_CASE("ADUC_ReportingUtils_StringHandleFromVectorInt32")
         ADUC::StringUtils::STRING_HANDLE_wrapper wrapped{ delimited_str };
         CHECK(!wrapped.is_null());
         CHECK_THAT(STRING_c_str(wrapped.get()), Equals(",00000001,00000002"));
+
+        VECTOR_destroy(extended_result_codes);
     }
 }

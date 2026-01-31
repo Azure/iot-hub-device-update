@@ -222,12 +222,12 @@ char* workflow_get_root_sandbox_dir(const ADUC_WorkflowHandle handle);
 bool workflow_set_selected_components(ADUC_WorkflowHandle handle, const char* selectedComponents);
 
 /**
- * @brief Gets a reference to the selected-components JSON string.
+ * @brief Gets a copy of the selected-components JSON string.
  *
  * @param handle A workflow data object handle.
- * @return const char* Contain selected-components JSON. Caller must not free this string.
+ * @return char* Contains selected-components JSON. Caller must call workflow_free_string() to free the memory once done.
  */
-const char* workflow_peek_selected_components(ADUC_WorkflowHandle handle);
+char* workflow_get_selected_components(ADUC_WorkflowHandle handle);
 
 /**
  * @brief Gets the update files count.
@@ -256,6 +256,22 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
  * @return true on success.
  */
 bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fileName, ADUC_FileEntity* entity);
+
+/**
+ * @brief Frees an array of ADUC_RelatedFile.
+ *
+ * @param relatedFileCount The number of related files in the array.
+ * @param relatedFileArray The array of related files to free.
+ */
+void ADUC_RelatedFile_FreeArray(size_t relatedFileCount, ADUC_RelatedFile* relatedFileArray);
+
+/**
+ * @brief Frees workflow-specific fields of a file entity (DownloadHandlerId and RelatedFiles).
+ *        Call this after ADUC_FileEntity_Uninit for complete cleanup.
+ *
+ * @param entity The file entity to free workflow-specific fields from.
+ */
+void workflow_free_file_entity(ADUC_FileEntity* entity);
 
 /**
  * @brief Gets the inode associated with the update file entity at the specified index.

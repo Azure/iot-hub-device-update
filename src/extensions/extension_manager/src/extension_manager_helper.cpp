@@ -144,6 +144,7 @@ unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options
         Log_Info("downloadTimeoutInMinutes override from config: %u", config->downloadTimeoutInMinutes);
         ret = config->downloadTimeoutInMinutes;
     }
+    ADUC_ConfigInfo_ReleaseInstance(config);
 done:
     return ret;
 }

@@ -157,6 +157,7 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPac
         ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
 
         CHECK(IsAducResultCodeSuccess(validationResult.ResultCode));
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
 
     }
     SECTION("RootKeyUtil_ValidateRootKeyPackage - Invalid RootKeyPackage Signature")
@@ -169,6 +170,7 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_ValidateRootKeyPac
         ADUC_Result validationResult = RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(&pkg);
 
         CHECK(validationResult.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_SIGNATURE_VALIDATION_FAILED);
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 }
 
@@ -193,6 +195,7 @@ TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility_LoadPackageFromDis
 
         CHECK(ADUC_RootKeyPackageUtils_AreEqual(rootKeyPackage,&correctPackage));
 
+        ADUC_RootKeyPackageUtils_Destroy(&correctPackage);
         ADUC_RootKeyPackageUtils_Destroy(rootKeyPackage);
         free(rootKeyPackage);
     }
@@ -265,6 +268,7 @@ TEST_CASE("RootKeyUtility_RootKeyIsDisabled")
     REQUIRE(pkg != nullptr);
     CHECK(RootKeyUtility_RootKeyIsDisabled(pkg, "ADU.200702.R"));
     CHECK_FALSE(RootKeyUtility_RootKeyIsDisabled(pkg, "ADU.200703.R"));
+    ADUC_RootKeyPackageUtils_Destroy(pkg);
     free(pkg);
 }
 
@@ -290,6 +294,7 @@ TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
         CHECK(disabledSigningKeyList != nullptr);
         CHECK(VECTOR_size(disabledSigningKeyList) == 0);
+        VECTOR_destroy(disabledSigningKeyList);
     }
 
     SECTION("prod - one disabled signing key")
@@ -309,6 +314,7 @@ TEST_CASE("RootKeyUtility_GetDisabledSigningKeys")
 
         cstr_wrapper base64url{ Base64URLEncode(CONSTBUFFER_GetContent(hashElement->hash)->buffer, CONSTBUFFER_GetContent(hashElement->hash)->size) };
         CHECK_THAT(base64url.get(), Equals("q5xF2ARjhdtH-kaLNTwZAMoXdy0iJQjziQ_AyZWDPRA"));
+        VECTOR_destroy(disabledSigningKeyList);
     }
 }
 

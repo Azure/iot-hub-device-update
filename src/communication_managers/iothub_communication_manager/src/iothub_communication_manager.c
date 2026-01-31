@@ -41,10 +41,17 @@
 #include <stdlib.h> // strtol
 #include <sys/stat.h>
 
+#include <pthread.h>
+
 /**
  * @brief A pointer to ADUC_ClientHandle data. This must be initialize by the component that creates the IoT Hub connection.
  */
 static ADUC_ClientHandle* g_aduc_client_handle_address = NULL;
+
+/**
+ * @brief A mutex to protect the IoT Hub connection handle.
+ */
+static pthread_mutex_t s_client_handle_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * @brief A callback function to be invoked when a device client handler has changed.
@@ -138,7 +145,9 @@ bool IoTHub_CommunicationManager_Init(
         return false;
     }
 
+    pthread_mutex_lock(&s_client_handle_mutex);
     g_aduc_client_handle_address = handle_address;
+    pthread_mutex_unlock(&s_client_handle_mutex);
     g_device_twin_callback = device_twin_callback;
     g_property_update_context = property_update_context;
     g_iothub_client_handle_changed_callback = client_handle_updated_callback;
@@ -165,11 +174,14 @@ static void ADUC_DeviceClient_Destroy(ADUC_ClientHandle clientHandle)
  */
 void IoTHub_CommunicationManager_Deinit()
 {
+    pthread_mutex_lock(&s_client_handle_mutex);
     if (g_aduc_client_handle_address != NULL && *g_aduc_client_handle_address != NULL)
     {
         ClientHandle_Destroy(*g_aduc_client_handle_address);
         g_aduc_client_handle_address = NULL;
     }
+    pthread_mutex_unlock(&s_client_handle_mutex);
+    pthread_mutex_destroy(&s_client_handle_mutex);
 
     if (g_iothub_client_initialized)
     {
@@ -193,7 +205,10 @@ bool IoTHub_CommunicationManager_IsAuthenticated()
  */
 ADUC_ClientHandle IoTHub_CommunicationManager_GetHandle()
 {
-    return (g_aduc_client_handle_address != NULL ? *g_aduc_client_handle_address : NULL);
+    pthread_mutex_lock(&s_client_handle_mutex);
+    ADUC_ClientHandle handle = (g_aduc_client_handle_address != NULL ? *g_aduc_client_handle_address : NULL);
+    pthread_mutex_unlock(&s_client_handle_mutex);
+    return handle;
 }
 
 /**
@@ -699,6 +714,7 @@ done:
  */
 static void ADUC_Refresh_IotHub_Connection_SAS_Token()
 {
+    pthread_mutex_lock(&s_client_handle_mutex);
     if (g_aduc_client_handle_address == NULL)
     {
         Log_Error("Invalidate operation. Must call IoTHub_CommunicationManager_Init() to initialize the manager.");
@@ -736,6 +752,7 @@ static void ADUC_Refresh_IotHub_Connection_SAS_Token()
     Log_Info("Successfully re-authenticated the IoT Hub connection.");
 
 done:
+    pthread_mutex_unlock(&s_client_handle_mutex);
 
     ADUC_ConnectionInfo_DeAlloc(&info);
 }

@@ -62,6 +62,18 @@ ninja test
 
 ### Run tests under valgrind memcheck
 
+To install Valgrind:
+```sh
+# Install from apt (Ubuntu 22.04 or newer recommended)
+sudo apt-get install valgrind
+
+# Or use install-deps.sh
+./scripts/install-deps.sh --install-valgrind apt
+
+# Build from source (version 3.23.0)
+./scripts/install-deps.sh --install-valgrind source
+```
+
 Ensure /usr/bin/valgrind is a valid symlink
 e.g. `sudo ln -s /opt/valgrind.3.19.0/bin/valgrind /usr/bin/valgrind`
 
@@ -71,3 +83,31 @@ ctest -T memcheck
 ```
 
 Results will be in `out/Testing/Temporary/MemoryChecker.*.log`
+
+#### Run specific tests under valgrind
+
+```sh
+cd out
+# Run a specific test
+ctest -R <test_name> -T memcheck
+
+# Run tests matching a pattern
+ctest -R ".*device_properties.*" -T memcheck
+
+# Run with verbose output
+ctest -R <test_name> -T memcheck -V
+```
+
+#### Run individual test binary directly with valgrind
+
+```sh
+# Run with full leak check
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./path/to/test_binary
+
+# With verbose output and log file
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes \
+  --verbose --log-file=valgrind-output.log ./path/to/test_binary
+
+# With child process tracking
+valgrind --leak-check=full --trace-children=yes ./path/to/test_binary
+```

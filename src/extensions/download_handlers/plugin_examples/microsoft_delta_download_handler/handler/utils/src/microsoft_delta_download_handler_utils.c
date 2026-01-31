@@ -178,7 +178,7 @@ done:
     STRING_delete(sourceUpdateHash);
     STRING_delete(sourceUpdateAlg);
     workflow_free_update_id(updateId);
-    free(sourceUpdatePath);
+    STRING_delete(sourceUpdatePath);
 
     return result;
 }

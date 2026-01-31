@@ -111,7 +111,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
             if (workflow_is_inline_step(handle, i))
             {
-                const char* selectedComponents = workflow_peek_selected_components(handle);
+                char* selectedComponents = workflow_get_selected_components(handle);
 
                 Log_Debug(
                     "Creating workflow for level#%d step#%d.\nSelected components:\n=====\n%s\n=====\n",
@@ -126,9 +126,11 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                 {
                     workflow_set_step_index(childHandle, i);
 
-                    // Inherit parent's selected components.
-                    workflow_set_selected_components(childHandle, workflow_peek_selected_components(handle));
+                    // Inherit parent's selected components (reuse the string we already retrieved).
+                    workflow_set_selected_components(childHandle, selectedComponents);
                 }
+
+                workflow_free_string(selectedComponents);
             }
             else
             {
@@ -223,9 +225,11 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
                             result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_SET_SELECTED_COMPONENTS_FAILURE;
                         }
 
+                        const char* selected_components = workflow_get_selected_components(childHandle);
                         Log_Debug(
                             "Set child handle's selected components: %s",
-                            workflow_peek_selected_components(childHandle));
+                            selected_components);
+                        workflow_free_string(const_cast<char*>(selected_components));
                     }
                 }
             }
@@ -306,7 +310,10 @@ static char* CreateComponentSerializedString(JSON_Array* components, size_t inde
     JSON_Array* array = json_array(json_value_init_array());
     json_array_append_value(array, componentClone);
     json_object_set_value(json_object(root), "components", json_array_get_wrapping_value(array));
-    return json_serialize_to_string_pretty(root);
+
+    char* result = json_serialize_to_string_pretty(root);
+    json_value_free(root);
+    return result;
 }
 
 /**
@@ -322,6 +329,7 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     ADUC_Result result = { ADUC_Result_Failure };
     JSON_Value* rootValue = nullptr;
     JSON_Object* rootObject = nullptr;
+    JSON_Array* componentsArrayLocal = nullptr;
 
     if (componentsArray == nullptr)
     {
@@ -332,7 +340,7 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     *componentsArray = nullptr;
 
     // Parse components list. If the list is empty, nothing to install.
-    const char* selectedComponents = workflow_peek_selected_components(handle);
+    char* selectedComponents = workflow_get_selected_components(handle);
     if (IsNullOrEmpty(selectedComponents))
     {
         result.ResultCode = ADUC_Result_Failure;
@@ -348,7 +356,14 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     }
 
     rootObject = json_object(rootValue);
-    *componentsArray = json_object_get_array(rootObject, "components");
+    componentsArrayLocal = json_object_get_array(rootObject, "components");
+    if (componentsArrayLocal == nullptr)
+    {
+        result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INVALID_COMPONENTS_DATA;
+        goto done;
+    }
+
+    *componentsArray = json_value_get_array(json_value_deep_copy(json_array_get_wrapping_value(componentsArrayLocal)));
     if (*componentsArray == nullptr)
     {
         result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INVALID_COMPONENTS_DATA;
@@ -359,6 +374,8 @@ static ADUC_Result GetSelectedComponentsArray(ADUC_WorkflowHandle handle, JSON_A
     result.ExtendedResultCode = 0;
 
 done:
+    json_value_free(rootValue);
+    workflow_free_string(selectedComponents);
     return result;
 }
 
@@ -478,6 +495,7 @@ static ADUC_Result HandleComponents(
                 workflow_set_result_details(handle, msg);
             }
         }
+    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
     }
 
     result.ResultCode = ADUC_Result_Success;
@@ -1128,6 +1146,7 @@ done:
         workflow_set_state(handle, ADUCITF_State_Failed);
     }
 
+    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
     json_free_serialized_string(serializedComponentString);
     workflow_free_string(workFolder);
 
@@ -1463,6 +1482,7 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
 
 done:
 
+    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
     json_free_serialized_string(serializedComponentString);
     workflow_free_string(workFolder);
 

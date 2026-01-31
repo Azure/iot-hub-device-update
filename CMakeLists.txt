@@ -540,6 +540,8 @@ option (
     ADUC_BUILD_DELTA_HANDLER
     "Build the Microsoft Delta Download Handler with iot-hub-device-update-delta library support"
     OFF)
+option (ADUC_ENABLE_CONSOLE_LOG "Enable console logging" ON)
+option (ADUC_ENABLE_FILE_LOG "Enable file logging" ON)
 
 ### End CMake Options
 
@@ -612,7 +614,7 @@ if (NEED_REGENERATE_RESULT_H)
     # First, generate extension result code headers using the wrapper script
     cmake_path (SET ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER NORMALIZE
                 "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/generate_all_extension_headers.py")
-    
+
     if (EXISTS "${ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER}")
         message (STATUS "Generating extension result code headers...")
         execute_process (

@@ -73,11 +73,16 @@ install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
-cmake_dir_symlink=""  # Will be set after work_folder is determined
+cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
 cmake_bin="cmake"
 
 install_shellcheck=false
 supported_shellcheck_version='0.8.0'
+
+install_valgrind=false
+valgrind_install_method="apt" # apt or source
+supported_valgrind_version='3.23.0'
+valgrind_ref="VALGRIND_3_23_0"
 
 install_githooks=false
 
@@ -129,6 +134,10 @@ print_help() {
     echo "--install-catch2          Install Catch2 from source."
     echo "--install-cmake           Installs supported version of cmake from installer if on ubuntu, else installs it from source."
     echo "--install-shellcheck      Installs supported version of shellcheck."
+    echo "--install-valgrind [method] Install Valgrind for memory leak detection."
+    echo "                          method can be: apt or source."
+    echo "                          'apt' installs from package manager."
+    echo "                          'source' builds from source (version $supported_valgrind_version)."
     echo "--cmake-prefix            Set the install path prefix when --install-cmake is used. Default is [git-root]/.tmp."
     echo "--cmake-version           Override the version of CMake. e.g. 3.23.2 that will be installed if --install-cmake is used."
     echo "--cmake-force-source      Force building cmake from source when --install-cmake is used."
@@ -157,7 +166,9 @@ print_help() {
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
-    echo "-f, --work-folder <work_folder>   Specifies the folder where source code will be cloned or downloaded."
+    echo "-f, --work-folder <work_folder>   Specifies the folder where temp artifacts will be stored."
+    echo "                                  This folder contains temporary build artifacts for dependencies,"
+    echo "                                  CMake/shellcheck installations, and test data."
     echo "                                  Default is [git-root]/.tmp."
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
@@ -167,6 +178,51 @@ print_help() {
     echo "-h, --help                Show this help message."
     echo ""
     echo "Example: ${BASH_SOURCE[0]} --install-all-deps --work-folder ~/adu-linux-client-deps --keep-source-code"
+}
+
+do_install_valgrind_from_apt() {
+    echo "Installing Valgrind from apt..."
+    $SUDO apt-get install --yes valgrind || return
+    echo "Valgrind installed from apt successfully."
+}
+
+do_install_valgrind_from_source() {
+    echo "Installing Valgrind from source..."
+    local valgrind_dir=$work_folder/valgrind
+    if [[ -d $valgrind_dir ]]; then
+        $SUDO rm -rf $valgrind_dir || return
+    fi
+
+    local valgrind_url
+    if [[ $use_ssh == "true" ]]; then
+        valgrind_url=git@github.com:valgrind/valgrind.git
+    else
+        valgrind_url=https://github.com/valgrind/valgrind.git
+    fi
+
+    echo -e "Building Valgrind from source...\n\tTag: $valgrind_ref\n\tFolder: $valgrind_dir"
+    mkdir -p $valgrind_dir || return
+    pushd $valgrind_dir > /dev/null || return
+    git clone --branch $valgrind_ref --depth 1 $valgrind_url . || return
+
+    ./autogen.sh || return
+    ./configure --prefix=/usr/local || return
+    make -j"$(nproc)" || return
+    $SUDO make install || return
+
+    popd > /dev/null || return
+
+    if [[ $keep_source_code != "true" ]]; then
+        echo "Removing Valgrind source code..."
+        $SUDO rm -rf $valgrind_dir
+    fi
+
+    # Create symlink if not already exists
+    if [[ ! -L /usr/bin/valgrind ]]; then
+        $SUDO ln -sf /usr/local/bin/valgrind /usr/bin/valgrind || return
+    fi
+
+    echo "Valgrind installed from source successfully."
 }
 
 do_install_githooks() {
@@ -741,6 +797,11 @@ do_install_cmake_from_source() {
     popd > /dev/null || return
 
     $SUDO ln -sf "${cmake_prefix}/${tarball_name}" "$cmake_dir_symlink"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "Failed to create cmake symlink at $cmake_dir_symlink"
+        return $ret_value
+    fi
 }
 
 do_install_cmake_from_installer() {
@@ -780,6 +841,11 @@ do_install_cmake_from_installer() {
     $SUDO rm "$fullpath_cmake_installer_sh" || return 1
 
     ln -sf "$cmake_installer_dir" "$cmake_dir_symlink"
+    ret_value=$?
+    if [ $ret_value -ne 0 ]; then
+        error "Failed to create cmake symlink at $cmake_dir_symlink"
+        return $ret_value
+    fi
 }
 
 do_install_shellcheck() {
@@ -957,6 +1023,18 @@ while [[ $1 != "" ]]; do
     --install-shellcheck)
         install_shellcheck=true
         ;;
+    --install-valgrind)
+        install_valgrind=true
+        # Check if next argument is a method
+        if [[ $2 != "" && $2 != -* ]]; then
+            shift
+            valgrind_install_method=$1
+            if [[ ! $valgrind_install_method =~ ^(apt|source)$ ]]; then
+                error "Invalid --install-valgrind method '$valgrind_install_method'. Valid options: apt, source"
+                $ret 1
+            fi
+        fi
+        ;;
     --install-githooks)
         install_githooks=true
         ;;
@@ -993,7 +1071,11 @@ while [[ $1 != "" ]]; do
         ;;
     -f | --work-folder)
         shift
-        work_folder=$(realpath "$1")
+        work_folder=$(realpath "$1" 2> /dev/null)
+        if [[ -z $work_folder ]]; then
+            error "Invalid or inaccessible work folder path: $1"
+            $ret 1
+        fi
         ;;
     -k | --keep-source-code)
         keep_source_code=true
@@ -1103,10 +1185,12 @@ fi
 
 # First off, install cmake if requested.
 if [[ $install_cmake == "true" ]]; then
+    cmake_installed=false
     if [[ $is_amd64 == "false" && $is_arm64 == "false" || $cmake_force_source == "true" ]]; then
-        if ! do_install_cmake_from_source; then
-            error "Failed to install cmake from source."
-            $ret 1
+        if do_install_cmake_from_source; then
+            cmake_installed=true
+        else
+            warn "Failed to install cmake from source. Falling back to system cmake."
         fi
     else
         arch=''
@@ -1122,14 +1206,28 @@ if [[ $install_cmake == "true" ]]; then
 
         if [[ -d $cmake_installer_dir && -x "${cmake_dir_symlink}/bin/cmake" ]]; then
             echo "${cmake_installer_dir} already exists. Skipping install of cmake..."
+            cmake_installed=true
         else
-            if ! do_install_cmake_from_installer "$arch"; then
-                error "Failed to install cmake using installer."
-                $ret 1
+            if do_install_cmake_from_installer "$arch"; then
+                cmake_installed=true
+            else
+                warn "Failed to install cmake using installer. Falling back to system cmake."
             fi
         fi
     fi
-    cmake_bin="${cmake_dir_symlink}/bin/cmake"
+    if [[ $cmake_installed == "true" ]]; then
+        cmake_bin="${cmake_dir_symlink}/bin/cmake"
+    else
+        echo "Using system cmake..."
+        cmake_bin="cmake"
+    fi
+fi
+
+# Write build environment to file for build.sh to source
+if [[ $install_cmake == "true" ]]; then
+    mkdir -p "$work_folder"
+    echo "ADU_CMAKE_BIN=$cmake_bin" > "$work_folder/.build-env"
+    echo "Build environment written to $work_folder/.build-env"
 fi
 
 # Install git hooks if requested.
@@ -1143,6 +1241,21 @@ fi
 if [[ $install_shellcheck == "true" ]]; then
     if ! do_install_shellcheck; then
         warn "Failed to install shellcheck."
+    fi
+fi
+
+# Install Valgrind if requested.
+if [[ $install_valgrind == "true" ]]; then
+    if [[ $valgrind_install_method == "apt" ]]; then
+        if ! do_install_valgrind_from_apt; then
+            error "Failed to install Valgrind from apt."
+            $ret 1
+        fi
+    elif [[ $valgrind_install_method == "source" ]]; then
+        if ! do_install_valgrind_from_source; then
+            error "Failed to install Valgrind from source."
+            $ret 1
+        fi
     fi
 fi
 

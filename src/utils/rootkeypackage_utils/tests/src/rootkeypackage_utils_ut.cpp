@@ -283,7 +283,9 @@ TEST_CASE("RootKeyPackageUtils_Parse")
 
             CHECK(encodedHashStr == expected);
 
-            CONSTBUFFER_DecRef(signingKeyHash.hash);
+            // Note: Don't DecRef signingKeyHash.hash here - it's a copy of the pointer
+            // from pkg.protectedProperties.disabledSigningKeys, and the Destroy function
+            // will handle cleanup.
             free(encodedHash);
         }
 
@@ -386,5 +388,8 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
         CHECK_FALSE(pkg.protectedProperties.isTest);
+
+        // Cleanup
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 }

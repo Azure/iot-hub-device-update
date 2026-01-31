@@ -8,7 +8,6 @@
 // https://github.com/catchorg/Catch2/blob/master/docs/own-main.md
 #include <catch2/catch_session.hpp>
 
-#include <ostream>
 #include <iostream>
 
 int main(int argc, char* argv[])

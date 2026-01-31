@@ -28,6 +28,10 @@ bool ADUC_HashUtils_GetShaVersionForTypeString(const char* hashTypeStr, SHAversi
 
 bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** hash);
 
+bool ADUC_HashUtils_GetIndexStrongestValidHash(
+    const ADUC_Hash* hashes, size_t hashCount,
+    size_t* outIndexStrongestAlgorithm, SHAversion* outBestShaVersion);
+
 /**
  * @brief Get file hash type at specified index.
  * @param hashArray The ADUC_Hash array.

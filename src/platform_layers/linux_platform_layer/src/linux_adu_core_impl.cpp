@@ -55,6 +55,11 @@ std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
     return std::unique_ptr<LinuxPlatformLayer>{ new LinuxPlatformLayer() };
 }
 
+LinuxPlatformLayer::~LinuxPlatformLayer()
+{
+    ExtensionManager::Uninit();
+}
+
 /**
  * @brief Set the ADUC_UpdateActionCallbacks object
  *

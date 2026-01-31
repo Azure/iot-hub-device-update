@@ -936,7 +936,7 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
         "Action '%s' complete. Result: %d (%s), %d (0x%x)",
         ADUCITF_WorkflowStepToString(entry->WorkflowStep),
         result.ResultCode,
-        result.ResultCode == 0 ? "failed" : "succeeded",
+        IsAducResultCodeFailure(result.ResultCode) ? "failed" : "succeeded",
         result.ExtendedResultCode,
         result.ExtendedResultCode);
 
