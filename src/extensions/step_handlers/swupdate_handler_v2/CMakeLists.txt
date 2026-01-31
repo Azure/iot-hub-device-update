@@ -9,7 +9,26 @@ set (
     "${ADUC_CONF_FOLDER}/${SWUPDATE_HANDLER_CONF_FILE}"
     CACHE STRING "Path to the SWUpdate handler configuration file.")
 
+# Generate result codes header from JSON definition
+set (RESULT_CODES_JSON "${CMAKE_CURRENT_SOURCE_DIR}/swupdate_handler_result_codes.json")
+set (RESULT_CODES_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/inc/aduc/swupdate_handler_result_codes.h")
+set (RESULT_CODE_GENERATOR "${PROJECT_SOURCE_DIR}/scripts/error_code_generator_defs/extension_result_code_generator.py")
+
+add_custom_command (
+    OUTPUT ${RESULT_CODES_HEADER}
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/inc/aduc"
+    COMMAND python3 ${RESULT_CODE_GENERATOR} -j ${RESULT_CODES_JSON} -o ${RESULT_CODES_HEADER}
+    DEPENDS ${RESULT_CODES_JSON} ${RESULT_CODE_GENERATOR}
+    COMMENT "Generating swupdate handler result codes header from ${RESULT_CODES_JSON}"
+    VERBATIM)
+
+# Create a custom target to ensure header is generated before compilation
+add_custom_target (generate_swupdate_result_codes DEPENDS ${RESULT_CODES_HEADER})
+
 add_library (${target_name} MODULE)
+
+# Make the library depend on the header generation
+add_dependencies (${target_name} generate_swupdate_result_codes)
 
 add_library (aduc::${target_name} ALIAS ${target_name})
 
@@ -48,6 +67,10 @@ target_compile_definitions (
             ADUC_VERSION_FILE="${ADUC_VERSION_FILE}")
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+
+# Note: yocto-a-b-update.sh is now deployed by meta-raspberrypi-adu layer (Raspberry Pi specific)
+# The generic ADU agent no longer includes this platform-specific script
+# See: meta-raspberrypi-adu/recipes-azure-device-update/azure-device-update/azure-device-update_git.bbappend
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

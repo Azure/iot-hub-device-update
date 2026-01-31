@@ -490,6 +490,15 @@ cmake_path (SET ADUC_PATH_TO_ERROR_CODE_JSON_FILE NORMALIZE
 cmake_path (SET ADUC_GENERATED_ERROR_CODE_FILE_PATH NORMALIZE
             "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}")
 
+# Extension Configurations
+set (
+    ADUC_EXTENSIONS_CONFIG_FILENAME
+    "extension_configs.json"
+    CACHE STRING "Name of the extension configurations JSON file")
+
+cmake_path (SET ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_EXTENSIONS_CONFIG_FILENAME}")
+
 #######
 # BEGIN Delta Downloader Handler Source Update Cache Configurations
 
@@ -559,7 +568,8 @@ find_package (
     REQUIRED)
 
 set (ERROR_CODE_GENERATOR_ARGS "--json-file-path" "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}"
-                               "--result-file-path" "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
+                               "--result-file-path" "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
+                               "--extensions-config" "${ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE}")
 
 # Cache file to track source file changes
 set (RESULT_H_CACHE_FILE "${CMAKE_BINARY_DIR}/.result_h_generation_cache")
@@ -571,7 +581,8 @@ option (ADUC_FORCE_REGENERATE_RESULT_H
 # Calculate SHA256 hashes of source files
 file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" JSON_FILE_HASH)
 file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}" SCRIPT_FILE_HASH)
-set (SOURCE_FILES_HASH "${JSON_FILE_HASH}|${SCRIPT_FILE_HASH}")
+file (SHA256 "${ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE}" EXTENSIONS_CONFIG_HASH)
+set (SOURCE_FILES_HASH "${JSON_FILE_HASH}|${SCRIPT_FILE_HASH}|${EXTENSIONS_CONFIG_HASH}")
 
 # Determine if result.h needs to be regenerated
 set (NEED_REGENERATE_RESULT_H TRUE)
@@ -598,6 +609,28 @@ endif ()
 if (NEED_REGENERATE_RESULT_H)
     message (STATUS "Generating result.h from result_codes.json (reason: ${REGENERATE_REASON})...")
 
+    # First, generate extension result code headers using the wrapper script
+    cmake_path (SET ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER NORMALIZE
+                "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/generate_all_extension_headers.py")
+    
+    if (EXISTS "${ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER}")
+        message (STATUS "Generating extension result code headers...")
+        execute_process (
+            COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER}
+                    --config "${ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE}"
+                    --source-dir "${CMAKE_CURRENT_SOURCE_DIR}"
+            RESULT_VARIABLE GENERATE_EXTENSION_HEADERS_RESULT
+            OUTPUT_VARIABLE EXTENSION_HEADERS_OUTPUT
+            ERROR_VARIABLE EXTENSION_HEADERS_ERROR)
+
+        if (NOT GENERATE_EXTENSION_HEADERS_RESULT EQUAL "0")
+            message (WARNING "Extension header generation failed:\n${EXTENSION_HEADERS_OUTPUT}\n${EXTENSION_HEADERS_ERROR}")
+        else ()
+            message (STATUS "Extension headers generation output:\n${EXTENSION_HEADERS_OUTPUT}")
+        endif ()
+    endif ()
+
+    # Then generate result.h
     execute_process (
         COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
                 ${ERROR_CODE_GENERATOR_ARGS}

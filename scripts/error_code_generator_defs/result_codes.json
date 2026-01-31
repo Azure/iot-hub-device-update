@@ -240,148 +240,7 @@
                     "code": 1,
                     "doc_string": "Results that originate from the SwUpdate Step Handler",
                     "name": "ADUC_CONTENT_HANDLER_SWUPDATE",
-                    "results": [
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_EMPTY_VERSION",
-                            "value": 1
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_UNKNOWN_UPDATE_VERSION",
-                            "value": 2
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_WRONG_UPDATE_VERSION",
-                            "value": 3
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_WRONG_FILECOUNT",
-                            "value": 4
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_PREPARE_FAILURE_BAD_FILE_ENTITY",
-                            "value": 5
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_CREATE_SANDBOX_FAILURE",
-                            "value": 6
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_MISSING_SCRIPT_FILE_NAME",
-                            "value": 7
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_MISSING_SWU_FILE_NAME",
-                            "value": 8
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_TOO_MANY_COMPONENTS",
-                            "value": 9
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INVALID_COMPONENTS_DATA",
-                            "value": 10
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_BAD_SWUPDATE_CONFIG_FILE",
-                            "value": 32
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_PERFORM_ACTION_FAILED_TO_GET_CONFIG_INSTANCE",
-                            "value": 33
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_UNKNOWN_UPDATE_VERSION",
-                            "value": 257
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_UPDATE_VERSION",
-                            "value": 258
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_FILECOUNT",
-                            "value": 259
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_BAD_FILE_ENTITY",
-                            "value": 260
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_ERROR_NULL_WORKFLOW",
-                            "value": 261
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PRIMARY_FILE_ENTITY",
-                            "value": 262
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_SCRIPT_FILE_ENTITY",
-                            "value": 263
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_PAYLOAD_FILE_ENTITY",
-                            "value": 264
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PAYLOAD_FILE_FAILURE_UNKNOWNEXCEPTION",
-                            "value": 510
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_PRIMARY_FILE_FAILURE_UNKNOWNEXCEPTION",
-                            "value": 511
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_CANNOT_OPEN_WORKFOLDER",
-                            "value": 513
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_IMAGE_FILE_NOT_FOUND",
-                            "value": 514
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW",
-                            "value": 515
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_BAD_FILE_ENTITY",
-                            "value": 516
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE",
-                            "value": 517
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_MISSING_INSTALLED_CRITERIA",
-                            "value": 518
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE",
-                            "value": 519
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_INSTALL_FAILURE_UNKNOWNEXCEPTION",
-                            "value": 767
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_APPLY_FAILURE",
-                            "value": 768
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_APPLY_FAILED_TO_GET_CONFIG_INSTANCE",
-                            "value": 769
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILURE",
-                            "value": 1024
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILED_TO_GET_CONFIG_INSTANCE",
-                            "value": 1025
-                        },
-                        {
-                            "name": "ADUC_ERC_SWUPDATE_HANDLER_CANCEL_FAILED_TO_CANCEL_APPLIED_UPDATE",
-                            "value": 1026
-                        }
-                    ]
+                    "results": []
                 },
                 {
                     "code": 2,
@@ -1354,6 +1213,10 @@
                         {
                             "name": "ADUC_ERC_MISSING_SOURCE_SANDBOX_FILE",
                             "value": 7
+                        },
+                        {
+                            "name": "ADUC_ERC_MOVE_HASH_VERIFICATION_FAILED",
+                            "value": 8
                         }
                     ]
                 },
