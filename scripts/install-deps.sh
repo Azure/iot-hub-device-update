@@ -641,8 +641,33 @@ do_install_delta() {
     # Setup VCPKG for delta library dependencies
     echo "Setting up VCPKG for delta library..."
     local vcpkg_root=$work_folder/vcpkg
-    local vcpkg_triplet="x64-linux"
     local build_type="Release"
+
+    # Auto-detect architecture for vcpkg triplet
+    local arch
+    arch=$(uname -m)
+    local vcpkg_triplet
+    local vcpkg_arch
+    case "$arch" in
+    x86_64 | amd64)
+        vcpkg_triplet="x64-linux"
+        vcpkg_arch="x64"
+        ;;
+    aarch64 | arm64)
+        vcpkg_triplet="arm64-linux"
+        vcpkg_arch="arm64"
+        ;;
+    armv7l | armhf)
+        vcpkg_triplet="arm-linux"
+        vcpkg_arch="arm"
+        ;;
+    *)
+        echo "Warning: Unknown architecture '$arch', defaulting to x64-linux"
+        vcpkg_triplet="x64-linux"
+        vcpkg_arch="x64"
+        ;;
+    esac
+    echo "Detected architecture: $arch -> using triplet: $vcpkg_triplet"
 
     if [[ $keep_source_code == "true" ]]; then
         build_type="Debug"
@@ -659,13 +684,13 @@ do_install_delta() {
     ./bootstrap-vcpkg.sh || return
     popd > /dev/null || return
 
-    # Create x64-linux triplet if it doesn't exist (community triplet may not be present)
-    local triplet_file="$vcpkg_root/triplets/community/x64-linux.cmake"
+    # Create triplet if it doesn't exist (community triplet may not be present)
+    local triplet_file="$vcpkg_root/triplets/community/$vcpkg_triplet.cmake"
     if [ ! -f "$triplet_file" ]; then
-        echo "Creating x64-linux triplet..."
+        echo "Creating $vcpkg_triplet triplet..."
         mkdir -p "$vcpkg_root/triplets/community" || return
-        cat > "$triplet_file" << 'EOF'
-set(VCPKG_TARGET_ARCHITECTURE x64)
+        cat > "$triplet_file" << EOF
+set(VCPKG_TARGET_ARCHITECTURE $vcpkg_arch)
 set(VCPKG_CRT_LINKAGE dynamic)
 set(VCPKG_LIBRARY_LINKAGE static)
 set(VCPKG_CMAKE_SYSTEM_NAME Linux)
