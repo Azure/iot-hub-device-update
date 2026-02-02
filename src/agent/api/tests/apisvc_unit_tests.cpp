@@ -21,11 +21,61 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <filesystem>
+#include <poll.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <thread>
 #include <unistd.h>
+
+// Timeout in milliseconds for FIFO operations
+constexpr int FIFO_OPEN_TIMEOUT_MS = 10000; // 10 seconds
+constexpr int FIFO_POLL_INTERVAL_MS = 50;   // 50 ms polling interval
+
+/**
+ * @brief Opens a FIFO with a timeout using non-blocking I/O and polling.
+ * @param path The path to the FIFO
+ * @param flags O_RDONLY or O_WRONLY (O_NONBLOCK will be added internally)
+ * @param timeout_ms Timeout in milliseconds
+ * @return File descriptor on success, -1 on timeout or error
+ */
+static int open_fifo_with_timeout(const char* path, int flags, int timeout_ms)
+{
+    auto start = std::chrono::steady_clock::now();
+    int fd = -1;
+
+    while (true)
+    {
+        fd = open(path, flags | O_NONBLOCK);
+        if (fd >= 0)
+        {
+            // Successfully opened, remove O_NONBLOCK for normal blocking read/write
+            int current_flags = fcntl(fd, F_GETFL);
+            if (current_flags != -1)
+            {
+                fcntl(fd, F_SETFL, current_flags & ~O_NONBLOCK);
+            }
+            return fd;
+        }
+
+        if (errno != ENXIO && errno != EAGAIN)
+        {
+            // Real error, not just "no reader/writer yet"
+            return -1;
+        }
+
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count();
+        if (elapsed_ms >= timeout_ms)
+        {
+            // Timeout
+            errno = ETIMEDOUT;
+            return -1;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(FIFO_POLL_INTERVAL_MS));
+    }
+}
 
 using Catch::Matchers::Equals;
 
@@ -61,8 +111,8 @@ TEST_CASE("apisvc crossproc tests")
 
         aduc::Defer defer_rm_fifo([respFifoPath]() { unlink(respFifoPath); });
 
-        // open request fifo for writing
-        int reqFifo = open(fifoPath, O_WRONLY);
+        // open request fifo for writing (with timeout to avoid indefinite blocking in CI)
+        int reqFifo = open_fifo_with_timeout(fifoPath, O_WRONLY, FIFO_OPEN_TIMEOUT_MS);
         REQUIRE(reqFifo != -1);
 
         aduc::Defer defer_close_req_fifo([reqFifo]() -> void { close(reqFifo); });
@@ -76,8 +126,8 @@ TEST_CASE("apisvc crossproc tests")
         ssize_t n = msg_send_req(reqFifo, &req);
         REQUIRE(n == 3 * sizeof(uint16_t) + slen);
 
-        // open response fifo for reading--open will block until data is available in fifo queue
-        int respFifo = open(respFifoPath, O_RDONLY);
+        // open response fifo for reading (with timeout to avoid indefinite blocking in CI)
+        int respFifo = open_fifo_with_timeout(respFifoPath, O_RDONLY, FIFO_OPEN_TIMEOUT_MS);
         REQUIRE(respFifo != -1);
 
         aduc::Defer defer_close_resp_fifo([respFifo]() -> void { close(respFifo); });
