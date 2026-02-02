@@ -625,13 +625,13 @@ do_install_delta() {
     echo -e "Building iot-hub-device-update-delta library ...\n\tBranch: $delta_ref\n\tFolder: $delta_dir"
     mkdir -p "$delta_dir" || return
     pushd "$delta_dir" > /dev/null || return
-    git clone --recursive --single-branch --branch $delta_ref --depth 1 $delta_url . || return
+    git clone --recursive --single-branch --branch "$delta_ref" --depth 1 "$delta_url" . || return
 
     # Install system dependencies required by delta library
     echo "Installing delta library system dependencies..."
-    local delta_deps="curl zip unzip tar gcc gcc-10 g++ g++-10 autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev"
     $SUDO apt-get update || return
-    $SUDO apt-get install --yes "$delta_deps" || return
+    # shellcheck disable=SC2086
+    $SUDO apt-get install --yes curl zip unzip tar gcc gcc-10 g++ g++-10 autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev || return
 
     # Setup gcc/g++ alternatives
     echo "Setting up gcc/g++ alternatives..."
@@ -648,14 +648,65 @@ do_install_delta() {
         build_type="Debug"
     fi
 
-    # Run VCPKG setup with classic mode
-    chmod +x "$delta_dir/vcpkg/setup_vcpkg.sh" || return
+    # Clone and bootstrap vcpkg if needed
+    if [ ! -d "$vcpkg_root" ]; then
+        echo "Cloning vcpkg..."
+        git clone https://github.com/microsoft/vcpkg "$vcpkg_root" || return
+    fi
 
-    # Set environment variables to force classic mode and avoid conflicts
+    pushd "$vcpkg_root" > /dev/null || return
+    git pull || true
+    ./bootstrap-vcpkg.sh || return
+    popd > /dev/null || return
+
+    # Create x64-linux triplet if it doesn't exist (community triplet may not be present)
+    local triplet_file="$vcpkg_root/triplets/community/x64-linux.cmake"
+    if [ ! -f "$triplet_file" ]; then
+        echo "Creating x64-linux triplet..."
+        mkdir -p "$vcpkg_root/triplets/community" || return
+        cat > "$triplet_file" << 'EOF'
+set(VCPKG_TARGET_ARCHITECTURE x64)
+set(VCPKG_CRT_LINKAGE dynamic)
+set(VCPKG_LIBRARY_LINKAGE static)
+set(VCPKG_CMAKE_SYSTEM_NAME Linux)
+EOF
+    fi
+
+    # Set environment variables to force classic mode and avoid conflicts with ADU's vcpkg.json
     export VCPKG_ROOT="$vcpkg_root"
     export VCPKG_FEATURE_FLAGS="-manifests"
 
-    "$delta_dir/vcpkg/setup_vcpkg.sh" "$vcpkg_root" "$delta_dir/vcpkg/ports" "$vcpkg_triplet" || return
+    # Install dependencies using classic mode with --classic flag
+    echo "Installing vcpkg dependencies for delta library..."
+    local overlay_ports="$delta_dir/vcpkg/ports"
+
+    # Helper function for vcpkg install with classic mode
+    vcpkg_install_classic() {
+        local pkg=$1
+        echo "Installing $pkg:$vcpkg_triplet..."
+        "$vcpkg_root/vcpkg" install "$pkg:$vcpkg_triplet" \
+            --classic \
+            --overlay-ports="$overlay_ports" \
+            --overlay-triplets="$vcpkg_root/triplets/community" \
+            --x-install-root="$vcpkg_root/installed" || return 1
+    }
+
+    # Install required packages
+    vcpkg_install_classic zlib || return
+    vcpkg_install_classic zstd || return
+    vcpkg_install_classic bzip2 || return
+    vcpkg_install_classic gtest || return
+    vcpkg_install_classic openssl || return
+    vcpkg_install_classic e2fsprogs || return
+    vcpkg_install_classic vcpkg-cmake-config || return
+    vcpkg_install_classic vcpkg-cmake || return
+    vcpkg_install_classic jsoncpp || return
+    vcpkg_install_classic libconfig || return
+    vcpkg_install_classic fmt || return
+    vcpkg_install_classic bsdiff || return
+
+    "$vcpkg_root/vcpkg" integrate install || true
+    "$vcpkg_root/vcpkg" list
 
     # Unset the flag after vcpkg setup
     unset VCPKG_FEATURE_FLAGS
@@ -668,16 +719,21 @@ do_install_delta() {
 
     # Set environment variables for build
     export VCPKG_ROOT="$vcpkg_root"
+    export VCPKG_OVERLAY_TRIPLETS="$vcpkg_root/triplets/community"
     export VCPKG_FEATURE_FLAGS="-manifests"
 
-    # Run vcpkg stage
-    ./build.sh "$vcpkg_triplet" "$build_type" vcpkg || return
+    # Skip vcpkg stage since we already installed dependencies above
+    # ./build.sh "$vcpkg_triplet" "$build_type" vcpkg || return
 
     # Run cmake stage
     ./build.sh "$vcpkg_triplet" "$build_type" cmake || return
 
     # Run build stage
     ./build.sh "$vcpkg_triplet" "$build_type" build || return
+
+    # Unset vcpkg environment variables
+    unset VCPKG_OVERLAY_TRIPLETS
+    unset VCPKG_FEATURE_FLAGS
 
     popd > /dev/null || return
 
