@@ -642,4 +642,188 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_CopyFileToDir")
         verifyContent[contentLength] = '\0';
         CHECK_THAT(verifyContent.data(), Equals(testContent));
     }
+
+    SECTION("Copy file exactly 1024 bytes - buffer boundary edge case")
+    {
+        // The internal buffer is 1024 bytes. When file is exactly 1024 bytes,
+        // fread reads the full buffer AND sets EOF simultaneously.
+        // This is the critical edge case for the feof() bug.
+        std::string exactSourcePath = copyTestDir + "/exact_1024.bin";
+        FILE* exactSource = fopen(exactSourcePath.c_str(), "wb");
+        REQUIRE(exactSource != nullptr);
+
+        const size_t exactSize = 1024;
+        std::vector<char> exactData(exactSize);
+        for (size_t i = 0; i < exactSize; i++)
+        {
+            exactData[i] = static_cast<char>('A' + (i % 26));
+        }
+        REQUIRE(fwrite(exactData.data(), 1, exactSize, exactSource) == exactSize);
+        fclose(exactSource);
+
+        std::string exactDestDir = copyTestDir + "/exact_1024_dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(exactDestDir.c_str()) == 0);
+
+        int result = ADUC_SystemUtils_CopyFileToDir(exactSourcePath.c_str(), exactDestDir.c_str(), false);
+        REQUIRE(result == 0);
+
+        std::string exactDestPath = exactDestDir + "/exact_1024.bin";
+        struct stat exactStat;
+        REQUIRE(stat(exactDestPath.c_str(), &exactStat) == 0);
+        REQUIRE(exactStat.st_size > 0);
+        CHECK(exactStat.st_size == static_cast<off_t>(exactSize));
+
+        // Verify content matches
+        FILE* verifyFile = fopen(exactDestPath.c_str(), "rb");
+        REQUIRE(verifyFile != nullptr);
+        std::vector<char> verifyContent(exactSize);
+        size_t bytesRead = fread(verifyContent.data(), 1, exactSize, verifyFile);
+        fclose(verifyFile);
+        REQUIRE(bytesRead == exactSize);
+        CHECK(memcmp(verifyContent.data(), exactData.data(), exactSize) == 0);
+    }
+
+    SECTION("Copy file 1023 bytes - just under buffer size")
+    {
+        std::string underSourcePath = copyTestDir + "/under_1023.bin";
+        FILE* underSource = fopen(underSourcePath.c_str(), "wb");
+        REQUIRE(underSource != nullptr);
+
+        const size_t underSize = 1023;
+        std::vector<char> underData(underSize);
+        for (size_t i = 0; i < underSize; i++)
+        {
+            underData[i] = static_cast<char>('a' + (i % 26));
+        }
+        REQUIRE(fwrite(underData.data(), 1, underSize, underSource) == underSize);
+        fclose(underSource);
+
+        std::string underDestDir = copyTestDir + "/under_1023_dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(underDestDir.c_str()) == 0);
+
+        int result = ADUC_SystemUtils_CopyFileToDir(underSourcePath.c_str(), underDestDir.c_str(), false);
+        REQUIRE(result == 0);
+
+        std::string underDestPath = underDestDir + "/under_1023.bin";
+        struct stat underStat;
+        REQUIRE(stat(underDestPath.c_str(), &underStat) == 0);
+        REQUIRE(underStat.st_size > 0);
+        CHECK(underStat.st_size == static_cast<off_t>(underSize));
+    }
+
+    SECTION("Copy file 1025 bytes - just over buffer size (2 reads, second is partial)")
+    {
+        std::string overSourcePath = copyTestDir + "/over_1025.bin";
+        FILE* overSource = fopen(overSourcePath.c_str(), "wb");
+        REQUIRE(overSource != nullptr);
+
+        const size_t overSize = 1025;
+        std::vector<char> overData(overSize);
+        for (size_t i = 0; i < overSize; i++)
+        {
+            overData[i] = static_cast<char>('0' + (i % 10));
+        }
+        REQUIRE(fwrite(overData.data(), 1, overSize, overSource) == overSize);
+        fclose(overSource);
+
+        std::string overDestDir = copyTestDir + "/over_1025_dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(overDestDir.c_str()) == 0);
+
+        int result = ADUC_SystemUtils_CopyFileToDir(overSourcePath.c_str(), overDestDir.c_str(), false);
+        REQUIRE(result == 0);
+
+        std::string overDestPath = overDestDir + "/over_1025.bin";
+        struct stat overStat;
+        REQUIRE(stat(overDestPath.c_str(), &overStat) == 0);
+        REQUIRE(overStat.st_size > 0);
+        CHECK(overStat.st_size == static_cast<off_t>(overSize));
+
+        // Verify all content including the single byte after buffer boundary
+        FILE* verifyFile = fopen(overDestPath.c_str(), "rb");
+        REQUIRE(verifyFile != nullptr);
+        std::vector<char> verifyContent(overSize);
+        size_t bytesRead = fread(verifyContent.data(), 1, overSize, verifyFile);
+        fclose(verifyFile);
+        REQUIRE(bytesRead == overSize);
+        CHECK(memcmp(verifyContent.data(), overData.data(), overSize) == 0);
+    }
+
+    SECTION("Copy binary data with null bytes - ensure null bytes don't truncate copy")
+    {
+        std::string binarySourcePath = copyTestDir + "/binary_nulls.bin";
+        FILE* binarySource = fopen(binarySourcePath.c_str(), "wb");
+        REQUIRE(binarySource != nullptr);
+
+        // Create binary data with embedded null bytes
+        const size_t binarySize = 256;
+        std::vector<char> binaryData(binarySize);
+        for (size_t i = 0; i < binarySize; i++)
+        {
+            binaryData[i] = static_cast<char>(i); // Includes 0x00 at position 0
+        }
+        // Explicitly add more nulls in the middle
+        binaryData[50] = '\0';
+        binaryData[100] = '\0';
+        binaryData[150] = '\0';
+
+        REQUIRE(fwrite(binaryData.data(), 1, binarySize, binarySource) == binarySize);
+        fclose(binarySource);
+
+        std::string binaryDestDir = copyTestDir + "/binary_dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(binaryDestDir.c_str()) == 0);
+
+        int result = ADUC_SystemUtils_CopyFileToDir(binarySourcePath.c_str(), binaryDestDir.c_str(), false);
+        REQUIRE(result == 0);
+
+        std::string binaryDestPath = binaryDestDir + "/binary_nulls.bin";
+        struct stat binaryStat;
+        REQUIRE(stat(binaryDestPath.c_str(), &binaryStat) == 0);
+        REQUIRE(binaryStat.st_size > 0);
+        CHECK(binaryStat.st_size == static_cast<off_t>(binarySize));
+
+        // Verify all bytes including those after null bytes
+        FILE* verifyFile = fopen(binaryDestPath.c_str(), "rb");
+        REQUIRE(verifyFile != nullptr);
+        std::vector<char> verifyContent(binarySize);
+        size_t bytesRead = fread(verifyContent.data(), 1, binarySize, verifyFile);
+        fclose(verifyFile);
+        REQUIRE(bytesRead == binarySize);
+        CHECK(memcmp(verifyContent.data(), binaryData.data(), binarySize) == 0);
+    }
+
+    SECTION("Null parameter handling - null filePath")
+    {
+        std::string destDir = copyTestDir + "/null_test";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(destDir.c_str()) == 0);
+
+        int result = ADUC_SystemUtils_CopyFileToDir(nullptr, destDir.c_str(), false);
+        CHECK(result != 0); // Should return error
+    }
+
+    SECTION("Null parameter handling - null dirPath")
+    {
+        int result = ADUC_SystemUtils_CopyFileToDir(sourceFilePath.c_str(), nullptr, false);
+        CHECK(result != 0); // Should return error
+    }
+
+    SECTION("Null parameter handling - both null")
+    {
+        int result = ADUC_SystemUtils_CopyFileToDir(nullptr, nullptr, false);
+        CHECK(result != 0); // Should return error
+    }
+
+    SECTION("Non-existent source file - should return error, not create empty dest")
+    {
+        std::string nonExistentPath = copyTestDir + "/this_file_does_not_exist.txt";
+        std::string destDir = copyTestDir + "/nonexistent_src_dest";
+        REQUIRE(ADUC_SystemUtils_MkDirRecursiveDefault(destDir.c_str()) == 0);
+
+        int result = ADUC_SystemUtils_CopyFileToDir(nonExistentPath.c_str(), destDir.c_str(), false);
+        CHECK(result != 0); // Should return error
+
+        // Verify no destination file was created
+        std::string wouldBeDestPath = destDir + "/this_file_does_not_exist.txt";
+        struct stat destStat;
+        CHECK(stat(wouldBeDestPath.c_str(), &destStat) != 0); // File should not exist
+    }
 }

@@ -190,7 +190,7 @@ do_install_valgrind_from_source() {
     echo "Installing Valgrind from source..."
     local valgrind_dir=$work_folder/valgrind
     if [[ -d $valgrind_dir ]]; then
-        $SUDO rm -rf $valgrind_dir || return
+        $SUDO rm -rf "$valgrind_dir" || return
     fi
 
     local valgrind_url
@@ -201,8 +201,8 @@ do_install_valgrind_from_source() {
     fi
 
     echo -e "Building Valgrind from source...\n\tTag: $valgrind_ref\n\tFolder: $valgrind_dir"
-    mkdir -p $valgrind_dir || return
-    pushd $valgrind_dir > /dev/null || return
+    mkdir -p "$valgrind_dir" || return
+    pushd "$valgrind_dir" > /dev/null || return
     git clone --branch $valgrind_ref --depth 1 $valgrind_url . || return
 
     ./autogen.sh || return
@@ -214,7 +214,7 @@ do_install_valgrind_from_source() {
 
     if [[ $keep_source_code != "true" ]]; then
         echo "Removing Valgrind source code..."
-        $SUDO rm -rf $valgrind_dir
+        $SUDO rm -rf "$valgrind_dir"
     fi
 
     # Create symlink if not already exists
@@ -286,7 +286,7 @@ do_install_azure_iot_sdk() {
     echo "Installing Azure IoT C SDK ..."
     local azure_sdk_dir=$work_folder/azure-iot-sdk-c
     if [[ -d $azure_sdk_dir ]]; then
-        $SUDO rm -rf $azure_sdk_dir || return
+        $SUDO rm -rf "$azure_sdk_dir" || return
     fi
 
     local azure_sdk_url
@@ -297,8 +297,8 @@ do_install_azure_iot_sdk() {
     fi
 
     echo -e "Building azure-iot-sdk-c ...\n\tBranch: $azure_sdk_ref\n\tFolder: $azure_sdk_dir"
-    mkdir -p $azure_sdk_dir || return
-    pushd $azure_sdk_dir > /dev/null || return
+    mkdir -p "$azure_sdk_dir" || return
+    pushd "$azure_sdk_dir" > /dev/null || return
     git clone --branch $azure_sdk_ref $azure_sdk_url . || return
     git submodule update --init || return
 
@@ -333,7 +333,7 @@ do_install_azure_iot_sdk() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $azure_sdk_dir || return
+        $SUDO rm -rf "$azure_sdk_dir" || return
     fi
 }
 
@@ -341,7 +341,7 @@ do_install_catch2() {
     echo "Installing Catch2 ..."
     local catch2_dir=$work_folder/catch2
     if [[ -d $catch2_dir ]]; then
-        $SUDO rm -rf $catch2_dir || return
+        $SUDO rm -rf "$catch2_dir" || return
     fi
 
     local catch2_url
@@ -352,8 +352,8 @@ do_install_catch2() {
     fi
 
     echo -e "Building Catch2 ...\n\tBranch: $catch2_ref\n\tFolder: $catch2_dir"
-    mkdir -p $catch2_dir || return
-    pushd $catch2_dir > /dev/null || return
+    mkdir -p "$catch2_dir" || return
+    pushd "$catch2_dir" > /dev/null || return
     git clone --recursive --single-branch --branch $catch2_ref --depth 1 $catch2_url . || return
 
     mkdir cmake || return
@@ -366,7 +366,7 @@ do_install_catch2() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $catch2_dir || return
+        $SUDO rm -rf "$catch2_dir" || return
     fi
 }
 
@@ -385,7 +385,7 @@ do_install_swupdate() {
 
     local swupdate_dir=$work_folder/swupdate
     if [[ -d $swupdate_dir ]]; then
-        $SUDO rm -rf $swupdate_dir || return 1
+        $SUDO rm -rf "$swupdate_dir" || return 1
     fi
 
     local swupdate_url
@@ -396,14 +396,14 @@ do_install_swupdate() {
     fi
 
     echo -e "Building SWUpdate ...\n\tBranch: $swupdate_ref\n\tFolder: $swupdate_dir"
-    mkdir -p $swupdate_dir || return
-    pushd $swupdate_dir > /dev/null || return
-    git clone --recursive --single-branch --branch $swupdate_ref --depth 1 $swupdate_url . || return
+    mkdir -p "$swupdate_dir" || return
+    pushd "$swupdate_dir" > /dev/null || return
+    git clone --recursive --single-branch --branch "$swupdate_ref" --depth 1 "$swupdate_url" . || return
 
     popd > /dev/null || return
     echo -e "Customizing SWUpdate build configurations..."
     cp src/deps/swupdate/.config "$swupdate_dir" || return
-    pushd $swupdate_dir > /dev/null || return
+    pushd "$swupdate_dir" > /dev/null || return
 
     echo -r "Building SWUpdate..."
     make || return
@@ -413,7 +413,7 @@ do_install_swupdate() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $swupdate_dir || return 1
+        $SUDO rm -rf "$swupdate_dir" || return 1
     fi
 }
 
@@ -514,7 +514,7 @@ do_install_do() {
     echo "Installing DO ..."
     local do_dir=$work_folder/do
     if [[ -d $do_dir ]]; then
-        $SUDO rm -rf $do_dir || return
+        $SUDO rm -rf "$do_dir" || return
     fi
 
     if [[ $install_packages == "true" || $install_packages_only == "true" ]]; then
@@ -525,15 +525,15 @@ do_install_do() {
     fi
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $do_dir || return
+        $SUDO rm -rf "$do_dir" || return
     elif [[ -d $do_dir ]]; then
         warn "$do_dir already exists! Skipping DO."
         return 0
     fi
 
     echo -e "Building DO ...\n\tBranch: $do_ref\n\tFolder: $do_dir"
-    mkdir -p $do_dir || return
-    pushd $do_dir > /dev/null || return
+    mkdir -p "$do_dir" || return
+    pushd "$do_dir" > /dev/null || return
 
     local do_url
     if [[ $use_ssh == "true" ]]; then
@@ -542,11 +542,11 @@ do_install_do() {
         do_url=https://github.com/Microsoft/do-client.git
     fi
 
-    git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
+    git clone --recursive --single-branch --branch "$do_ref" --depth 1 "$do_url" . || return
 
-    bootstrap_file=$do_dir/build/scripts/bootstrap.sh
-    chmod +x $bootstrap_file || return
-    $SUDO $bootstrap_file --install build || return
+    bootstrap_file="$do_dir/build/scripts/bootstrap.sh"
+    chmod +x "$bootstrap_file" || return
+    $SUDO "$bootstrap_file" --install build || return
 
     mkdir cmake || return
     pushd cmake > /dev/null || return
@@ -574,7 +574,7 @@ do_install_azure_storage_sdk() {
     local azure_storage_sdk_dir=$work_folder/azure_storage_sdk_dir
 
     if [[ -d $azure_storage_sdk_dir ]]; then
-        $SUDO rm -rf $azure_storage_sdk_dir || return
+        $SUDO rm -rf "$azure_storage_sdk_dir" || return
     fi
 
     local azure_storage_sdk_url
@@ -585,11 +585,11 @@ do_install_azure_storage_sdk() {
     fi
 
     echo -e "Building Azure Storage SDK ...\n\tBranch: $azure_storage_sdk_branch_ref\n\t Folder: $azure_storage_sdk_dir"
-    mkdir -p $azure_storage_sdk_dir || return
-    pushd $azure_storage_sdk_dir > /dev/null || return
-    git clone --recursive --single-branch --branch $azure_storage_sdk_branch_ref $azure_storage_sdk_url . || return
+    mkdir -p "$azure_storage_sdk_dir" || return
+    pushd "$azure_storage_sdk_dir" > /dev/null || return
+    git clone --recursive --single-branch --branch "$azure_storage_sdk_branch_ref" "$azure_storage_sdk_url" . || return
 
-    git checkout tags/$azure_storage_sdk_tag_ref
+    git checkout tags/"$azure_storage_sdk_tag_ref"
 
     local azure_storage_sdk_cmake_options=""
 
@@ -612,7 +612,7 @@ do_install_delta() {
     echo "Installing iot-hub-device-update-delta library ..."
     local delta_dir=$work_folder/iot-hub-device-update-delta
     if [[ -d $delta_dir ]]; then
-        $SUDO rm -rf $delta_dir || return
+        $SUDO rm -rf "$delta_dir" || return
     fi
 
     local delta_url
@@ -623,15 +623,15 @@ do_install_delta() {
     fi
 
     echo -e "Building iot-hub-device-update-delta library ...\n\tBranch: $delta_ref\n\tFolder: $delta_dir"
-    mkdir -p $delta_dir || return
-    pushd $delta_dir > /dev/null || return
+    mkdir -p "$delta_dir" || return
+    pushd "$delta_dir" > /dev/null || return
     git clone --recursive --single-branch --branch $delta_ref --depth 1 $delta_url . || return
 
     # Install system dependencies required by delta library
     echo "Installing delta library system dependencies..."
     local delta_deps="curl zip unzip tar gcc gcc-10 g++ g++-10 autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev"
     $SUDO apt-get update || return
-    $SUDO apt-get install --yes $delta_deps || return
+    $SUDO apt-get install --yes "$delta_deps" || return
 
     # Setup gcc/g++ alternatives
     echo "Setting up gcc/g++ alternatives..."
@@ -686,7 +686,8 @@ do_install_delta() {
     local delta_build_dir="$delta_dir/src/out/native/${vcpkg_triplet}/${build_type}"
 
     # Install the .deb package if it exists
-    if [ -f "$delta_build_dir/_packages"/*.deb ]; then
+    # shellcheck disable=SC2144
+    if ls "$delta_build_dir/_packages"/*.deb 1> /dev/null 2>&1; then
         echo "Installing from .deb package..."
         $SUDO dpkg -i "$delta_build_dir/_packages"/*.deb || return
 
@@ -730,8 +731,8 @@ do_install_delta() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $delta_dir || return
-        $SUDO rm -rf $vcpkg_root || return
+        $SUDO rm -rf "$delta_dir" || return
+        $SUDO rm -rf "$vcpkg_root" || return
     fi
 }
 
@@ -755,12 +756,12 @@ do_install_cmake_from_source() {
     cmake_src_url="https://cmake.org/files/v${maj_min_ver}/${tarball_filename}"
     cmake_tar_path="$work_folder/${tarball_filename}"
     if [[ -f $cmake_tar_path ]]; then
-        $SUDO rm -rf $cmake_tar_path || return 1
+        $SUDO rm -rf "$cmake_tar_path" || return 1
     fi
 
     cmake_dir_path="$work_folder/${tarball_name}"
     if [[ -d $cmake_dir_path ]]; then
-        $SUDO rm -rf $cmake_dir_path || return 1
+        $SUDO rm -rf "$cmake_dir_path" || return 1
     fi
 
     mkdir -p "$cmake_dir_path"
@@ -784,7 +785,7 @@ do_install_cmake_from_source() {
     pushd "$cmake_dir_path" > /dev/null || return
 
     echo "Running 'bootstrap' ..."
-    $SUDO ./bootstrap --verbose --no-qt-gui --prefix=${cmake_prefix} > "${cmake_dir_path}/bootstrap.log" 2>&1
+    $SUDO ./bootstrap --verbose --no-qt-gui --prefix="${cmake_prefix}" > "${cmake_dir_path}/bootstrap.log" 2>&1
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "bootstrap --prefix=${cmake_prefix} failed with exit code ${ret_value}"
@@ -831,7 +832,7 @@ do_install_cmake_from_installer() {
 
     $SUDO chown "$(id -un)":"$(id -gn)" "${fullpath_cmake_installer_sh}"
     chmod u+x "${fullpath_cmake_installer_sh}"
-    "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix=${cmake_prefix}
+    "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix="${cmake_prefix}"
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "${fullpath_cmake_installer_sh} failed with exit code ${ret_value}"
@@ -1100,19 +1101,20 @@ while [[ $1 != "" ]]; do
 done
 
 # Ensure workfolder exists with proper permissions
-if [[ ! -d "$work_folder" ]]; then
+if [[ ! -d $work_folder ]]; then
     echo "Creating work folder: $work_folder"
     mkdir -p "$work_folder" || $ret
 fi
 
 # Ensure the work folder has proper ownership
 current_user="$(id -un)"
-work_folder_owner="$(stat -c '%U' "$work_folder" 2>/dev/null || echo 'unknown')"
-if [[ "$work_folder_owner" != "$current_user" && "$work_folder_owner" != "unknown" ]]; then
+work_folder_owner="$(stat -c '%U' "$work_folder" 2> /dev/null || echo 'unknown')"
+if [[ $work_folder_owner != "$current_user" && $work_folder_owner != "unknown" ]]; then
     echo "Changing ownership of $work_folder to $current_user"
     $SUDO chown -R "$current_user":"$(id -gn)" "$work_folder" || $ret
 fi
-chmod -R u+rwx "$work_folder" || $ret
+# Use sudo for chmod in case some files are owned by root or another user
+$SUDO chmod -R u+rwx "$work_folder" 2> /dev/null || true
 
 # Set cmake_prefix and cmake_dir_symlink based on work_folder location
 cmake_prefix="$work_folder"

@@ -15,8 +15,18 @@ fi
 
 validate=false
 
+# Determine the git root directory
+GITROOT="$(git rev-parse --show-toplevel 2> /dev/null)"
+if [ -z "$GITROOT" ]; then
+    # If not in a git repo, use the script's parent directory
+    GITROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
+
+# Use the same work folder as install-deps.sh and build.sh
+work_folder="$(dirname "${GITROOT}")/.adu-tmp"
+
 # use readline -e to resolve symlink
-shellcheck_bin=$(readlink -e '/tmp/deviceupdate-shellcheck')
+shellcheck_bin=$(readlink -e "${work_folder}/deviceupdate-shellcheck")
 shfmt_bin='/tmp/shfmt'
 
 is_arm32=false
@@ -107,12 +117,6 @@ fi
 
 if ! [ -x "$(command -v git)" ]; then
     error 'git is not installed. Try: apt install git'
-    $ret 1
-fi
-
-GITROOT="$(git rev-parse --show-toplevel 2> /dev/null)"
-if [ -z "$GITROOT" ]; then
-    error 'Unable to determine git root.'
     $ret 1
 fi
 
