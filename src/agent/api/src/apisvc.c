@@ -20,20 +20,23 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <time.h>
 #define _XOPEN_SOURCE 700
 #include <sys/types.h>
 #include <unistd.h>
 
 #define g_AducApiVersion 1
 #define FIFO_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) // rw-rw----
+#define RESP_FIFO_OPEN_TIMEOUT_SEC 10 // Absolute timeout for opening response FIFO
 
 static const unsigned OnErrorDelayMicrosecs = 150000;
 
 pthread_t g_api_svc_thread = { 0 };
-bool g_api_svc_thread_running = false;
+atomic_bool g_api_svc_thread_running = false;
 
 typedef struct tagFifoThreadRetVal
 {
@@ -48,7 +51,7 @@ static void* aduc_apisvc_thread_proc(void*);
 //
 bool init_api_svc(const char* fifoPath)
 {
-    if (g_api_svc_thread_running)
+    if (atomic_load(&g_api_svc_thread_running))
     {
         return false;
     }
@@ -74,7 +77,7 @@ bool init_api_svc(const char* fifoPath)
         return false;
     }
 
-    g_api_svc_thread_running = true;
+    atomic_store(&g_api_svc_thread_running, true);
     return true;
 }
 
@@ -87,7 +90,7 @@ bool uninit_api_svc()
     void* threadRet = NULL;
     FifoThreadRetVal* retVal = NULL;
 
-    g_api_svc_thread_running = false;
+    atomic_store(&g_api_svc_thread_running, false);
     int res = pthread_join(g_api_svc_thread, (void**)&threadRet);
     if (res != 0)
     {
@@ -221,7 +224,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
     }
     Log_Info("API Request FIFO is verified: '%s'", fifo_path);
 
-    while ((rdfifo == -1) && g_api_svc_thread_running && (open_read_retries < 30))
+    while ((rdfifo == -1) && atomic_load(&g_api_svc_thread_running) && (open_read_retries < 30))
     {
         ++open_read_retries;
         rdfifo = open(fifo_path, O_RDONLY | O_NONBLOCK);
@@ -243,7 +246,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
 
     Log_Info("Success opening API Request FIFO for read: '%s'", fifo_path);
 
-    while (g_api_svc_thread_running)
+    while (atomic_load(&g_api_svc_thread_running))
     {
         ssize_t n = 0;
         ApiWireRequestMsg msg = { 0 };
@@ -293,8 +296,21 @@ static void* aduc_apisvc_thread_proc(void* arg)
             continue;
         }
 
-        while (writefifo == -1 && g_api_svc_thread_running && open_write_retries < 30)
+        // Get start time for absolute timeout on response FIFO open
+        struct timespec open_start_time;
+        clock_gettime(CLOCK_MONOTONIC, &open_start_time);
+
+        while (writefifo == -1 && atomic_load(&g_api_svc_thread_running))
         {
+            // Check absolute timeout
+            struct timespec now;
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            if ((now.tv_sec - open_start_time.tv_sec) >= RESP_FIFO_OPEN_TIMEOUT_SEC)
+            {
+                Log_Error("Timeout (%d sec) opening response FIFO '%s'", RESP_FIFO_OPEN_TIMEOUT_SEC, msg.data);
+                break;
+            }
+
             ++open_write_retries;
 
             // First, open for read to prevent EOF on client side (keep-alive descriptor)
@@ -320,7 +336,7 @@ static void* aduc_apisvc_thread_proc(void* arg)
                 continue;
             }
         }
-        if (!g_api_svc_thread_running)
+        if (!atomic_load(&g_api_svc_thread_running))
         {
             // Cleanup before breaking
             if (resp_fifo_keepalive != -1)
