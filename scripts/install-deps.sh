@@ -630,13 +630,35 @@ do_install_delta() {
     # Install system dependencies required by delta library
     echo "Installing delta library system dependencies..."
     $SUDO apt-get update || return
-    # shellcheck disable=SC2086
-    $SUDO apt-get install --yes curl zip unzip tar gcc gcc-10 g++ g++-10 autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev || return
 
-    # Setup gcc/g++ alternatives
-    echo "Setting up gcc/g++ alternatives..."
-    $SUDO update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 || true
-    $SUDO update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 || true
+    # Determine the appropriate GCC version based on distro
+    local OS VER gcc_ver
+    OS=$(lsb_release --short --id)
+    VER=$(lsb_release --short --release)
+    if [[ $OS == "Debian" && $VER == "12" ]]; then
+        gcc_ver="12"
+    elif [[ ($OS == "Debian" && $VER == "11") || ($OS == "Ubuntu" && $VER == "20.04") || ($OS == "Ubuntu" && $VER == "22.04") ]]; then
+        gcc_ver="10"
+    else
+        # Default to system GCC (no specific version suffix)
+        gcc_ver=""
+    fi
+
+    echo "Using GCC version: ${gcc_ver:-system default}"
+
+    if [[ -n $gcc_ver ]]; then
+        # shellcheck disable=SC2086
+        $SUDO apt-get install --yes curl zip unzip tar gcc "gcc-${gcc_ver}" g++ "g++-${gcc_ver}" autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev || return
+    else
+        $SUDO apt-get install --yes curl zip unzip tar gcc g++ autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev || return
+    fi
+
+    # Setup gcc/g++ alternatives (only if specific version was installed)
+    if [[ -n $gcc_ver ]]; then
+        echo "Setting up gcc/g++ alternatives..."
+        $SUDO update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-${gcc_ver}" 20 || true
+        $SUDO update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-${gcc_ver}" 20 || true
+    fi
 
     # Setup VCPKG for delta library dependencies
     echo "Setting up VCPKG for delta library..."
