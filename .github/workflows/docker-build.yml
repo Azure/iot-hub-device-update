@@ -9,6 +9,12 @@ jobs:
       matrix:
         os: ["debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04"]
         arch: [amd64, arm64]
+        exclude:
+          # Ubuntu 20.04 arm64 uses aarch64-linux-gnu cross-compiler (GCC 9)
+          # which doesn't support C++20 <span> required by delta library.
+          # Ubuntu 20.04 reached end of standard support in April 2025.
+          - os: "ubuntu:20.04"
+            arch: arm64
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm' || 'ubuntu-latest' }}
     container:
       image: ${{ matrix.os }}
