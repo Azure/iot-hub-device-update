@@ -203,7 +203,9 @@ static void* aduc_apisvc_thread_proc(void* arg)
     int open_read_retries = 0, open_write_retries = 0;
     ssize_t sent = 0;
 
-    ADUC_Logging_Init(ADUC_LOG_DEBUG, "aducapi");
+    // Note: Do NOT call ADUC_Logging_Init here - the logging subsystem is process-wide
+    // and must be initialized only once by the main thread. Calling it from multiple
+    // threads causes double-free on shutdown when zlog_finish() frees global pointers.
 
     // Ignore SIGPIPE so write() returns -1 with EPIPE instead of killing the thread
     signal(SIGPIPE, SIG_IGN);
@@ -445,7 +447,7 @@ done:
     }
 
     free(fifo_path);
-    ADUC_Logging_Uninit();
+    // Note: Do NOT call ADUC_Logging_Uninit here - see comment at thread start.
 
     return retval;
 }
