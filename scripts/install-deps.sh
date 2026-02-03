@@ -622,10 +622,20 @@ do_install_delta() {
         delta_url=https://github.com/Azure/iot-hub-device-update-delta.git
     fi
 
-    echo -e "Building iot-hub-device-update-delta library ...\n\tBranch: $delta_ref\n\tFolder: $delta_dir"
+    # Override delta_ref for Debian 12 to use the GCC 12 compatible branch
+    local OS VER
+    OS=$(lsb_release --short --id 2> /dev/null || echo "Unknown")
+    VER=$(lsb_release --short --release 2> /dev/null || echo "0")
+    local effective_delta_ref=$delta_ref
+    if [[ $OS == "Debian" && $VER == "12" ]]; then
+        effective_delta_ref="adu/debian/12/amd64"
+        echo "Debian 12 detected: using delta branch '$effective_delta_ref' for GCC 12 compatibility"
+    fi
+
+    echo -e "Building iot-hub-device-update-delta library ...\n\tBranch: $effective_delta_ref\n\tFolder: $delta_dir"
     mkdir -p "$delta_dir" || return
     pushd "$delta_dir" > /dev/null || return
-    git clone --recursive --single-branch --branch "$delta_ref" --depth 1 "$delta_url" . || return
+    git clone --recursive --single-branch --branch "$effective_delta_ref" --depth 1 "$delta_url" . || return
 
     # Install system dependencies required by delta library
     echo "Installing delta library system dependencies..."
