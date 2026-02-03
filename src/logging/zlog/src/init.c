@@ -7,6 +7,7 @@
  */
 #include "aduc/logging.h"
 #include "aduc/system_utils.h"
+#include <stdatomic.h> // atomic_int, atomic_fetch_add, atomic_fetch_sub
 #include <stdio.h> // printf
 #include <sys/stat.h> // stat
 
@@ -22,7 +23,9 @@
 #    define ZLOG_ENABLE_FILE_LOG ZLOG_DISABLED
 #endif
 
-static int ref_count = 0;
+// Thread-safe reference count for logging init/uninit calls.
+// Using atomic to prevent race conditions when multiple threads call init/uninit.
+static atomic_int ref_count = 0;
 
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
@@ -78,7 +81,8 @@ ADUC_LOG_SEVERITY g_logLevel = ADUC_LOG_INFO;
  */
 void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 {
-    if (ref_count++ > 0)
+    // atomic_fetch_add returns the previous value, so if it was > 0, logging is already initialized
+    if (atomic_fetch_add(&ref_count, 1) > 0)
     {
         return;
     }
@@ -118,7 +122,8 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
  */
 void ADUC_Logging_Uninit()
 {
-    if (--ref_count > 0)
+    // atomic_fetch_sub returns the previous value, so if it was > 1, there are still other users
+    if (atomic_fetch_sub(&ref_count, 1) > 1)
     {
         return;
     }
