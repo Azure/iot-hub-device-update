@@ -32,6 +32,9 @@
 constexpr int FIFO_OPEN_TIMEOUT_MS = 10000; // 10 seconds
 constexpr int FIFO_POLL_INTERVAL_MS = 50;   // 50 ms polling interval
 
+// Test data directory for FIFO files - use compile-time ADUC_TEST_DATA_FOLDER
+static const std::string TEST_DATA_DIR = std::string{ ADUC_TEST_DATA_FOLDER } + "/apisvc";
+
 /**
  * @brief Opens a FIFO with a timeout using non-blocking I/O and polling.
  * @param path The path to the FIFO
@@ -83,6 +86,10 @@ ViewStateManager g_vsm = { 0 };
 
 TEST_CASE("apisvc crossproc tests")
 {
+    // Ensure test data directory exists
+    std::filesystem::create_directories(TEST_DATA_DIR);
+    aduc::Defer defer_cleanup([]() { std::filesystem::remove_all(TEST_DATA_DIR); });
+
     REQUIRE(0 == viewstatemgr_create(&g_vsm));
     aduc::Defer defer_destroy([&]() { viewstatemgr_destroy(&g_vsm); });
 
@@ -93,11 +100,13 @@ TEST_CASE("apisvc crossproc tests")
     {
         REQUIRE(viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Installing));
 
-        const char* fifoPath = "/tmp/test_req_fifo";
-        REQUIRE(init_api_svc(fifoPath));
+        // Use test data directory for FIFO files
+        std::string reqFifoPath = TEST_DATA_DIR + "/test_req_fifo";
+        std::string respFifoPath = TEST_DATA_DIR + "/test_resp_fifo";
+
+        REQUIRE(init_api_svc(reqFifoPath.c_str()));
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        const char* respFifoPath = "/tmp/test_resp_fifo";
         {
             std::filesystem::path p{ respFifoPath };
             if (std::filesystem::exists(p))
@@ -105,29 +114,30 @@ TEST_CASE("apisvc crossproc tests")
                 REQUIRE(std::filesystem::remove(p));
             }
         }
-        int ret_resp_fifo = mkfifo(respFifoPath, 0666);
+        // Use 0660 permissions to match FIFO_FILE_MODE expected by verify_fifo_security()
+        int ret_resp_fifo = mkfifo(respFifoPath.c_str(), 0660);
         bool cond = ret_resp_fifo == 0 || errno == EEXIST;
         REQUIRE(cond);
 
-        aduc::Defer defer_rm_fifo([respFifoPath]() { unlink(respFifoPath); });
+        aduc::Defer defer_rm_fifo([&respFifoPath]() { unlink(respFifoPath.c_str()); });
 
         // open request fifo for writing (with timeout to avoid indefinite blocking in CI)
-        int reqFifo = open_fifo_with_timeout(fifoPath, O_WRONLY, FIFO_OPEN_TIMEOUT_MS);
+        int reqFifo = open_fifo_with_timeout(reqFifoPath.c_str(), O_WRONLY, FIFO_OPEN_TIMEOUT_MS);
         REQUIRE(reqFifo != -1);
 
         aduc::Defer defer_close_req_fifo([reqFifo]() -> void { close(reqFifo); });
 
         // Write GET_STATE request
-        size_t slen = strlen(respFifoPath);
+        size_t slen = respFifoPath.length();
         REQUIRE(slen <= MAX_BUF_LEN);
         ApiWireRequestMsg req = { .ver = 1, .type = ApiRequestType_GETSTATE, .len = (uint16_t)slen };
-        strncpy(req.data, respFifoPath, slen);
+        strncpy(req.data, respFifoPath.c_str(), slen);
 
         ssize_t n = msg_send_req(reqFifo, &req);
         REQUIRE(n == 3 * sizeof(uint16_t) + slen);
 
         // open response fifo for reading (with timeout to avoid indefinite blocking in CI)
-        int respFifo = open_fifo_with_timeout(respFifoPath, O_RDONLY, FIFO_OPEN_TIMEOUT_MS);
+        int respFifo = open_fifo_with_timeout(respFifoPath.c_str(), O_RDONLY, FIFO_OPEN_TIMEOUT_MS);
         REQUIRE(respFifo != -1);
 
         aduc::Defer defer_close_resp_fifo([respFifo]() -> void { close(respFifo); });

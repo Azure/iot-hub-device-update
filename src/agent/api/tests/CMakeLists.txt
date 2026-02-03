@@ -12,7 +12,8 @@ target_sources (${target_name} PRIVATE apisvc_unit_tests.cpp)
 target_compile_definitions (
     ${target_name} PRIVATE ADUC_API_DEFAULT_FIFO_PATH="${ADUC_API_DEFAULT_FIFO_PATH}"
                            ADUC_FILE_GROUP="${ADUC_FILE_GROUP}"
-                           ADUC_FILE_USER="${ADUC_FILE_USER}")
+                           ADUC_FILE_USER="${ADUC_FILE_USER}"
+                           ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 target_link_libraries (
     ${target_name}
