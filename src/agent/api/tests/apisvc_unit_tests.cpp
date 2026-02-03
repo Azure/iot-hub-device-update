@@ -115,9 +115,12 @@ TEST_CASE("apisvc crossproc tests")
             }
         }
         // Use 0660 permissions to match FIFO_FILE_MODE expected by verify_fifo_security()
+        // Note: mkfifo mode is modified by umask (actual = mode & ~umask), so we must
+        // explicitly chmod() to ensure exact permissions regardless of container umask.
         int ret_resp_fifo = mkfifo(respFifoPath.c_str(), 0660);
         bool cond = ret_resp_fifo == 0 || errno == EEXIST;
         REQUIRE(cond);
+        REQUIRE(chmod(respFifoPath.c_str(), 0660) == 0);
 
         aduc::Defer defer_rm_fifo([&respFifoPath]() { unlink(respFifoPath.c_str()); });
 
