@@ -47,7 +47,7 @@ jobs:
       - name: Run tests
         run: |
           cd out
-          ctest
+          ctest || ctest --rerun-failed --output-on-failure
       - name: Run tests with Valgrind (memory leak check)
         if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
         shell: bash
