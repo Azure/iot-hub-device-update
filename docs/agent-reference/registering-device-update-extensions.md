@@ -70,7 +70,7 @@ $ cat /var/lib/adu/extensions/update_content_handlers/microsoft_update-manifest_
 
 ```sh
 
-    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_downloader_file
 ```
 
 ### Contents of resultant extension.json for content downloader
@@ -78,10 +78,10 @@ $ cat /var/lib/adu/extensions/update_content_handlers/microsoft_update-manifest_
 ```sh
 cat /var/lib/adu/extensions/content_downloader/extension.json
 {
-   "fileName":"/var/lib/adu/extensions/sources/libdeliveryoptimization_content_downloader.so",
-   "sizeInBytes":254584,
+   "fileName":"/var/lib/adu/extensions/sources/libcurl_content_downloader.so",
+   "sizeInBytes":450616,
    "hashes": {
-        "sha256":"0amRRIkSZ/im/AoLahg7QZwzZWo837VPEa1zedXl9BA="
+        "sha256":"a374b5c6095b3a9a8568c60c895080f89db0d98d534f126ebab31bbfa9bb9815"
    }
 }
 ```
