@@ -81,7 +81,7 @@ cat /var/lib/adu/extensions/content_downloader/extension.json
    "fileName":"/var/lib/adu/extensions/sources/libcurl_content_downloader.so",
    "sizeInBytes":450616,
    "hashes": {
-        "sha256":"a374b5c6095b3a9a8568c60c895080f89db0d98d534f126ebab31bbfa9bb9815"
+        "sha256":"o3S1xglbOpqFaMYMiVCA+J2w2Y1TTxJuurMbv6m7mBU="
    }
 }
 ```
