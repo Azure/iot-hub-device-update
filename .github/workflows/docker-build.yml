@@ -30,14 +30,14 @@ jobs:
         if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
         shell: bash
         run: |
-            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind apt
+            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind apt --work-folder $GITHUB_WORKSPACE/.workspace
       - name: Install dependencies (without ValGrind)
         if: matrix.os != 'ubuntu:22.04' && !(startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04')
         shell: bash
         run: |
-            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
+            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --work-folder $GITHUB_WORKSPACE/.workspace
       - name: Build packages and tests
-        run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel
+        run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel --work-folder $GITHUB_WORKSPACE/.workspace
       - name: Run tests
         run: |
           cd out

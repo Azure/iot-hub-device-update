@@ -491,12 +491,20 @@ void AzureDeviceUpdateCoreInterface_PropertyUpdateCallback(
 // Reporting
 //
 static JSON_Status _json_object_set_update_result(
-    JSON_Object* object, int32_t resultCode, STRING_HANDLE extendedResultCodes, const char* resultDetails)
+    JSON_Object* object, ADUC_Result result, STRING_HANDLE extendedResultCodes, const char* resultDetails)
 {
-    JSON_Status status = json_object_set_number(object, ADUCITF_FIELDNAME_RESULTCODE, resultCode);
+    JSON_Status status = json_object_set_number(object, ADUCITF_FIELDNAME_RESULTCODE, result.ResultCode);
     if (status != JSONSuccess)
     {
         Log_Error("Could not set value for field: %s", ADUCITF_FIELDNAME_RESULTCODE);
+        goto done;
+    }
+
+    // Show ExtendedResultCode in IoTHub for "Last Attempted Update" in "Details"
+    status = json_object_set_number(object, ADUCITF_FIELDNAME_EXTENDEDRESULTCODE, result.ExtendedResultCode);
+    if (status != JSONSuccess)
+    {
+        Log_Error("Could not set value for field: %s", ADUCITF_FIELDNAME_EXTENDEDRESULTCODE);
         goto done;
     }
 
@@ -776,7 +784,7 @@ JSON_Value* GetReportingJsonValue(
 
     // Set top-level update state and result.
     jsonStatus = _json_object_set_update_result(
-        lastInstallResultObject, rootResult.ResultCode, rootResultERCs, workflow_peek_result_details(handle));
+        lastInstallResultObject, rootResult, rootResultERCs, workflow_peek_result_details(handle));
 
     if (jsonStatus != JSONSuccess)
     {
@@ -833,7 +841,7 @@ JSON_Value* GetReportingJsonValue(
                 ADUC_ReportingUtils_CreateReportingErcHexStr(childResult.ExtendedResultCode, true /* is_first */);
             jsonStatus = _json_object_set_update_result(
                 childResultObject,
-                childResult.ResultCode,
+                childResult,
                 childExtendedResultCodes,
                 workflow_peek_result_details(childHandle));
 

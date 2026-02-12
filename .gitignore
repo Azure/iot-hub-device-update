@@ -1,6 +1,9 @@
 ### VisualStudio Code
 .vscode/
 
+### ADU temporary folder for built dependencies and test data files
+.workspace/
+
 ### VisualStudio 2017
 .vs/
 
