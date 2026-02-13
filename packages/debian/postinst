@@ -37,6 +37,7 @@ adu_swupdate_handler_2_file=libmicrosoft_swupdate_2.so
 adu_example_component_enumerator_file=libcontoso_component_enumerator.so
 
 adu_delivery_optimization_downloader_file=libdeliveryoptimization_content_downloader.so
+adu_curl_content_downloader_file=libcurl_content_downloader.so
 
 adu_delta_download_handler_file=libmicrosoft_delta_download_handler.so
 
@@ -232,7 +233,16 @@ register_reference_extensions() {
     $adu_bin_path -l 2 --extension-type componentEnumerator --register-extension $adu_extensions_sources_dir/$adu_example_component_enumerator_file
 
     echo "Register content downloader extension..."
-    $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+    if [ -f "$adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file" ]; then
+        echo "Registering DO content downloader..."
+        $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+    elif [ -f "$adu_extensions_sources_dir/$adu_curl_content_downloader_file" ]; then
+        echo "Registering curl content downloader..."
+        $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_content_downloader_file
+    else
+        echo "ERROR: No content downloader found!"
+        exit 1
+    fi
 
     echo "Register delta download handler..."
     $adu_bin_path -l 2 --extension-type downloadHandler --extension-id "microsoft/delta:1" --register-extension $adu_extensions_sources_dir/$adu_delta_download_handler_file
