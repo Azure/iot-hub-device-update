@@ -7,6 +7,9 @@
 ### VisualStudio 2017
 .vs/
 
+### Temporary workspace files
+.workspace/
+
 ### GDB debugger
 .gdbinit
 .gdb_history
@@ -57,3 +60,4 @@ status_monitor
 .tmp
 out_test_cache/
 **/.result_h_generation_cache
+*.gcov

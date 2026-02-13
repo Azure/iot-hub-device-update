@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04"]
+        os: ["debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04", "ubuntu:24.04"]
         arch: [amd64, arm64]
         exclude:
           # Ubuntu 20.04 arm64 uses aarch64-linux-gnu cross-compiler (GCC 9)
