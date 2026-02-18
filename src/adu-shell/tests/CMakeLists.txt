@@ -9,17 +9,32 @@ disablertti ()
 
 find_package (Catch2 REQUIRED)
 
-add_executable (${PROJECT_NAME} adushell_ut.cpp)
+add_executable (
+	${PROJECT_NAME}
+	adushell_ut.cpp
+	../src/adushell_action.cpp
+	../src/aptget_tasks.cpp
+	../src/common_tasks.cpp
+	../src/script_tasks.cpp)
 
 target_include_directories (
 	${PROJECT_NAME}
 	PUBLIC ../inc
 		   ${ADUC_EXPORT_INCLUDES}
-		   ${CMAKE_CURRENT_SOURCE_DIR}/../../logging/inc)
+		   ${CMAKE_CURRENT_SOURCE_DIR}/../../logging/inc
+		   ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/process_utils/inc
+		   ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/string_utils/inc
+		   ${CMAKE_CURRENT_SOURCE_DIR}/../../libaducpal/inc)
 
-target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_USE_XLOGGING=1)
+target_compile_definitions (
+	${PROJECT_NAME}
+	PRIVATE ADUC_USE_XLOGGING=1
+			ADUC_FILE_USER="__adu_shell_test_user__"
+			ADUC_FILE_GROUP="__adu_shell_test_group__"
+			ADU_SHELL_BIN_PATH="$<TARGET_FILE:adu-shell>")
 
-target_link_libraries (${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain Catch2::Catch2)
+target_link_libraries (${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain Catch2::Catch2 aduc::string_utils)
+target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 include (CTest)
 include (Catch)
