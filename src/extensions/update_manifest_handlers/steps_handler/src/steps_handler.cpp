@@ -973,6 +973,13 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             {
                 result = contentHandler->Install(&stepWorkflow);
             }
+            // Extra catch section to get details logged.
+            catch (const std::exception& e) {
+                Log_Error("The handler throws an exception inside Install().  Exc: '%s'", e.what());
+                result.ResultCode = ADUC_Result_Failure;
+                result.ExtendedResultCode = ADUC_ERC_STEPS_HANDLER_INSTALL_UNKNOWN_EXCEPTION_INSTALL_CHILD_STEP;
+                goto done;
+            }
             catch (...)
             {
                 Log_Error("The handler throws an exception inside Install().");
