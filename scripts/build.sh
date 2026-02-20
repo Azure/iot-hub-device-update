@@ -113,10 +113,34 @@ Usage: build.sh [options...]
 
     --rootkeypkg-curl                     Download the RootKey Package with curl instead of delivery optimization agent.
 
+    --coverage                            Run coverage workflow via scripts/run_coverage.sh:
+                                            instrumented build, unit tests, and Cobertura code coverage report generation.
+
     -h, --help                            Show this help message.
 
 EOS
 }
+
+# Coverage workflow is implemented in scripts/run_coverage.sh.
+# In build.sh, --coverage is a thin dispatcher for 3 steps:
+# 1) instrumented build, 2) unit test execution, 3) coverage report generation.
+if [[ " $* " == *" --coverage "* ]]; then
+    coverage_script="$script_dir/run_coverage.sh"
+    if [[ ! -x $coverage_script ]]; then
+        error "Coverage script not found or not executable: $coverage_script"
+        $ret 1
+    fi
+
+    declare -a coverage_args=()
+    for arg in "$@"; do
+        if [[ $arg != "--coverage" ]]; then
+            coverage_args+=("$arg")
+        fi
+    done
+
+    "$coverage_script" "${coverage_args[@]}"
+    $ret $?
+fi
 
 copyfile_exit_if_failed() {
     bullet "Copying $1 to $2"
