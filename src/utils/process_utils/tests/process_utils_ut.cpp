@@ -11,6 +11,7 @@
 
 #include "aduc/process_utils.hpp" // ADUC_LaunchChildProcess
 
+#include <algorithm>
 #include <vector>
 
 using Catch::Matchers::ContainsSubstring;
@@ -79,6 +80,17 @@ TEST_CASE("Bad parameter error")
 
     // Expecting output text to contain the specified bogus option.
     CHECK_THAT(output.c_str(), ContainsSubstring(bogusOption));
+}
+
+TEST_CASE("Command-not-found returns non-zero and captures stderr")
+{
+    std::vector<std::string> args;
+    std::string output;
+
+    const int exitCode = ADUC_LaunchChildProcess("adu_command_that_does_not_exist", args, output);
+
+    CHECK(exitCode != EXIT_SUCCESS);
+    CHECK_THAT(output.c_str(), ContainsSubstring("execvp failed"));
 }
 
 TEST_CASE("VerifyProcessEffectiveGroup")

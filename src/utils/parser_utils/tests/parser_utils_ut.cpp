@@ -1,8 +1,11 @@
 
 #include "aduc/hash_utils.h"
 #include "aduc/parser_utils.h"
+#include <aduc/adu_types.h>
 #include <aduc/types/hash.h>
 #include <catch2/catch_all.hpp>
+
+#include <string>
 
 using Catch::Matchers::Equals;
 
@@ -65,5 +68,157 @@ TEST_CASE("ADUC_FileEntity_Init")
         ADUC_FileEntity_Uninit(&fileEntity);
         ADUC_Hash_FreeArray(1, hash);
         hash = nullptr;
+    }
+
+    SECTION("Returns false for invalid required arguments")
+    {
+        ADUC_FileEntity fileEntity{};
+        ADUC_Hash hash{};
+        REQUIRE(ADUC_Hash_Init(&hash, "hashvalue", "sha256"));
+
+        CHECK_FALSE(ADUC_FileEntity_Init(nullptr, "id", "file", "uri", "", &hash, 1, 1));
+        CHECK_FALSE(ADUC_FileEntity_Init(&fileEntity, nullptr, "file", "uri", "", &hash, 1, 1));
+        CHECK_FALSE(ADUC_FileEntity_Init(&fileEntity, "id", nullptr, "uri", "", &hash, 1, 1));
+        CHECK_FALSE(ADUC_FileEntity_Init(&fileEntity, "id", "file", "uri", "", nullptr, 1, 1));
+
+        ADUC_Hash_UnInit(&hash);
+    }
+
+    SECTION("Allows null downloadUri and arguments")
+    {
+        ADUC_FileEntity fileEntity{};
+        ADUC_Hash hash{};
+        REQUIRE(ADUC_Hash_Init(&hash, "hashvalue", "sha256"));
+
+        REQUIRE(ADUC_FileEntity_Init(&fileEntity, "id", "file", nullptr, nullptr, &hash, 1, 42));
+        CHECK(fileEntity.DownloadUri == nullptr);
+        CHECK(fileEntity.Arguments == nullptr);
+        CHECK(fileEntity.SizeInBytes == 42);
+
+        ADUC_FileEntity_Uninit(&fileEntity);
+        ADUC_Hash_UnInit(&hash);
+    }
+}
+
+TEST_CASE("ADUC_HashArray_AllocAndInit")
+{
+    SECTION("Parses hash object")
+    {
+        JSON_Value* root = json_parse_string("{\"sha256\":\"abc\",\"sha1\":\"def\"}");
+        REQUIRE(root != nullptr);
+        JSON_Object* obj = json_value_get_object(root);
+        REQUIRE(obj != nullptr);
+
+        size_t hashCount = 0;
+        ADUC_Hash* hashes = ADUC_HashArray_AllocAndInit(obj, &hashCount);
+        REQUIRE(hashes != nullptr);
+        CHECK(hashCount == 2);
+
+        ADUC_Hash_FreeArray(hashCount, hashes);
+        json_value_free(root);
+    }
+
+    SECTION("Fails with null count pointer")
+    {
+        JSON_Value* root = json_parse_string("{\"sha256\":\"abc\"}");
+        REQUIRE(root != nullptr);
+        JSON_Object* obj = json_value_get_object(root);
+        REQUIRE(obj != nullptr);
+
+        CHECK(ADUC_HashArray_AllocAndInit(obj, nullptr) == nullptr);
+        json_value_free(root);
+    }
+
+    SECTION("Fails for empty object")
+    {
+        JSON_Value* root = json_parse_string("{}");
+        REQUIRE(root != nullptr);
+        JSON_Object* obj = json_value_get_object(root);
+        REQUIRE(obj != nullptr);
+
+        size_t hashCount = 99;
+        ADUC_Hash* hashes = ADUC_HashArray_AllocAndInit(obj, &hashCount);
+        CHECK(hashes == nullptr);
+        CHECK(hashCount == 0);
+
+        json_value_free(root);
+    }
+}
+
+TEST_CASE("ADUC_JSON_GetUpdateManifestRoot")
+{
+    SECTION("Returns parsed updateManifest object")
+    {
+        JSON_Value* action = json_parse_string(
+            "{\"updateManifest\":\"{\\\"updateId\\\":{\\\"provider\\\":\\\"p\\\",\\\"name\\\":\\\"n\\\",\\\"version\\\":\\\"v\\\"}}\"}");
+        REQUIRE(action != nullptr);
+
+        JSON_Value* manifest = ADUC_JSON_GetUpdateManifestRoot(action);
+        REQUIRE(manifest != nullptr);
+        REQUIRE(json_value_get_object(manifest) != nullptr);
+
+        json_value_free(manifest);
+        json_value_free(action);
+    }
+
+    SECTION("Returns null when updateManifest is missing")
+    {
+        JSON_Value* action = json_parse_string("{\"foo\":\"bar\"}");
+        REQUIRE(action != nullptr);
+        CHECK(ADUC_JSON_GetUpdateManifestRoot(action) == nullptr);
+        json_value_free(action);
+    }
+}
+
+TEST_CASE("ADUC_Json_GetUpdateId")
+{
+    SECTION("Parses valid updateId")
+    {
+        JSON_Value* action = json_parse_string(
+            "{\"updateManifest\":\"{\\\"updateId\\\":{\\\"provider\\\":\\\"prov\\\",\\\"name\\\":\\\"name\\\",\\\"version\\\":\\\"1.0\\\"}}\"}");
+        REQUIRE(action != nullptr);
+
+        ADUC_UpdateId* updateId = nullptr;
+        REQUIRE(ADUC_Json_GetUpdateId(action, &updateId));
+        REQUIRE(updateId != nullptr);
+        CHECK(std::string(updateId->Provider) == "prov");
+        CHECK(std::string(updateId->Name) == "name");
+        CHECK(std::string(updateId->Version) == "1.0");
+
+        ADUC_UpdateId_UninitAndFree(updateId);
+        json_value_free(action);
+    }
+
+    SECTION("Fails for missing updateId fields")
+    {
+        JSON_Value* action = json_parse_string(
+            "{\"updateManifest\":\"{\\\"updateId\\\":{\\\"provider\\\":\\\"prov\\\"}}\"}");
+        REQUIRE(action != nullptr);
+
+        ADUC_UpdateId* updateId = reinterpret_cast<ADUC_UpdateId*>(0x1);
+        CHECK_FALSE(ADUC_Json_GetUpdateId(action, &updateId));
+        CHECK(updateId == nullptr);
+
+        json_value_free(action);
+    }
+}
+
+TEST_CASE("ADUC_UpdateId_AllocAndInit")
+{
+    SECTION("Allocates and sets all fields")
+    {
+        ADUC_UpdateId* updateId = ADUC_UpdateId_AllocAndInit("prov", "name", "2.0");
+        REQUIRE(updateId != nullptr);
+        CHECK(std::string(updateId->Provider) == "prov");
+        CHECK(std::string(updateId->Name) == "name");
+        CHECK(std::string(updateId->Version) == "2.0");
+        ADUC_UpdateId_UninitAndFree(updateId);
+    }
+
+    SECTION("Returns null for invalid arguments")
+    {
+        CHECK(ADUC_UpdateId_AllocAndInit(nullptr, "name", "1") == nullptr);
+        CHECK(ADUC_UpdateId_AllocAndInit("prov", nullptr, "1") == nullptr);
+        CHECK(ADUC_UpdateId_AllocAndInit("prov", "name", nullptr) == nullptr);
     }
 }

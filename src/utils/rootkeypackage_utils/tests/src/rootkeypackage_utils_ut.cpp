@@ -393,3 +393,49 @@ TEST_CASE("RootKeyPackageUtils_Parse")
         ADUC_RootKeyPackageUtils_Destroy(&pkg);
     }
 }
+
+extern "C" bool ADUC_RootKeyPackageUtils_AreEqual(const ADUC_RootKeyPackage* lPack, const ADUC_RootKeyPackage* rPack);
+
+TEST_CASE("RootKeyPackageUtils_SerializePackageToJsonString")
+{
+    SECTION("null package returns null")
+    {
+        CHECK(ADUC_RootKeyPackageUtils_SerializePackageToJsonString(nullptr) == nullptr);
+    }
+
+    SECTION("missing protected properties json returns null")
+    {
+        ADUC_RootKeyPackage pkg{};
+        pkg.protectedPropertiesJsonString = STRING_construct("");
+        pkg.signatures = VECTOR_create(sizeof(ADUC_RootKeyPackage_Signature));
+
+        REQUIRE(pkg.protectedPropertiesJsonString != nullptr);
+        REQUIRE(pkg.signatures != nullptr);
+
+        CHECK(ADUC_RootKeyPackageUtils_SerializePackageToJsonString(&pkg) == nullptr);
+
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
+    }
+
+    SECTION("roundtrip parse and serialize keeps package equivalent")
+    {
+        std::string rootkey_pkg_json = aduc::FileTestUtils_slurpFile(get_example_rootkey_package_json_path());
+
+        ADUC_RootKeyPackage pkg{};
+        ADUC_Result parseResult = ADUC_RootKeyPackageUtils_Parse(rootkey_pkg_json.c_str(), &pkg);
+        REQUIRE(IsAducResultCodeSuccess(parseResult.ResultCode));
+
+        char* serialized = ADUC_RootKeyPackageUtils_SerializePackageToJsonString(&pkg);
+        REQUIRE(serialized != nullptr);
+
+        ADUC_RootKeyPackage reparsed{};
+        ADUC_Result reparsedResult = ADUC_RootKeyPackageUtils_Parse(serialized, &reparsed);
+        REQUIRE(IsAducResultCodeSuccess(reparsedResult.ResultCode));
+
+        CHECK(ADUC_RootKeyPackageUtils_AreEqual(&pkg, &reparsed));
+
+        ADUC_RootKeyPackageUtils_Destroy(&reparsed);
+        ADUC_RootKeyPackageUtils_Destroy(&pkg);
+        json_free_serialized_string(serialized);
+    }
+}

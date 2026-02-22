@@ -66,3 +66,37 @@ TEST_CASE("ADUC_UrlUtils_GetPathFileName - non empty file with query string and 
     CHECK_THAT(STRING_c_str(urlPathFileName), Equals("file-v1.1.json"));
     STRING_delete(urlPathFileName);
 }
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - NULL url parameter")
+{
+    STRING_HANDLE urlPathFileName = nullptr;
+    ADUC_Result result = ADUC_UrlUtils_GetPathFileName(nullptr, &urlPathFileName);
+    REQUIRE(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_URL_BAD_ARG);
+    CHECK(urlPathFileName == nullptr);
+}
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - NULL outFileName parameter")
+{
+    ADUC_Result result = ADUC_UrlUtils_GetPathFileName("http://somehost.com/file.txt", nullptr);
+    REQUIRE(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_URL_BAD_ARG);
+}
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - URL missing scheme separator")
+{
+    STRING_HANDLE urlPathFileName = nullptr;
+    ADUC_Result result = ADUC_UrlUtils_GetPathFileName("http//somehost.com/file.txt", &urlPathFileName);
+    REQUIRE(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_URL_BAD_URL);
+    CHECK(urlPathFileName == nullptr);
+}
+
+TEST_CASE("ADUC_UrlUtils_GetPathFileName - URL with no scheme at all")
+{
+    STRING_HANDLE urlPathFileName = nullptr;
+    ADUC_Result result = ADUC_UrlUtils_GetPathFileName("somehost.com/file.txt", &urlPathFileName);
+    REQUIRE(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_URL_BAD_URL);
+    CHECK(urlPathFileName == nullptr);
+}

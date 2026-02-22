@@ -174,3 +174,23 @@ TEST_CASE("Signature Verification")
         CryptoUtils_FreeCryptoKeyHandle(key);
     }
 }
+
+TEST_CASE("CryptoUtils_IsValidSignature input validation")
+{
+    const uint8_t signature[] = { 0x01, 0x02, 0x03 };
+    const uint8_t blob[] = { 0x10, 0x11, 0x12 };
+
+    CHECK_FALSE(CryptoUtils_IsValidSignature(nullptr, signature, sizeof(signature), blob, sizeof(blob), nullptr));
+    CHECK_FALSE(CryptoUtils_IsValidSignature("rs256", nullptr, sizeof(signature), blob, sizeof(blob), nullptr));
+    CHECK_FALSE(CryptoUtils_IsValidSignature("rs256", signature, 0, blob, sizeof(blob), nullptr));
+    CHECK_FALSE(CryptoUtils_IsValidSignature("rs256", signature, sizeof(signature), nullptr, sizeof(blob), nullptr));
+    CHECK_FALSE(CryptoUtils_IsValidSignature("rs256", signature, sizeof(signature), blob, 0, nullptr));
+}
+
+TEST_CASE("CryptoUtils_IsValidSignature unsupported algorithm")
+{
+    const uint8_t signature[] = { 0x01, 0x02, 0x03 };
+    const uint8_t blob[] = { 0x10, 0x11, 0x12 };
+
+    CHECK_FALSE(CryptoUtils_IsValidSignature("hs256", signature, sizeof(signature), blob, sizeof(blob), nullptr));
+}
