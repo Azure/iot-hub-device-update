@@ -392,3 +392,129 @@ TEST_CASE_METHOD(GetRootKeyValidationMockHook, "RootKeyUtility_GetKeyForKid")
         CHECK(key == nullptr);
     }
 }
+
+TEST_CASE("RootKeyUtility reporting ERC helpers")
+{
+    RootKeyUtility_ClearReportingErc();
+    CHECK(RootKeyUtility_GetReportingErc() == 0);
+
+    RootKeyUtility_SetReportingErc(0x12345678);
+    CHECK(RootKeyUtility_GetReportingErc() == 0x12345678);
+
+    RootKeyUtility_ClearReportingErc();
+    CHECK(RootKeyUtility_GetReportingErc() == 0);
+}
+
+TEST_CASE_METHOD(SignatureValidationMockHook, "ADUC_RootKeyUtility_IsUpdateStoreNeeded")
+{
+    ADUC_RootKeyPackage packageToTest = {};
+    REQUIRE(IsAducResultCodeSuccess(ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(), &packageToTest).ResultCode));
+
+    STRING_HANDLE storePath = STRING_construct(get_valid_example_rootkey_package_json_path().c_str());
+    REQUIRE(storePath != nullptr);
+
+    SECTION("Returns true for null package")
+    {
+        CHECK(ADUC_RootKeyUtility_IsUpdateStoreNeeded(storePath, nullptr));
+    }
+
+    SECTION("Returns false when package matches local store")
+    {
+        REQUIRE(IsAducResultCodeSuccess(
+            RootKeyUtility_ReloadPackageFromDisk(get_valid_example_rootkey_package_json_path().c_str(), true).ResultCode));
+        CHECK_FALSE(ADUC_RootKeyUtility_IsUpdateStoreNeeded(storePath, &packageToTest));
+    }
+
+    SECTION("Returns true when package differs from local store")
+    {
+        REQUIRE(IsAducResultCodeSuccess(
+            RootKeyUtility_ReloadPackageFromDisk(get_valid_example_rootkey_package_json_path().c_str(), true).ResultCode));
+
+        ADUC_RootKeyPackage differentPackage = {};
+        REQUIRE(IsAducResultCodeSuccess(
+            ADUC_RootKeyPackageUtils_Parse(invalidRootKeyPackageJson.c_str(), &differentPackage).ResultCode));
+
+        CHECK(ADUC_RootKeyUtility_IsUpdateStoreNeeded(storePath, &differentPackage));
+
+        ADUC_RootKeyPackageUtils_Destroy(&differentPackage);
+    }
+
+    ADUC_RootKeyPackageUtils_Destroy(&packageToTest);
+    STRING_delete(storePath);
+}
+
+TEST_CASE_METHOD(SignatureValidationMockHook, "RootKeyUtility public API edge paths")
+{
+    SECTION("LoadSerializedPackage success and failure")
+    {
+        char* serializedPackage = nullptr;
+        ADUC_Result result =
+            RootKeyUtility_LoadSerializedPackage(get_valid_example_rootkey_package_json_path().c_str(), &serializedPackage);
+        REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+        REQUIRE(serializedPackage != nullptr);
+        CHECK(strlen(serializedPackage) > 0);
+        json_free_serialized_string(serializedPackage);
+
+        serializedPackage = nullptr;
+        result = RootKeyUtility_LoadSerializedPackage(
+            get_nonexistent_example_rootkey_package_json_path().c_str(), &serializedPackage);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_CANT_LOAD_FROM_STORE);
+        CHECK(serializedPackage == nullptr);
+    }
+
+    SECTION("LoadPackageFromDisk bad args")
+    {
+        ADUC_RootKeyPackage* rootKeyPackage = nullptr;
+        ADUC_Result result = RootKeyUtility_LoadPackageFromDisk(&rootKeyPackage, nullptr, false);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS);
+        CHECK(rootKeyPackage == nullptr);
+    }
+
+    SECTION("WriteRootKeyPackageToFileAtomically bad args")
+    {
+        ADUC_RootKeyPackage validPackage = {};
+        REQUIRE(IsAducResultCodeSuccess(ADUC_RootKeyPackageUtils_Parse(validRootKeyPackageJson.c_str(), &validPackage).ResultCode));
+
+        STRING_HANDLE validPath = STRING_construct("/tmp/unused");
+        REQUIRE(validPath != nullptr);
+        ADUC_Result result = RootKeyUtility_WriteRootKeyPackageToFileAtomically(nullptr, validPath);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS);
+        STRING_delete(validPath);
+
+        result = RootKeyUtility_WriteRootKeyPackageToFileAtomically(&validPackage, nullptr);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS);
+
+        STRING_HANDLE emptyPath = STRING_construct("");
+        REQUIRE(emptyPath != nullptr);
+        result = RootKeyUtility_WriteRootKeyPackageToFileAtomically(&validPackage, emptyPath);
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS);
+
+        STRING_delete(emptyPath);
+        ADUC_RootKeyPackageUtils_Destroy(&validPackage);
+    }
+
+    SECTION("GetKeyForKidFromHardcodedKeys success and missing kid")
+    {
+        CryptoKeyHandle key = nullptr;
+        ADUC_Result result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "testrootkey1");
+        CHECK(IsAducResultCodeSuccess(result.ResultCode));
+        REQUIRE(key != nullptr);
+        CryptoUtils_FreeCryptoKeyHandle(key);
+
+        key = nullptr;
+        result = RootKeyUtility_GetKeyForKidFromHardcodedKeys(&key, "not-a-real-kid");
+        CHECK(IsAducResultCodeFailure(result.ResultCode));
+        CHECK(result.ExtendedResultCode == ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID);
+        CHECK(key == nullptr);
+    }
+
+    SECTION("RootKeyIsDisabled returns true for null package")
+    {
+        CHECK(RootKeyUtility_RootKeyIsDisabled(nullptr, "any-key"));
+    }
+}

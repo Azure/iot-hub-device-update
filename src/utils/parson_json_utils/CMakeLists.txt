@@ -19,3 +19,7 @@ target_link_libraries (
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 target_link_umock_c (${target_name} PRIVATE)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

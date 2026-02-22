@@ -14,7 +14,7 @@ set (sources main.cpp root_key_utils_ut.cpp)
 
 add_executable (${PROJECT_NAME})
 
-target_sources (${PROJECT_NAME} PRIVATE main.cpp root_key_utils_ut.cpp)
+target_sources (${PROJECT_NAME} PRIVATE ${sources})
 
 target_compile_definitions (${PROJECT_NAME}
                             PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")

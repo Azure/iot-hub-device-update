@@ -26,3 +26,7 @@ target_link_libraries (
             aduc::workflow_utils)
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

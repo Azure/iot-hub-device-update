@@ -689,3 +689,43 @@ TEST_CASE("IsSigningKeyDisallowed")
         VECTOR_destroy(disallowedSigningKeys);
     }
 }
+
+TEST_CASE("JwsUtils API edge cases")
+{
+    SECTION("jws_result_to_str maps unknown values")
+    {
+        CHECK(strcmp(jws_result_to_str(JWSResult_Success), "Success") == 0);
+        CHECK(strcmp(jws_result_to_str((JWSResult)999), "???") == 0);
+    }
+
+    SECTION("VerifyJWSWithSJWK rejects malformed input")
+    {
+        CHECK(VerifyJWSWithSJWK(nullptr) == JWSResult_BadStructure);
+        CHECK(VerifyJWSWithSJWK("abc.def") == JWSResult_BadStructure);
+    }
+
+    SECTION("GetPayloadFromJWT rejects malformed input")
+    {
+        ADUC::StringUtils::cstr_wrapper payload;
+        CHECK(GetPayloadFromJWT(nullptr, payload.address_of()) == false);
+        CHECK(payload.get() == nullptr);
+    }
+
+    SECTION("GetKeyFromBase64EncodedJWK rejects malformed input")
+    {
+        CHECK(GetKeyFromBase64EncodedJWK(nullptr) == nullptr);
+        CHECK(GetKeyFromBase64EncodedJWK("abc.def") == nullptr);
+    }
+
+    SECTION("IsSigningKeyDisallowed validates exponent")
+    {
+        VECTOR_HANDLE disallowedSigningKeys = GetSigningKeyDisallowedList(nullptr);
+        REQUIRE(disallowedSigningKeys != nullptr);
+
+        const char* invalidExponentSjwk =
+            R"({"kty":"RSA","alg":"RS256","kid":"ADU.210609.R.S","n":"abc","e":"AQAC"})";
+        CHECK(IsSigningKeyDisallowed(invalidExponentSjwk, disallowedSigningKeys) == JWSResult_InvalidSJWKPayload);
+
+        VECTOR_destroy(disallowedSigningKeys);
+    }
+}
