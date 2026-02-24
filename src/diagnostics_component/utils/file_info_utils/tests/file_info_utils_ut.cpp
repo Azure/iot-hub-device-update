@@ -41,7 +41,7 @@ public:
     {
         // Remove all files in test directory
         std::string rmCmd = std::string("rm -rf ") + TEST_DIR;
-        system(rmCmd.c_str());
+        (void)system(rmCmd.c_str());
     }
 
     static bool createFile(const std::string& filename, size_t size)
