@@ -536,10 +536,8 @@ option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
 option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
 option (ADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL
         "Use Curl to download the Rootkey Package instead of DeliveryOptimization agent" OFF)
-option (
-    ADUC_BUILD_DELTA_HANDLER
-    "Build the Microsoft Delta Download Handler with iot-hub-device-update-delta library support"
-    OFF)
+option (ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION
+        "Build with Delivery Optimization support" ON)
 option (ADUC_ENABLE_CONSOLE_LOG "Enable console logging" ON)
 option (ADUC_ENABLE_FILE_LOG "Enable file logging" ON)
 
