@@ -42,9 +42,8 @@ install_packages=false
 install_packages_only=false
 # The folder where source code will be placed
 # for building and installing from source.
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
-repo_root="$(cd "$script_dir/.." > /dev/null 2>&1 && pwd)"
-DEFAULT_WORKFOLDER="$repo_root/.workspace"
+# Use parent directory of git root to avoid vcpkg manifest conflicts
+DEFAULT_WORKFOLDER="$(dirname "${GITROOT}")/.adu-tmp"
 work_folder=$DEFAULT_WORKFOLDER
 keep_source_code=false
 use_ssh=false
@@ -68,15 +67,13 @@ install_swupdate=false
 default_swupdate_ref=2021.11
 swupdate_ref=$default_swupdate_ref
 
-default_delta_ref=main
-delta_ref=$default_delta_ref
-
 install_cmake=false
 supported_cmake_version='3.23.2'
 install_cmake_version="$supported_cmake_version"
 cmake_force_source=false
 cmake_prefix="$work_folder"
 cmake_installer_dir=""
+cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
 cmake_bin="cmake"
 
 install_shellcheck=false
@@ -95,8 +92,10 @@ default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
 
-# CMake symlink location
-cmake_dir_symlink="$repo_root/.workspace/deviceupdate-cmake"
+# Delta Handler Deps
+default_delta_ref=main
+install_delta=false
+delta_ref=$default_delta_ref
 
 # catch2 build
 #
@@ -107,7 +106,7 @@ catch2_cc=""
 catch2_cxx=""
 
 # Dependencies packages
-aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev' 'file')
+aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
 compiler_packages=('gcc' 'g++')
 
@@ -167,8 +166,10 @@ print_help() {
     echo "-p, --install-packages    Indicates that packages should be installed."
     echo "--install-packages-only   Indicates that only packages should be installed and that dependencies should not be installed from source."
     echo ""
-    echo "-f, --work-folder <work_folder>   Specifies the folder where source code will be cloned or downloaded."
-    echo "                                  Default is [repo-root]/.workspace/."
+    echo "-f, --work-folder <work_folder>   Specifies the folder where temp artifacts will be stored."
+    echo "                                  This folder contains temporary build artifacts for dependencies,"
+    echo "                                  CMake/shellcheck installations, and test data."
+    echo "                                  Default is [git-root]/.tmp."
     echo "-k, --keep-source-code            Indicates that source code should not be deleted after install from work_folder."
     echo ""
     echo "--use-ssh                 Use ssh URLs to clone instead of https URLs."
@@ -245,20 +246,9 @@ do_install_aduc_packages() {
 
     $SUDO apt-get install --yes "${aduc_packages[@]}" || return
 
-    # For Ubuntu 24.04+, ensure the 'file' utility is installed (may be needed by CPack)
-    OS=$(lsb_release --short --id)
-    if [[ $OS == "Ubuntu" ]]; then
-        # Parse version to check if 24.04 or later
-        VER_MAJOR=$(echo "$VER" | cut -d. -f1)
-        VER_MINOR=$(echo "$VER" | cut -d. -f2)
-        if [[ $VER_MAJOR -gt 24 ]] || [[ $VER_MAJOR -eq 24 && $VER_MINOR -ge 4 ]]; then
-            echo "Ensuring 'file' utility is available for Ubuntu 24.04+"
-            $SUDO apt-get install --yes file || echo "Warning: Could not install 'file' package"
-        fi
-    fi
-
     # The latest version of gcc available on Debian is gcc-6. We install that version if we are
     # building for Debian, otherwise we install gcc-8 for Ubuntu.
+    OS=$(lsb_release --short --id)
     if [[ $OS == "Debian" && $VER == "9" ]]; then
         $SUDO apt-get install --yes gcc-6 g++-6 || return
         catch2_cc=/usr/bin/gcc-6
@@ -274,11 +264,6 @@ do_install_aduc_packages() {
         $SUDO apt-get install --yes gcc-12 g++-12 || return
         catch2_cc=/usr/bin/gcc-12
         catch2_cxx=/usr/bin/g++-12
-    elif [[ $OS == "Ubuntu" && $VER == "24.04" ]]; then
-        # Ubuntu 24.04 and newer have a recent enough default gcc, so we don't need to install a specific version
-        echo "Using system default gcc for Ubuntu 24.04+"
-        catch2_cc=/usr/bin/gcc
-        catch2_cxx=/usr/bin/g++
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
         catch2_cc=/usr/bin/gcc-8
@@ -527,13 +512,6 @@ do_install_do_release_tarball() {
 
 do_install_do() {
     echo "Installing DO ..."
-
-    # Skip DO installation on Ubuntu 24.04 and newer
-    if [[ $OS == "Ubuntu" && $VER == "24.04" ]]; then
-        echo "Skipping DO installation on Ubuntu 24.04 (not supported)"
-        return 0
-    fi
-
     local do_dir=$work_folder/do
     if [[ -d $do_dir ]]; then
         $SUDO rm -rf "$do_dir" || return
@@ -612,25 +590,6 @@ do_install_azure_storage_sdk() {
     git clone --recursive --single-branch --branch "$azure_storage_sdk_branch_ref" "$azure_storage_sdk_url" . || return
 
     git checkout tags/"$azure_storage_sdk_tag_ref"
-
-    # Apply patch to fix missing cstdint include for GCC 12+ (Ubuntu 24.04, Debian 12)
-    # Check GCC version and apply patch only if GCC >= 12
-    local gcc_version
-    gcc_version=$(gcc -dumpversion | cut -d. -f1)
-
-    if [[ $gcc_version -ge 12 ]]; then
-        local patch_file="$script_dir/patches/azure-storage-sdk-base64-cstdint.patch"
-        if [[ -f $patch_file ]]; then
-            echo "Detected GCC $gcc_version (>= 12), applying patch to fix base64.cpp compilation issue..."
-            git apply "$patch_file" || {
-                warn "Failed to apply patch, build may fail on GCC $gcc_version"
-            }
-        else
-            warn "Patch file not found at $patch_file, build may fail on GCC $gcc_version"
-        fi
-    else
-        echo "GCC $gcc_version detected, patch not needed (only required for GCC >= 12)"
-    fi
 
     local azure_storage_sdk_cmake_options=""
 
@@ -1254,13 +1213,11 @@ while [[ $1 != "" ]]; do
     shift
 done
 
-# Always setup workfolder with proper ownership, especially for .workspace in repo
+# Ensure workfolder exists with proper permissions
 if [[ ! -d $work_folder ]]; then
-    mkdir -pv "$work_folder" || $ret
+    echo "Creating work folder: $work_folder"
+    mkdir -p "$work_folder" || $ret
 fi
-# Ensure the work folder has the correct owner (the user running the script, not root)
-$SUDO chown "$(id -un)":"$(id -gn)" "$work_folder" || $ret
-$SUDO chmod ug+rwx,o= "$work_folder" || $ret
 
 # Ensure the work folder has proper ownership
 current_user="$(id -un)"
