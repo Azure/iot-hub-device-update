@@ -1,0 +1,30 @@
+--- a/sdk/core/azure-core/inc/azure/core/base64.hpp
++++ b/sdk/core/azure-core/inc/azure/core/base64.hpp
+@@ -10,6 +10,7 @@
+
+ #pragma once
+
++#include <cstdint>
+ #include <algorithm>
+ #include <stdexcept>
+ #include <string>
+--- a/sdk/core/azure-core/src/base64.cpp
++++ b/sdk/core/azure-core/src/base64.cpp
+@@ -3,6 +3,7 @@
+
+ #include "azure/core/base64.hpp"
+ #include "azure/core/platform.hpp"
++#include <cstdint>
+
+ #include <string>
+ #include <vector>
+--- a/sdk/core/azure-core/inc/azure/core/uuid.hpp
++++ b/sdk/core/azure-core/inc/azure/core/uuid.hpp
+@@ -10,6 +10,7 @@
+
+ #include "azure/core/platform.hpp"
+
++#include <cstdint>
+ #include <cstring>
+ #include <string>
+
