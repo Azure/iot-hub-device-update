@@ -24,3 +24,7 @@ target_link_libraries (
             aduc::logging
             iothub_client_mqtt_transport
             umqtt)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

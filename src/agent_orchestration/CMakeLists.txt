@@ -17,3 +17,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types
     PRIVATE aduc::c_utils aduc::workflow_utils)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
