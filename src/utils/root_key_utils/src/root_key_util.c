@@ -82,15 +82,28 @@ CryptoKeyHandle MakeCryptoKeyHandleFromRSARootkey(const RSARootKey rootKey)
     CryptoKeyHandle key = NULL;
     uint8_t* modulus = NULL;
 
+    Log_Debug("Processing key '%s'", rootKey.kid);
+
     const size_t modulusSize = Base64URLDecode(rootKey.N, &modulus);
 
     if (modulusSize == 0)
     {
-        Log_Error("zero len modulus");
+        Log_Error("Base64URLDecode failed - zero len modulus for key '%s'", rootKey.kid);
         goto done;
     }
 
+    Log_Debug("Decoded modulus for key '%s' (%zu bytes)", rootKey.kid, modulusSize);
+
     key = RSAKey_ObjFromModulusBytesExponentInt(modulus, modulusSize, rootKey.e);
+
+    if (key == NULL)
+    {
+        Log_Error("RSAKey_ObjFromModulusBytesExponentInt failed for key '%s'", rootKey.kid);
+    }
+    else
+    {
+        Log_Info("Successfully created key handle for '%s'", rootKey.kid);
+    }
 
 done:
 

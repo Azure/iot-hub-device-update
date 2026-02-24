@@ -13,9 +13,11 @@
 #include <ctype.h>
 #include <openssl/bn.h>
 #include <openssl/evp.h>
+#include <openssl/err.h>
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 #    include <openssl/encoder.h>
 #    include <openssl/param_build.h>
+#    include <openssl/provider.h>
 #endif
 
 #include <openssl/rsa.h>
@@ -23,8 +25,47 @@
 #include <string.h>
 
 #include <aducpal/strings.h> // strcasecmp
+#include <aduc/logging.h>
 
 #define SHA256NUMBYTES 32
+
+/**
+ * @brief Helper function to log all pending OpenSSL errors
+ * @param context A string describing the context where the error occurred
+ */
+static void LogOpenSSLErrors(const char* context)
+{
+    unsigned long err;
+    char buf[256];
+
+    Log_Error("OpenSSL error context: %s", context);
+    while ((err = ERR_get_error()) != 0)
+    {
+        ERR_error_string_n(err, buf, sizeof(buf));
+        Log_Error("  OpenSSL error: %s", buf);
+    }
+}
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+/**
+ * @brief Log OpenSSL provider information for debugging
+ */
+static int LogProviderCallback(OSSL_PROVIDER* prov, void* arg)
+{
+    (void)arg;
+    Log_Debug("  Loaded provider: %s", OSSL_PROVIDER_get0_name(prov));
+    return 1;
+}
+
+static void LogOpenSSLProviders(void)
+{
+    Log_Debug("OpenSSL version: %s (0x%08lX)", OpenSSL_version(OPENSSL_VERSION), (unsigned long)OPENSSL_VERSION_NUMBER);
+    Log_Debug("FIPS mode enabled: %s", EVP_default_properties_is_fips_enabled(NULL) ? "YES" : "NO");
+    Log_Debug("Loaded OpenSSL providers:");
+    OSSL_PROVIDER_do_all(NULL, LogProviderCallback, NULL);
+}
+#endif
+
 /**
  * @brief Algorithm_Id values and supported algorithms
  */
@@ -227,18 +268,36 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
     OSSL_PARAM* params = NULL;
     BIGNUM* bn_N = NULL;
     BIGNUM* bn_e = NULL;
+    const char* failurePoint = "unknown";
+
+    Log_Debug("Creating RSA key (modulus_len=%zu, exponent=%u)", N_len, e);
+
+    // Log OpenSSL environment info once
+    static int providerLogged = 0;
+    if (!providerLogged)
+    {
+        LogOpenSSLProviders();
+        providerLogged = 1;
+    }
 
     ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
 
     if (ctx == NULL)
     {
+        failurePoint = "EVP_PKEY_CTX_new_from_name";
+        Log_Error("RSAKey: %s failed", failurePoint);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: EVP_PKEY_CTX created successfully");
 
     bn_N = BN_new();
 
     if (bn_N == NULL)
     {
+        failurePoint = "BN_new for modulus";
+        Log_Error("RSAKey: %s failed", failurePoint);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
 
@@ -246,61 +305,100 @@ CryptoKeyHandle RSAKey_ObjFromModulusBytesExponentInt(const uint8_t* N, size_t N
 
     if (bn_e == NULL)
     {
+        failurePoint = "BN_new for exponent";
+        Log_Error("RSAKey: %s failed", failurePoint);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
 
     if (BN_bin2bn(N, (int)N_len, bn_N) == 0)
     {
+        failurePoint = "BN_bin2bn";
+        Log_Error("RSAKey: %s failed (N_len=%zu)", failurePoint, N_len);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: Modulus BIGNUM created (%d bits)", BN_num_bits(bn_N));
 
     if (BN_set_word(bn_e, e) == 0)
     {
+        failurePoint = "BN_set_word";
+        Log_Error("RSAKey: %s failed (e=%u)", failurePoint, e);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: Exponent BIGNUM created");
 
     param_bld = OSSL_PARAM_BLD_new();
 
     if (param_bld == NULL)
     {
+        failurePoint = "OSSL_PARAM_BLD_new";
+        Log_Error("RSAKey: %s failed", failurePoint);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
 
     status = OSSL_PARAM_BLD_push_BN(param_bld, "n", bn_N);
     if (status != 1)
     {
+        failurePoint = "OSSL_PARAM_BLD_push_BN for 'n'";
+        Log_Error("RSAKey: %s failed (status=%d)", failurePoint, status);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: Pushed 'n' parameter");
 
     status = OSSL_PARAM_BLD_push_BN(param_bld, "e", bn_e);
     if (status != 1)
     {
+        failurePoint = "OSSL_PARAM_BLD_push_BN for 'e'";
+        Log_Error("RSAKey: %s failed (status=%d)", failurePoint, status);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: Pushed 'e' parameter");
 
     status = OSSL_PARAM_BLD_push_BN(param_bld, "d", NULL);
     if (status != 1)
     {
+        failurePoint = "OSSL_PARAM_BLD_push_BN for 'd' (NULL)";
+        Log_Error("RSAKey: %s failed (status=%d)", failurePoint, status);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: Pushed 'd' parameter (NULL for public key)");
 
     params = OSSL_PARAM_BLD_to_param(param_bld);
     if (params == NULL)
     {
+        failurePoint = "OSSL_PARAM_BLD_to_param";
+        Log_Error("RSAKey: %s failed", failurePoint);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: Built OSSL_PARAM");
 
     status = EVP_PKEY_fromdata_init(ctx);
     if (status != 1)
     {
+        failurePoint = "EVP_PKEY_fromdata_init";
+        Log_Error("RSAKey: %s failed (status=%d)", failurePoint, status);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Debug("RSAKey: fromdata_init succeeded");
 
     status = EVP_PKEY_fromdata(ctx, &result, EVP_PKEY_PUBLIC_KEY, params);
     if (status != 1)
     {
+        failurePoint = "EVP_PKEY_fromdata";
+        Log_Error("RSAKey: %s failed (status=%d)", failurePoint, status);
+        LogOpenSSLErrors(failurePoint);
         goto done;
     }
+    Log_Info("RSAKey: Successfully created RSA public key handle");
+
 done:
 
     if (ctx != NULL)
