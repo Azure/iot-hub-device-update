@@ -25,3 +25,7 @@ target_link_libraries (
             diagnostics_component::diagnostics_interface)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
