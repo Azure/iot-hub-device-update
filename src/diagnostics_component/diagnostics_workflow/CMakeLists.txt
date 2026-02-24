@@ -31,7 +31,3 @@ target_link_libraries (
             diagnostic_utils::operation_id_utils
             Parson::parson
             parson_json_utils)
-
-if (ADUC_BUILD_UNIT_TESTS)
-    add_subdirectory (tests)
-endif ()

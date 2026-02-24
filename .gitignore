@@ -7,9 +7,6 @@
 ### VisualStudio 2017
 .vs/
 
-### Temporary workspace files
-.workspace/
-
 ### GDB debugger
 .gdbinit
 .gdb_history
