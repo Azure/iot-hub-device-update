@@ -174,7 +174,7 @@ do_install_valgrind_from_source() {
     echo "Installing Valgrind from source..."
     local valgrind_dir=$work_folder/valgrind
     if [[ -d $valgrind_dir ]]; then
-        $SUDO rm -rf $valgrind_dir || return
+        $SUDO rm -rf "$valgrind_dir" || return
     fi
 
     local valgrind_url
@@ -185,9 +185,9 @@ do_install_valgrind_from_source() {
     fi
 
     echo -e "Building Valgrind from source...\n\tTag: $valgrind_ref\n\tFolder: $valgrind_dir"
-    mkdir -p $valgrind_dir || return
-    pushd $valgrind_dir > /dev/null || return
-    git clone --branch $valgrind_ref --depth 1 $valgrind_url . || return
+    mkdir -p "$valgrind_dir" || return
+    pushd "$valgrind_dir" > /dev/null || return
+    git clone --branch "$valgrind_ref" --depth 1 "$valgrind_url" . || return
 
     ./autogen.sh || return
     ./configure --prefix=/usr/local || return
@@ -198,7 +198,7 @@ do_install_valgrind_from_source() {
 
     if [[ $keep_source_code != "true" ]]; then
         echo "Removing Valgrind source code..."
-        $SUDO rm -rf $valgrind_dir
+        $SUDO rm -rf "$valgrind_dir"
     fi
 
     # Create symlink if not already exists
@@ -234,8 +234,8 @@ do_install_aduc_packages() {
     OS=$(lsb_release --short --id)
     if [[ $OS == "Ubuntu" ]]; then
         # Parse version to check if 24.04 or later
-        VER_MAJOR=$(echo $VER | cut -d. -f1)
-        VER_MINOR=$(echo $VER | cut -d. -f2)
+        VER_MAJOR=$(echo "$VER" | cut -d. -f1)
+        VER_MINOR=$(echo "$VER" | cut -d. -f2)
         if [[ $VER_MAJOR -gt 24 ]] || [[ $VER_MAJOR -eq 24 && $VER_MINOR -ge 4 ]]; then
             echo "Ensuring 'file' utility is available for Ubuntu 24.04+"
             $SUDO apt-get install --yes file || echo "Warning: Could not install 'file' package"
@@ -256,6 +256,11 @@ do_install_aduc_packages() {
         catch2_cc=/usr/bin/gcc-10
         catch2_cxx=/usr/bin/g++-10
     elif [[ $OS == "Debian" && $VER == "12" ]]; then
+        $SUDO apt-get install --yes gcc-12 g++-12 || return
+        catch2_cc=/usr/bin/gcc-12
+        catch2_cxx=/usr/bin/g++-12
+    elif [[ $OS == "Debian" && $VER == "13" ]]; then
+        # Debian 13 (trixie) - use gcc-12 for consistency with Debian 12
         $SUDO apt-get install --yes gcc-12 g++-12 || return
         catch2_cc=/usr/bin/gcc-12
         catch2_cxx=/usr/bin/g++-12
@@ -286,7 +291,7 @@ do_install_azure_iot_sdk() {
     echo "Installing Azure IoT C SDK ..."
     local azure_sdk_dir=$work_folder/azure-iot-sdk-c
     if [[ -d $azure_sdk_dir ]]; then
-        $SUDO rm -rf $azure_sdk_dir || return
+        $SUDO rm -rf "$azure_sdk_dir" || return
     fi
 
     local azure_sdk_url
@@ -297,9 +302,9 @@ do_install_azure_iot_sdk() {
     fi
 
     echo -e "Building azure-iot-sdk-c ...\n\tBranch: $azure_sdk_ref\n\tFolder: $azure_sdk_dir"
-    mkdir -p $azure_sdk_dir || return
-    pushd $azure_sdk_dir > /dev/null || return
-    git clone --branch $azure_sdk_ref $azure_sdk_url . || return
+    mkdir -p "$azure_sdk_dir" || return
+    pushd "$azure_sdk_dir" > /dev/null || return
+    git clone --branch "$azure_sdk_ref" "$azure_sdk_url" . || return
     git submodule update --init || return
 
     mkdir cmake || return
@@ -333,7 +338,7 @@ do_install_azure_iot_sdk() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $azure_sdk_dir || return
+        $SUDO rm -rf "$azure_sdk_dir" || return
     fi
 }
 
@@ -341,7 +346,7 @@ do_install_catch2() {
     echo "Installing Catch2 ..."
     local catch2_dir=$work_folder/catch2
     if [[ -d $catch2_dir ]]; then
-        $SUDO rm -rf $catch2_dir || return
+        $SUDO rm -rf "$catch2_dir" || return
     fi
 
     local catch2_url
@@ -352,9 +357,9 @@ do_install_catch2() {
     fi
 
     echo -e "Building Catch2 ...\n\tBranch: $catch2_ref\n\tFolder: $catch2_dir"
-    mkdir -p $catch2_dir || return
-    pushd $catch2_dir > /dev/null || return
-    git clone --recursive --single-branch --branch $catch2_ref --depth 1 $catch2_url . || return
+    mkdir -p "$catch2_dir" || return
+    pushd "$catch2_dir" > /dev/null || return
+    git clone --recursive --single-branch --branch "$catch2_ref" --depth 1 "$catch2_url" . || return
 
     mkdir cmake || return
     pushd cmake > /dev/null || return
@@ -366,7 +371,7 @@ do_install_catch2() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $catch2_dir || return
+        $SUDO rm -rf "$catch2_dir" || return
     fi
 }
 
@@ -385,7 +390,7 @@ do_install_swupdate() {
 
     local swupdate_dir=$work_folder/swupdate
     if [[ -d $swupdate_dir ]]; then
-        $SUDO rm -rf $swupdate_dir || return 1
+        $SUDO rm -rf "$swupdate_dir" || return 1
     fi
 
     local swupdate_url
@@ -396,14 +401,14 @@ do_install_swupdate() {
     fi
 
     echo -e "Building SWUpdate ...\n\tBranch: $swupdate_ref\n\tFolder: $swupdate_dir"
-    mkdir -p $swupdate_dir || return
-    pushd $swupdate_dir > /dev/null || return
-    git clone --recursive --single-branch --branch $swupdate_ref --depth 1 $swupdate_url . || return
+    mkdir -p "$swupdate_dir" || return
+    pushd "$swupdate_dir" > /dev/null || return
+    git clone --recursive --single-branch --branch "$swupdate_ref" --depth 1 "$swupdate_url" . || return
 
     popd > /dev/null || return
     echo -e "Customizing SWUpdate build configurations..."
     cp src/deps/swupdate/.config "$swupdate_dir" || return
-    pushd $swupdate_dir > /dev/null || return
+    pushd "$swupdate_dir" > /dev/null || return
 
     echo -r "Building SWUpdate..."
     make || return
@@ -413,7 +418,7 @@ do_install_swupdate() {
     popd > /dev/null || return
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $swupdate_dir || return 1
+        $SUDO rm -rf "$swupdate_dir" || return 1
     fi
 }
 
@@ -519,9 +524,15 @@ do_install_do() {
         return 0
     fi
 
+    # Skip DO installation on Debian 13 (trixie) - not yet supported by DO
+    if [[ $OS == "Debian" && $VER == "13" ]]; then
+        echo "Skipping DO installation on Debian 13 (not yet supported)"
+        return 0
+    fi
+
     local do_dir=$work_folder/do
     if [[ -d $do_dir ]]; then
-        $SUDO rm -rf $do_dir || return
+        $SUDO rm -rf "$do_dir" || return
     fi
 
     if [[ $install_packages == "true" || $install_packages_only == "true" ]]; then
@@ -532,15 +543,15 @@ do_install_do() {
     fi
 
     if [[ $keep_source_code != "true" ]]; then
-        $SUDO rm -rf $do_dir || return
+        $SUDO rm -rf "$do_dir" || return
     elif [[ -d $do_dir ]]; then
         warn "$do_dir already exists! Skipping DO."
         return 0
     fi
 
     echo -e "Building DO ...\n\tBranch: $do_ref\n\tFolder: $do_dir"
-    mkdir -p $do_dir || return
-    pushd $do_dir > /dev/null || return
+    mkdir -p "$do_dir" || return
+    pushd "$do_dir" > /dev/null || return
 
     local do_url
     if [[ $use_ssh == "true" ]]; then
@@ -549,11 +560,11 @@ do_install_do() {
         do_url=https://github.com/Microsoft/do-client.git
     fi
 
-    git clone --recursive --single-branch --branch $do_ref --depth 1 $do_url . || return
+    git clone --recursive --single-branch --branch "$do_ref" --depth 1 "$do_url" . || return
 
     bootstrap_file=$do_dir/build/scripts/bootstrap.sh
-    chmod +x $bootstrap_file || return
-    $SUDO $bootstrap_file --install build || return
+    chmod +x "$bootstrap_file" || return
+    $SUDO "$bootstrap_file" --install build || return
 
     mkdir cmake || return
     pushd cmake > /dev/null || return
@@ -581,7 +592,7 @@ do_install_azure_storage_sdk() {
     local azure_storage_sdk_dir=$work_folder/azure_storage_sdk_dir
 
     if [[ -d $azure_storage_sdk_dir ]]; then
-        $SUDO rm -rf $azure_storage_sdk_dir || return
+        $SUDO rm -rf "$azure_storage_sdk_dir" || return
     fi
 
     local azure_storage_sdk_url
@@ -592,9 +603,9 @@ do_install_azure_storage_sdk() {
     fi
 
     echo -e "Building Azure Storage SDK ...\n\tBranch: $azure_storage_sdk_branch_ref\n\t Folder: $azure_storage_sdk_dir"
-    mkdir -p $azure_storage_sdk_dir || return
-    pushd $azure_storage_sdk_dir > /dev/null || return
-    git clone --recursive --single-branch --branch $azure_storage_sdk_branch_ref $azure_storage_sdk_url . || return
+    mkdir -p "$azure_storage_sdk_dir" || return
+    pushd "$azure_storage_sdk_dir" > /dev/null || return
+    git clone --recursive --single-branch --branch "$azure_storage_sdk_branch_ref" "$azure_storage_sdk_url" . || return
 
     git checkout tags/$azure_storage_sdk_tag_ref
 
@@ -654,12 +665,12 @@ do_install_cmake_from_source() {
     cmake_src_url="https://cmake.org/files/v${maj_min_ver}/${tarball_filename}"
     cmake_tar_path="$work_folder/${tarball_filename}"
     if [[ -f $cmake_tar_path ]]; then
-        $SUDO rm -rf $cmake_tar_path || return 1
+        $SUDO rm -rf "$cmake_tar_path" || return 1
     fi
 
     cmake_dir_path="$work_folder/${tarball_name}"
     if [[ -d $cmake_dir_path ]]; then
-        $SUDO rm -rf $cmake_dir_path || return 1
+        $SUDO rm -rf "$cmake_dir_path" || return 1
     fi
 
     mkdir -p "$cmake_dir_path"
@@ -683,7 +694,7 @@ do_install_cmake_from_source() {
     pushd "$cmake_dir_path" > /dev/null || return
 
     echo "Running 'bootstrap' ..."
-    $SUDO ./bootstrap --verbose --no-qt-gui --prefix=${cmake_prefix} > "${cmake_dir_path}/bootstrap.log" 2>&1
+    $SUDO ./bootstrap --verbose --no-qt-gui --prefix="${cmake_prefix}" > "${cmake_dir_path}/bootstrap.log" 2>&1
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "bootstrap --prefix=${cmake_prefix} failed with exit code ${ret_value}"
@@ -730,7 +741,7 @@ do_install_cmake_from_installer() {
 
     $SUDO chown "$(id -un)":"$(id -gn)" "${fullpath_cmake_installer_sh}"
     chmod u+x "${fullpath_cmake_installer_sh}"
-    "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix=${cmake_prefix}
+    "${fullpath_cmake_installer_sh}" --include-subdir --skip-license --prefix="${cmake_prefix}"
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "${fullpath_cmake_installer_sh} failed with exit code ${ret_value}"

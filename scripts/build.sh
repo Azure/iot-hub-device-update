@@ -496,6 +496,13 @@ if [[ $OS == "ubuntu" && $VER == "24.04" ]]; then
     CMAKE_OPTIONS+=("-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=ON")
 fi
 
+# Disable DO on Debian 13 (trixie) - not yet supported
+if [[ $OS == "debian" && $VER == "13" ]]; then
+    echo "Disabling Delivery Optimization for Debian 13 (not yet supported)"
+    CMAKE_OPTIONS+=("-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF")
+    CMAKE_OPTIONS+=("-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=ON")
+fi
+
 if [[ $major_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_MAJOR=$major_version")
 fi

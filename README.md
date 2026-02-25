@@ -22,6 +22,7 @@ Device Update for IoT Hub is an end-to-end platform for deploying over-the-air u
 | Ubuntu 24.04 AMD64 | ✓ Supported | curl downloader only (DO not available) |
 | Debian 11 (Bullseye) AMD64 | ✓ Supported | With Delivery Optimization |
 | Debian 12 (Bookworm) AMD64 | ✓ Supported | With Delivery Optimization |
+| Debian 13 (Trixie) AMD64 | ✓ Supported | curl downloader only (DO not available) |
 
 ## Quick Start
 
