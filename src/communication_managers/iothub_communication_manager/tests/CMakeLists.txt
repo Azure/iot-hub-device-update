@@ -1,46 +1,42 @@
 cmake_minimum_required (VERSION 3.5)
 
-project (linux_platform_layer_unit_tests)
+project (iothub_communication_manager_unit_tests)
 
 include (agentRules)
 
 compileasc99 ()
 disablertti ()
 
-set (
-    sources
-    download_ut.cpp
-    linux_adu_core_exports_ut.cpp
-    linux_adu_core_impl_ut.cpp
-    linux_device_info_exports_ut.cpp
-    mock_do_download.cpp)
-
-add_executable (${PROJECT_NAME} ${sources})
-
 find_package (Catch2 REQUIRED)
 find_package (IotHubClient REQUIRED)
+find_package (umqtt REQUIRED)
+
+add_executable (${PROJECT_NAME} iothub_communication_manager_ut.cpp)
+
+target_include_directories (
+    ${PROJECT_NAME}
+    PRIVATE ${ADUC_EXPORT_INCLUDES}
+            ${ADUC_TYPES_INCLUDES}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../inc)
 
 # NOTE: the call to find_package for azure_c_shared_utility
 # must come before umqtt since their config.cmake files expect
 # the aziotsharedutil target to already have been defined.
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
-find_package (umqtt REQUIRED)
-
-target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
-
 target_link_libraries (
     ${PROJECT_NAME}
-    PUBLIC IotHubClient::iothub_client iothub_client_mqtt_transport umqtt
-    PRIVATE aduc::linux_platform_layer
-            aduc::extension_manager
-            aduc::logging
-            aduc::system_utils
-            aduc::exception_utils
+    PUBLIC IotHubClient::iothub_client iothub_client_mqtt_transport iothub_client_mqtt_ws_transport umqtt
+    PRIVATE aduc::iothub_communication_manager
+            aduc::communication_abstraction
+            aduc::adu_types
             aduc::c_utils
+            aduc::logging
             atomic
             Catch2::Catch2WithMain
             libaducpal)
+
+target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_CONF_FILE_PATH="/etc/adu/du-config.json")
 
 include (CTest)
 include (Catch)
