@@ -12,7 +12,6 @@
 #include "aduc/types/update_content.h"
 
 #include "parson.h"
-
 #include <stdlib.h>
 #include <string.h>
 
