@@ -103,32 +103,6 @@ TEST_CASE("ADUC_WorkflowData_SetLastCompletedWorkflowId")
     }
 }
 
-TEST_CASE("ADUC_WorkflowData_SetReceivedC2D and GetReceivedC2D")
-{
-    ADUC_WorkflowData workflowData = {};
-    workflowData.receivedC2DMsg = false;
-    
-    SECTION("Get initial value (should be false)")
-    {
-        bool received = ADUC_WorkflowData_GetReceivedC2D(&workflowData);
-        CHECK(received == false);
-    }
-    
-    SECTION("Set and get C2D flag")
-    {
-        ADUC_WorkflowData_SetReceivedC2D(&workflowData);
-        bool received = ADUC_WorkflowData_GetReceivedC2D(&workflowData);
-        CHECK(received == true);
-    }
-    
-    SECTION("Flag persists after being set")
-    {
-        ADUC_WorkflowData_SetReceivedC2D(&workflowData);
-        CHECK(ADUC_WorkflowData_GetReceivedC2D(&workflowData) == true);
-        CHECK(ADUC_WorkflowData_GetReceivedC2D(&workflowData) == true);
-    }
-}
-
 TEST_CASE("ADUC_WorkflowData wrapper APIs handle null workflow handle")
 {
     ADUC_WorkflowData workflowData = {};

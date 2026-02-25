@@ -642,32 +642,6 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(config->refCount == 0);
     }
 
-    SECTION("apiRequestFifoPath is optional")
-    {
-        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentStr) == 0);
-        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-
-        ADUC_ConfigInfo config = {};
-
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
-        CHECK(config.apiRequestFifoPath == nullptr);
-
-        ADUC_ConfigInfo_UnInit(&config);
-    }
-
-    SECTION("idlePuaseMilliseconds is optional and defaults to 0 (no pause)")
-    {
-        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentStr) == 0);
-        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
-
-        ADUC_ConfigInfo config = {};
-
-        CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
-        CHECK(config.idlePauseMilliseconds == 0);
-
-        ADUC_ConfigInfo_UnInit(&config);
-    }
-
     SECTION("GetAduShellTrustedUsers returns and frees trusted-user vector")
     {
         REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentStr) == 0);

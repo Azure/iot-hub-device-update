@@ -511,11 +511,11 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
         goto done;
     }
 
-    size_t readBytes = fread(readBuff, readMaxBuffSize, sizeof(readBuff[0]), sourceFile);
+    size_t readBytes = fread(readBuff, sizeof(readBuff[0]), readMaxBuffSize, sourceFile);
 
-    while (readBytes != 0 && feof(sourceFile) != 0)
+    while (readBytes > 0)
     {
-        const size_t writtenBytes = fwrite(readBuff, readBytes, sizeof(readBuff[0]), destFile);
+        const size_t writtenBytes = fwrite(readBuff, sizeof(readBuff[0]), readBytes, destFile);
 
         result = ferror(destFile);
         if (writtenBytes != readBytes || result != 0)
@@ -523,7 +523,7 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
             goto done;
         }
 
-        readBytes = fread(readBuff, readMaxBuffSize, sizeof(readBuff[0]), sourceFile);
+        readBytes = fread(readBuff, sizeof(readBuff[0]), readMaxBuffSize, sourceFile);
         result = ferror(sourceFile);
         if (result != 0)
         {
@@ -545,10 +545,16 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
     result = 0;
 done:
 
-    fclose(sourceFile);
-    fclose(destFile);
+    if (sourceFile != NULL)
+    {
+        fclose(sourceFile);
+    }
+    if (destFile != NULL)
+    {
+        fclose(destFile);
+    }
 
-    if (result != 0)
+    if (result != 0 && destFilePath != NULL)
     {
         remove(STRING_c_str(destFilePath));
     }
