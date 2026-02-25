@@ -94,8 +94,9 @@ TEST_CASE("findFilesInDir - Nested directories")
     ADUC_SystemUtils_MkDirRecursiveDefault((testDir + "/subdir2").c_str());
     
     // Create files at root level only
-    // NOTE: Due to a bug in file_utils.cpp line 45 (uses dirPath instead of nextDir),
-    // nested files are not found correctly. Testing current behavior.
+    // TODO: Known bug in file_utils.cpp line 45 (uses dirPath instead of nextDir) causes
+    // nested files not to be found correctly. This test currently asserts that buggy behavior;
+    // once the bug is fixed, update this test to validate correct nested traversal.
     CreateFile(testDir + "/root_file1.txt", "root1");
     CreateFile(testDir + "/root_file2.txt", "root2");
     
