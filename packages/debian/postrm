@@ -16,7 +16,7 @@ adu_shell_bin_path=/usr/bin/adu-shell
 adu_eis_conf_file=adu.toml
 eis_idservice_dir=/etc/aziot/identityd/config.d
 
-# The adu_group is the group that gives admins and partner users like DO user
+# The adu_group is the group that gives admins and partner users
 # access to ADU resources like sandbox folder.
 adu_group=adu
 # adu_user is the user that the ADU Agent daemon will run as.

@@ -106,16 +106,16 @@ function Register-Components {
     # contentDownloader
     #
 
-    # curl content downlaoader not used on Windows.
+    # curl content downlaoader will be used on Windows.
     # /var/lib/adu/extensions/content_downloader/extension.json
-    # $curl_content_downloader_file = 'curl_content_downloader.dll'
-    # & $aduciotagent_path --register-extension "$adu_extensions_sources_dir/$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
+    $curl_content_downloader_file = "$adu_extensions_sources_dir/curl_content_downloader.dll"
+    & $aduciotagent_path --register-extension "$curl_content_downloader_file" --extension-type contentDownloader --log-level 2
 
     # /var/lib/adu/extensions/content_downloader/extension.json
-    $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
-    & $aduciotagent_path --register-extension $do_content_downloader_file --extension-type contentDownloader --log-level 2
+    # $do_content_downloader_file = "$adu_extensions_sources_dir/deliveryoptimization_content_downloader.dll"
+    # & $aduciotagent_path --register-extension $do_content_downloader_file --extension-type contentDownloader --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$curl_content_downloader_file' failed: $LASTEXITCODE"
     }
 
     #
@@ -126,40 +126,40 @@ function Register-Components {
     $microsoft_script_1_handler_file = "$adu_extensions_sources_dir/microsoft_script_1.dll"
     & $aduciotagent_path --register-extension $microsoft_script_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/script:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_script_1_handler_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_simulator_1/content_handler.json
     $microsoft_simulator_1_file = "$adu_extensions_sources_dir/microsoft_simulator_1.dll"
     & $aduciotagent_path --register-extension $microsoft_simulator_1_file --extension-type updateContentHandler --extension-id 'microsoft/simulator:1'
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_simulator_1_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_steps_1/content_handler.json
     $microsoft_steps_1_file = "$adu_extensions_sources_dir/microsoft_steps_1.dll"
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/steps:1' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:4' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
     & $aduciotagent_path --register-extension $microsoft_steps_1_file --extension-type updateContentHandler --extension-id 'microsoft/update-manifest:5' --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_steps_1_file' failed: $LASTEXITCODE"
     }
 
     # /var/lib/adu/extensions/update_content_handlers/microsoft_wim_1/content_handler.json
     $microsoft_wim_1_handler_file = "$adu_extensions_sources_dir/microsoft_wim_1.dll"
     & $aduciotagent_path --register-extension $microsoft_wim_1_handler_file --extension-type updateContentHandler --extension-id 'microsoft/wim:1'  --log-level 2
     if ($LASTEXITCODE -ne 0) {
-        Show-Error "Registration of '$do_content_downloader_file' failed: $LASTEXITCODE"
+        Show-Error "Registration of '$microsoft_wim_1_handler_file' failed: $LASTEXITCODE"
     }
     ''
 }

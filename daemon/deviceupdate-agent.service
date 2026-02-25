@@ -1,7 +1,7 @@
 [Unit]
 Description=Device Update Agent daemon.
-After=network-online.target deliveryoptimization-agent.service
-Wants=network-online.target deliveryoptimization-agent.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
