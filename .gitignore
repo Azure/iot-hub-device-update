@@ -57,3 +57,4 @@ status_monitor
 .tmp
 out_test_cache/
 **/.result_h_generation_cache
+*.gcov
