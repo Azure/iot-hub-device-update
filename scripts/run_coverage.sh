@@ -13,6 +13,15 @@ root_dir="$script_dir/.."
 
 out_dir="$root_dir/out"
 
+exclude_patterns=(
+    ".*/tests?/.*"
+    ".*/Testing/.*"
+    # These extension paths contain code examples, so they do not need coverage reporting.
+    ".*/src/extensions/component_enumerators/.*"
+    ".*/src/extensions/content_downloaders/deliveryoptimization_downloader/.*"
+    ".*/src/extensions/step_handlers/simulator_handler/.*"
+)
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
     -o | --out-dir)
@@ -67,15 +76,23 @@ coverage_xml_path="$coverage_report_dir/Cobertura.xml"
 mkdir -p "$coverage_report_dir"
 
 # 2) Generate Cobertura report from collected coverage data.
-gcovr \
-    --root "$root_dir" \
-    --object-directory "$out_dir" \
-    --filter ".*/src/.*" \
-    --exclude ".*/tests?/.*" \
-    --exclude ".*/Testing/.*" \
-    --xml-pretty \
-    --output "$coverage_xml_path" \
+gcovr_args=(
+    --root "$root_dir"
+    --object-directory "$out_dir"
+    --filter ".*/src/.*"
+)
+
+for pattern in "${exclude_patterns[@]}"; do
+    gcovr_args+=(--exclude "$pattern")
+done
+
+gcovr_args+=(
+    --xml-pretty
+    --output "$coverage_xml_path"
     --print-summary
+)
+
+gcovr "${gcovr_args[@]}"
 
 if [[ ! -s $coverage_xml_path ]]; then
     warn "Cobertura report not generated: $coverage_xml_path"
