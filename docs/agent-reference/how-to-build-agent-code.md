@@ -29,6 +29,7 @@ The Device Update agent has been tested and verified on the following platforms:
 | Ubuntu | 18.04 LTS | AMD64 | ✗ Not Supported | - | End of support |
 | Debian | 11 (Bullseye) | AMD64 | ✓ Supported | - | With Delivery Optimization |
 | Debian | 12 (Bookworm) | AMD64 | ✓ Supported | - | With Delivery Optimization |
+| Debian | 13 (Trixie) | AMD64 | ✓ Supported | - | curl downloader only (DO not available) |
 | Debian | 10 (Buster) | AMD64 | ✗ Not Supported | - | End of support |
 
 ## Build Dependencies
@@ -39,33 +40,33 @@ The following table lists all build-time dependencies with their Last Known Good
 
 ### Core Build Tools
 
-| Tool | Minimum Version | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Source |
-|------|----------------|--------------|--------------|--------------|-----------|-----------|--------|
-| GCC | 10.0 | gcc-10 | gcc-10/11 | gcc-13 | gcc-10 | gcc-12 | System package |
-| CMake | 3.10 | 3.16.3 | 3.22.1 | 3.28.3 | 3.18.4 | 3.25.1 | System package or [built from source](#installing-dependencies) |
-| Ninja | 1.10+ | 1.10.0 | 1.10.2 | 1.11.1 | 1.10.1 | 1.11.1 | System package |
-| Git | 2.0+ | 2.25.1 | 2.34.1 | 2.43.0 | 2.30.2 | 2.39.2 | System package |
-| pkg-config | - | ✓ | ✓ | ✓ | ✓ | ✓ | System package |
+| Tool | Minimum Version | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Debian 13 | Source |
+|------|----------------|--------------|--------------|--------------|-----------|-----------|-----------|--------|
+| GCC | 10.0 | gcc-10 | gcc-10/11 | gcc-13 | gcc-10 | gcc-12 | gcc-12 | System package |
+| CMake | 3.10 | 3.16.3 | 3.22.1 | 3.28.3 | 3.18.4 | 3.25.1 | 3.31.6 | System package or [built from source](#installing-dependencies) |
+| Ninja | 1.10+ | 1.10.0 | 1.10.2 | 1.11.1 | 1.10.1 | 1.11.1 | 1.12.1 | System package |
+| Git | 2.0+ | 2.25.1 | 2.34.1 | 2.43.0 | 2.30.2 | 2.39.2 | 2.47.3 | System package |
+| pkg-config | - | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | System package |
 
 ### Core Dependencies Built from Source
 
-| Dependency | LKG Version/Tag | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Notes |
-|------------|----------------|--------------|--------------|--------------|-----------|-----------|-------|
-| Azure IoT C SDK | `LTS_08_2023` | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-azure-iot-c-sdk) |
-| Azure Storage SDK for C++ | `azure-core_1.6.0` | ✓ | ✓ | ✓* | ✓ | ✓* | [*Requires GCC 12+ patch](#building-azure-storage-sdk-for-c) |
-| Delivery Optimization SDK | `main` (latest) | ✓ | ✓ | ✗ | ✓ | ✓ | [Not available on Ubuntu 24.04](#building-delivery-optimization-sdk) |
-| Catch2 | `v3.8.0` | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-catch2) (unit tests only) |
-| Parson | Latest | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-parson) |
-| Microsoft Delta Download Handler | Submodule | ✓ | ✓ | ✓ | ✓ | ✓ | Built with agent |
+| Dependency | LKG Version/Tag | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Debian 13 | Notes |
+|------------|----------------|--------------|--------------|--------------|-----------|-----------|-----------|-------|
+| Azure IoT C SDK | `LTS_08_2023` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-azure-iot-c-sdk) |
+| Azure Storage SDK for C++ | `azure-core_1.6.0` | ✓ | ✓ | ✓* | ✓ | ✓* | ✓* | [*Requires GCC 12+ patch](#building-azure-storage-sdk-for-c) |
+| Delivery Optimization SDK | `main` (latest) | ✓ | ✓ | ✗ | ✓ | ✓ | ✗ | [Not available on Ubuntu 24.04 or Debian 13](#building-delivery-optimization-sdk) |
+| Catch2 | `v3.8.0` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-catch2) (unit tests only) |
+| Parson | Latest | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-parson) |
+| Microsoft Delta Download Handler | Submodule | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Built with agent |
 
 ### System Package Dependencies
 
-| Package | Purpose | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 |
-|---------|---------|--------------|--------------|--------------|-----------|-----------|
-| libcurl4-openssl-dev | HTTP/HTTPS client | ✓ Required | ✓ Required | ✓ Required | ✓ Required | ✓ Required |
-| libssl-dev | TLS/Crypto | ✓ (1.1.1) | ✓ (3.0) | ✓ (3.0) | ✓ (1.1.1) | ✓ (3.0) |
-| uuid-dev | UUID generation | ✓ | ✓ | ✓ | ✓ | ✓ |
-| zlib1g-dev | Compression | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Package | Purpose | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Debian 13 |
+|---------|---------|--------------|--------------|--------------|-----------|-----------|-----------|
+| libcurl4-openssl-dev | HTTP/HTTPS client | ✓ Required | ✓ Required | ✓ Required | ✓ Required | ✓ Required | ✓ Required |
+| libssl-dev | TLS/Crypto | ✓ (1.1.1) | ✓ (3.0) | ✓ (3.0) | ✓ (1.1.1) | ✓ (3.0) | ✓ (3.5) |
+| uuid-dev | UUID generation | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| zlib1g-dev | Compression | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Optional Development Tools
 
@@ -96,7 +97,7 @@ The following dependencies are required to run the Device Update agent on deploy
 - `libdeliveryoptimization` >= 1.0.0
 - `curl` (fallback downloader)
 
-**Ubuntu 24.04:**
+**Ubuntu 24.04, Debian 13:**
 - `curl` (primary downloader)
 - Note: Delivery Optimization not available
 
@@ -169,6 +170,7 @@ The Azure Storage SDK for C++ provides blob storage operations for file uploads.
 **Affected Platforms:** Platforms using GCC 12 or later
 - Ubuntu 24.04 (GCC 13)
 - Debian 12 (GCC 12)
+- Debian 13 (GCC 12/14)
 - Any custom build environment with GCC 12+
 
 **Issue:** GCC 12 and later removed implicit standard library includes that previous versions provided. The Azure Storage SDK compilation fails with errors like:
@@ -213,9 +215,10 @@ The Delivery Optimization SDK provides robust, peer-to-peer content distribution
 - ✓ **Debian 11:** Fully supported
 - ✓ **Debian 12:** Fully supported
 - ✗ **Ubuntu 24.04:** **NOT AVAILABLE** - Package not maintained for this version
+- ✗ **Debian 13:** **NOT AVAILABLE** - Package not maintained for this version
 
-**Alternative on Ubuntu 24.04:**
-The agent automatically uses the curl content downloader (`libcurl_content_downloader.so`) as a replacement. The build system detects Ubuntu 24.04 and configures accordingly:
+**Alternative on Ubuntu 24.04 and Debian 13:**
+The agent automatically uses the curl content downloader (`libcurl_content_downloader.so`) as a replacement. The build system detects Ubuntu 24.04 and Debian 13 and configures accordingly:
 - Sets `ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF`
 - Registers curl downloader as primary content downloader
 - Package dependencies exclude DO packages
@@ -735,6 +738,39 @@ This section contains important platform-specific information, limitations, and 
 - See [Building Azure Storage SDK for C++](#building-azure-storage-sdk-for-c) for details
 
 **Known Issues:** None
+
+---
+
+### Debian 13 (Trixie) Specifics
+
+**GCC Version:** 14.x (system default), gcc-12 used for build
+**CMake Version:** 3.31.6 (system)
+
+**Key Changes from Previous Versions:**
+- Uses gcc-12 for consistency with Debian 12
+- Build system auto-detects Debian 13
+
+**Delivery Optimization:**
+- **NOT AVAILABLE** - Package not maintained for Debian 13
+- Build automatically disables DO via `ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF`
+- `build.sh` detects Debian 13 and configures accordingly
+
+**Content Downloader:**
+- Primary: `libcurl_content_downloader.so`
+- Automatically registered during package installation
+- No Delivery Optimization fallback available
+
+**Compiler Compatibility:**
+- GCC 12 requires Azure Storage SDK patch (applied automatically by install-deps.sh when GCC >= 12)
+- See [Building Azure Storage SDK for C++](#building-azure-storage-sdk-for-c) for details
+
+**Package Dependencies:**
+- Debian package depends on `curl` only
+- No `deliveryoptimization-agent` or `libdeliveryoptimization` dependencies
+
+**Known Limitations:**
+- No peer-to-peer download optimization
+- All downloads are direct HTTP/HTTPS via curl
 
 ---
 
