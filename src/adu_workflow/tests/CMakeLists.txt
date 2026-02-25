@@ -25,7 +25,6 @@ target_link_libraries (
             aduc::c_utils
             aduc::config_utils
             aduc::test_utils
-            aduc::viewstatemgr
             aduc::workflow_data_utils
             aduc::workflow_utils
             aduc::agent_orchestration
