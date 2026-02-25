@@ -652,6 +652,15 @@ if [[ $ret_val == 0 && $enable_coverage == "true" ]]; then
 
     "$coverage_script" --out-dir "$output_directory"
     ret_val=$?
+
+    if [[ $ret_val == 0 ]]; then
+        bullet "Generating Markdown coverage report..."
+        python3 "$script_dir/generate_coverage_report.py" "$output_directory/coverage/Cobertura.xml" "$output_directory/coverage/coverage-report.md"
+        ret_val=$?
+        if [[ $ret_val != 0 ]]; then
+            error "Coverage report generation failed with exit code: $ret_val"
+        fi
+    fi
 fi
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
