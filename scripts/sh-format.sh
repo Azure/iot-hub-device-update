@@ -16,7 +16,11 @@ fi
 validate=false
 
 # use readline -e to resolve symlink
-shellcheck_bin=$(readlink -e '/tmp/deviceupdate-shellcheck')
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKSPACE_DIR="${REPO_ROOT}/.workspace"
+
+shellcheck_bin=$(readlink -e "${WORKSPACE_DIR}/deviceupdate-shellcheck")
 shfmt_bin='/tmp/shfmt'
 
 is_arm32=false
