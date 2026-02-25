@@ -18,3 +18,7 @@ target_sources (${target_name} PRIVATE src/auto_opendir.cpp src/file_utils.cpp)
 target_link_libraries (${target_name} PRIVATE aduc::system_utils)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

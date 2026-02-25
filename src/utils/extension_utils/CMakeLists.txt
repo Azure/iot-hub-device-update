@@ -41,3 +41,7 @@ target_link_libraries (
             aduc::string_utils
             aduc::system_utils
             Parson::parson)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

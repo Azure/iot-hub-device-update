@@ -119,6 +119,19 @@ static const char* invalidIdentityResponseStr =
     R"(})";
 
 static const char* invalidSignatureResponseStr = "{}";
+
+static const char* unsupportedAuthTypeIdentityResponseStr =
+    R"({)"
+        R"("type":"aziot",)"
+        R"("spec":{)"
+            R"("hubName":"foo.example-devices.net",)"
+            R"("deviceId":"user-test-device",)"
+            R"("auth":{)"
+                R"("type":"unsupported-auth",)"
+                R"("keyHandle":"primary")"
+            R"(})"
+        R"(})"
+    R"(})";
 // clang-format on
 
 //
@@ -127,10 +140,16 @@ static const char* invalidSignatureResponseStr = "{}";
 static char* g_identityResp = nullptr;
 static char* g_signatureResp = nullptr;
 static char* g_certificateResp = nullptr;
+static EISErr g_identityRequestResult = EISErr_Ok;
 
 static EISErr MockHookRequestIdentitiesFromEIS(unsigned int timeoutMS, char** responseBuffer)
 {
     UNREFERENCED_PARAMETER(timeoutMS);
+
+    if (g_identityRequestResult != EISErr_Ok)
+    {
+        return g_identityRequestResult;
+    }
 
     *responseBuffer = g_identityResp;
     return EISErr_Ok;
@@ -168,6 +187,11 @@ public:
         REGISTER_GLOBAL_MOCK_HOOK(RequestIdentitiesFromEIS, MockHookRequestIdentitiesFromEIS);
         REGISTER_GLOBAL_MOCK_HOOK(RequestSignatureFromEIS, MockHookRequestSignatureFromEIS);
         REGISTER_GLOBAL_MOCK_HOOK(RequestCertificateFromEIS, MockHookRequestCertificateFromEIS);
+
+        g_identityRequestResult = EISErr_Ok;
+        g_identityResp = nullptr;
+        g_signatureResp = nullptr;
+        g_certificateResp = nullptr;
     }
 
     ~GlobalMockHookTestCaseFixture() = default;
@@ -479,6 +503,57 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
 
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, cppcoreguidelines-no-malloc, hicpp-no-malloc): g_signatureResp is a basic C-string so it must be freed by a call to free()
         free(g_signatureResp);
+
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
+    }
+
+    SECTION("RequestConnectionStringFromEISWithExpiry with null provisioningInfo")
+    {
+        const auto expiry = static_cast<time_t>(time(nullptr) + 86400);
+        uint32_t timeout = 5000;
+
+        EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, nullptr);
+
+        CHECK(result.service == EISService_Utils);
+        CHECK(result.err == EISErr_InvalidArg);
+    }
+
+    SECTION("RequestConnectionStringFromEISWithExpiry propagates identity service request failure")
+    {
+        const auto expiry = static_cast<time_t>(time(nullptr) + 86400);
+        uint32_t timeout = 5000;
+
+        g_identityRequestResult = EISErr_TimeoutErr;
+
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
+
+        EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
+
+        CHECK(outInfo.connectionString == nullptr);
+        CHECK(result.service == EISService_IdentityService);
+        CHECK(result.err == EISErr_TimeoutErr);
+
+        ADUC_ConnectionInfo_DeAlloc(&outInfo);
+    }
+
+    SECTION("RequestConnectionStringFromEISWithExpiry fails unsupported auth type")
+    {
+        const auto expiry = static_cast<time_t>(time(nullptr) + 86400);
+        uint32_t timeout = 5000;
+
+        REQUIRE(mallocAndStrcpy_s(&g_identityResp, unsupportedAuthTypeIdentityResponseStr) == 0);
+
+        ADUC_ConnectionInfo outInfo = {
+            ADUC_AuthType_NotSet, ADUC_ConnType_NotSet, nullptr, nullptr, nullptr, nullptr
+        };
+
+        EISUtilityResult result = RequestConnectionStringFromEISWithExpiry(expiry, timeout, &outInfo);
+
+        CHECK(outInfo.connectionString == nullptr);
+        CHECK(result.service == EISService_IdentityService);
+        CHECK(result.err == EISErr_RecvInvalidValueErr);
 
         ADUC_ConnectionInfo_DeAlloc(&outInfo);
     }

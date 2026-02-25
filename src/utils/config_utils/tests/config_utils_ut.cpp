@@ -641,4 +641,93 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         ADUC_ConfigInfo_ReleaseInstance(config);
         CHECK(config->refCount == 0);
     }
+
+    SECTION("GetAduShellTrustedUsers returns and frees trusted-user vector")
+    {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentStr) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
+        REQUIRE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
+
+        VECTOR_HANDLE users = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
+        REQUIRE(users != nullptr);
+        REQUIRE(VECTOR_size(users) == 2);
+
+        STRING_HANDLE* firstUser = static_cast<STRING_HANDLE*>(VECTOR_element(users, 0));
+        STRING_HANDLE* secondUser = static_cast<STRING_HANDLE*>(VECTOR_element(users, 1));
+        REQUIRE(firstUser != nullptr);
+        REQUIRE(secondUser != nullptr);
+        CHECK_THAT(STRING_c_str(*firstUser), Equals("adu"));
+        CHECK_THAT(STRING_c_str(*secondUser), Equals("do"));
+
+        ADUC_ConfigInfo_FreeAduShellTrustedUsers(users);
+        CHECK(VECTOR_size(users) == 0);
+        VECTOR_destroy(users);
+
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
+    SECTION("X509 connection reads cert, key and ca files")
+    {
+        const char* certPath = "/tmp/adu_config_utils_ut_cert.pem";
+        const char* keyPath = "/tmp/adu_config_utils_ut_key.pem";
+        const char* caPath = "/tmp/adu_config_utils_ut_ca.pem";
+
+        {
+            FILE* f = fopen(certPath, "wb");
+            REQUIRE(f != nullptr);
+            REQUIRE(fwrite("CERT", 1, 4, f) == 4);
+            fclose(f);
+        }
+        {
+            FILE* f = fopen(keyPath, "wb");
+            REQUIRE(f != nullptr);
+            REQUIRE(fwrite("KEY", 1, 3, f) == 3);
+            fclose(f);
+        }
+        {
+            FILE* f = fopen(caPath, "wb");
+            REQUIRE(f != nullptr);
+            REQUIRE(fwrite("CA", 1, 2, f) == 2);
+            fclose(f);
+        }
+
+        std::string x509Config = std::string("{") +
+            "\"schemaVersion\":\"1.1\"," +
+            "\"aduShellTrustedUsers\":[\"adu\",\"do\"]," +
+            "\"manufacturer\":\"device_info_manufacturer\"," +
+            "\"model\":\"device_info_model\"," +
+            "\"agents\":[{" +
+                "\"name\":\"host-update\"," +
+                "\"runas\":\"adu\"," +
+                "\"connectionSource\":{" +
+                    "\"connectionType\":\"AIS\"," +
+                    "\"connectionData\":\"iotHubDeviceUpdate\"," +
+                    "\"connectionX509CertFilePath\":\"" + certPath + "\"," +
+                    "\"connectionX509PrivateKeyFilePath\":\"" + keyPath + "\"," +
+                    "\"connectionX509CaCertFilePath\":\"" + caPath + "\"" +
+                "}," +
+                "\"manufacturer\":\"Contoso\"," +
+                "\"model\":\"Smart-Box\"" +
+            "}]}";
+
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, x509Config.c_str()) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
+        REQUIRE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
+
+        const ADUC_AgentInfo* agent = ADUC_ConfigInfo_GetAgent(&config, 0);
+        REQUIRE(agent != nullptr);
+        CHECK(agent->x509Cert != nullptr);
+        CHECK(agent->x509PrivateKey != nullptr);
+        CHECK(agent->x509CaCert != nullptr);
+
+        ADUC_ConfigInfo_UnInit(&config);
+
+        remove(certPath);
+        remove(keyPath);
+        remove(caPath);
+    }
 }

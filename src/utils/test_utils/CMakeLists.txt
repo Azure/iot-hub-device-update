@@ -18,3 +18,7 @@ target_link_libraries (
     PUBLIC aduc::workflow_utils)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

@@ -51,3 +51,5 @@ Testing/
 ### VCPKG
 .vcpkg/
 .vcpkg-installed/
+
+*.gcov
