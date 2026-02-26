@@ -340,11 +340,19 @@ const ADUC_WorkflowHandlerMapEntry* GetWorkflowHandlerMapEntryForAction(ADUCITF_
  */
 void ADUC_Workflow_DoWork(ADUC_WorkflowData* workflowData)
 {
+    if (workflowData == NULL)
+    {
+        return;
+    }
+
     // As this method will be called many times, rather than call into adu_core_export_helpers to call into upper-layer,
     // just call directly into upper-layer here.
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
 
-    updateActionCallbacks->DoWorkCallback(updateActionCallbacks->PlatformLayerHandle, workflowData);
+    if (updateActionCallbacks->DoWorkCallback != NULL)
+    {
+        updateActionCallbacks->DoWorkCallback(updateActionCallbacks->PlatformLayerHandle, workflowData);
+    }
 }
 
 void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData)
@@ -1149,7 +1157,8 @@ static void ADUC_Workflow_SetUpdateStateHelper(
             // Fall through to report Idle without InstalledUpdateId.
         }
 
-        if (!workflowData->ReportStateAndResultAsyncCallback(
+        if (workflowData->ReportStateAndResultAsyncCallback != NULL
+            && !workflowData->ReportStateAndResultAsyncCallback(
                 (ADUC_WorkflowDataToken)workflowData, updateState, result, NULL /* installedUpdateId */))
         {
             updateState = ADUCITF_State_Failed;
@@ -1162,7 +1171,8 @@ static void ADUC_Workflow_SetUpdateStateHelper(
     }
     else // Not Idle state
     {
-        if (!workflowData->ReportStateAndResultAsyncCallback(
+        if (workflowData->ReportStateAndResultAsyncCallback != NULL
+            && !workflowData->ReportStateAndResultAsyncCallback(
                 (ADUC_WorkflowDataToken)workflowData, updateState, result, NULL /* installedUpdateId */))
         {
             updateState = ADUCITF_State_Failed;
@@ -1232,6 +1242,11 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
  */
 void ADUC_Workflow_SetUpdateState(ADUC_WorkflowData* workflowData, ADUCITF_State updateState)
 {
+    if (workflowData == NULL)
+    {
+        return;
+    }
+
     ADUC_Workflow_SetUpdateStateHelper(workflowData, updateState, NULL /*result*/);
 }
 
@@ -1245,6 +1260,11 @@ void ADUC_Workflow_SetUpdateState(ADUC_WorkflowData* workflowData, ADUCITF_State
 void ADUC_Workflow_SetUpdateStateWithResult(
     ADUC_WorkflowData* workflowData, ADUCITF_State updateState, ADUC_Result result)
 {
+    if (workflowData == NULL)
+    {
+        return;
+    }
+
     ADUC_Workflow_SetUpdateStateHelper(workflowData, updateState, &result);
 }
 
@@ -1256,11 +1276,17 @@ void ADUC_Workflow_SetUpdateStateWithResult(
  */
 void ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(ADUC_WorkflowData* workflowData, const char* updateId)
 {
+    if (workflowData == NULL)
+    {
+        return;
+    }
+
     ADUC_Result idleResult;
     idleResult.ResultCode = ADUC_Result_Apply_Success;
     idleResult.ExtendedResultCode = 0;
 
-    if (!workflowData->ReportStateAndResultAsyncCallback(
+    if (workflowData->ReportStateAndResultAsyncCallback == NULL
+        || !workflowData->ReportStateAndResultAsyncCallback(
             (ADUC_WorkflowDataToken)workflowData, ADUCITF_State_Idle, &idleResult, updateId))
     {
         Log_Error("Failed to report last installed updateId. Going to idle state.");
@@ -1290,6 +1316,11 @@ void ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(ADUC_WorkflowData* workflowDa
  */
 void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 {
+    if (workflowData == NULL)
+    {
+        return;
+    }
+
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
 
     ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
@@ -1315,8 +1346,11 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
         {
             Log_Info("Calling SandboxDestroyCallback");
 
-            updateActionCallbacks->SandboxDestroyCallback(
-                updateActionCallbacks->PlatformLayerHandle, workflowId, workFolder);
+            if (updateActionCallbacks->SandboxDestroyCallback != NULL)
+            {
+                updateActionCallbacks->SandboxDestroyCallback(
+                    updateActionCallbacks->PlatformLayerHandle, workflowId, workFolder);
+            }
         }
     }
     else
@@ -1330,7 +1364,10 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 
     Log_Info("Calling IdleCallback");
 
-    updateActionCallbacks->IdleCallback(updateActionCallbacks->PlatformLayerHandle, workflowId);
+    if (updateActionCallbacks->IdleCallback != NULL)
+    {
+        updateActionCallbacks->IdleCallback(updateActionCallbacks->PlatformLayerHandle, workflowId);
+    }
 
     workflow_free_string(workflowId);
     workflow_free_string(workFolder);
@@ -1347,6 +1384,12 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
  */
 ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        return failResult;
+    }
+
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
 
     ADUC_Result result = { .ResultCode = ADUC_Result_Success , .ExtendedResultCode = 0 };
@@ -1377,6 +1420,12 @@ void ADUC_Workflow_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* m
  */
 ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallData)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        return failResult;
+    }
+
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     ADUC_WorkflowHandle* workflowHandle = workflowData->WorkflowHandle;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
@@ -1401,17 +1450,26 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
 
     // Note: It's okay for SandboxCreate to return NULL for the work folder.
     // NULL likely indicates an OS without a file system.
-    result = updateActionCallbacks->SandboxCreateCallback(
-        updateActionCallbacks->PlatformLayerHandle, workflow_peek_id(workflowData->WorkflowHandle), workFolder);
-
-    if (IsAducResultCodeFailure(result.ResultCode))
+    if (updateActionCallbacks->SandboxCreateCallback != NULL)
     {
-        goto done;
+        result = updateActionCallbacks->SandboxCreateCallback(
+            updateActionCallbacks->PlatformLayerHandle, workflow_peek_id(workflowData->WorkflowHandle), workFolder);
+
+        if (IsAducResultCodeFailure(result.ResultCode))
+        {
+            goto done;
+        }
     }
 
     Log_Info("Using sandbox %s", workFolder != NULL ? workFolder : "(null)");
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DownloadStarted);
+
+    if (updateActionCallbacks->DownloadCallback == NULL)
+    {
+        result.ResultCode = ADUC_Result_Download_Success;
+        goto done;
+    }
 
     result = updateActionCallbacks->DownloadCallback(
         updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
@@ -1440,6 +1498,12 @@ void ADUC_Workflow_MethodCall_Download_Complete(ADUC_MethodCall_Data* methodCall
  */
 ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallData)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        return failResult;
+    }
+
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
     ADUC_Result result;
@@ -1460,6 +1524,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallDat
 
     Log_Info("Calling InstallCallback");
 
+    if (updateActionCallbacks->InstallCallback == NULL)
+    {
+        result.ResultCode = ADUC_Result_Install_Success;
+        goto done;
+    }
+
     result = updateActionCallbacks->InstallCallback(
         updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
 
@@ -1470,6 +1540,11 @@ done:
 void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
     UNREFERENCED_PARAMETER(result);
+
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        return;
+    }
 
     if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle)
         || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
@@ -1495,7 +1570,7 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
     {
         // If 'install' indicated a restart is required, go ahead and restart the agent.
         Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
-        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+        methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
         if (success == 0)
@@ -1518,6 +1593,12 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
  */
 ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        return failResult;
+    }
+
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
     ADUC_Result result;
@@ -1537,6 +1618,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_BackupStarted);
 
     Log_Info("Calling BackupCallback");
+
+    if (updateActionCallbacks->BackupCallback == NULL)
+    {
+        result.ResultCode = ADUC_Result_Backup_Success;
+        goto done;
+    }
 
     result = updateActionCallbacks->BackupCallback(
         updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
@@ -1559,6 +1646,12 @@ void ADUC_Workflow_MethodCall_Backup_Complete(ADUC_MethodCall_Data* methodCallDa
  */
 ADUC_Result ADUC_Workflow_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        return failResult;
+    }
+
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
     ADUC_Result result;
@@ -1579,6 +1672,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 
     Log_Info("Calling ApplyCallback");
 
+    if (updateActionCallbacks->ApplyCallback == NULL)
+    {
+        result.ResultCode = ADUC_Result_Apply_Success;
+        goto done;
+    }
+
     result = updateActionCallbacks->ApplyCallback(
         updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
 
@@ -1588,6 +1687,11 @@ done:
 
 void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        return;
+    }
+
     if (workflow_is_immediate_reboot_requested(methodCallData->WorkflowData->WorkflowHandle)
         || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
@@ -1612,7 +1716,7 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
     {
         // If apply indicated a restart is required, go ahead and restart the agent.
         Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
-        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+        methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
         if (success == 0)
@@ -1640,6 +1744,12 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
  */
 ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallData)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        return failResult;
+    }
+
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
     ADUC_Result result;
@@ -1662,6 +1772,12 @@ ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallDat
 
     Log_Info("Calling RestoreCallback");
 
+    if (updateActionCallbacks->RestoreCallback == NULL)
+    {
+        result.ResultCode = ADUC_Result_Restore_Success;
+        goto done;
+    }
+
     result = updateActionCallbacks->RestoreCallback(
         updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
 
@@ -1671,6 +1787,11 @@ done:
 
 void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallData, ADUC_Result result)
 {
+    if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
+    {
+        return;
+    }
+
     if (result.ResultCode == ADUC_Result_Restore_RequiredReboot
         || result.ResultCode == ADUC_Result_Restore_RequiredImmediateReboot)
     {
@@ -1695,7 +1816,7 @@ void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallD
     {
         // If restore indicated a restart is required, go ahead and restart the agent.
         Log_Info("Restore indicated success with AgentRestartRequired - restarting the agent now");
-        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+        methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
         if (success == 0)
@@ -1726,6 +1847,11 @@ void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallD
  */
 void ADUC_Workflow_MethodCall_Cancel(const ADUC_WorkflowData* workflowData)
 {
+    if (workflowData == NULL)
+    {
+        return;
+    }
+
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
 
     if (workflow_get_operation_in_progress(workflowData->WorkflowHandle))
@@ -1761,6 +1887,13 @@ ADUC_Result ADUC_Workflow_MethodCall_IsInstalled(const ADUC_WorkflowData* workfl
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
 
     Log_Info("Calling IsInstalledCallback to check if content is installed.");
+
+    if (updateActionCallbacks->IsInstalledCallback == NULL)
+    {
+        ADUC_Result notInstalledResult = { .ResultCode = ADUC_Result_IsInstalled_NotInstalled };
+        return notInstalledResult;
+    }
+
     return updateActionCallbacks->IsInstalledCallback(
         updateActionCallbacks->PlatformLayerHandle, (ADUC_WorkflowDataToken)workflowData);
 }
