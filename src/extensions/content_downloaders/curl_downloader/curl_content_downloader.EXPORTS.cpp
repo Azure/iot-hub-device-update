@@ -35,10 +35,12 @@ EXPORTED_METHOD ADUC_Result Download(
 /**
  * @brief One-time initialization for the content downloader.
  *
+ * @param initializeData The initialization data.
  * @param logLevel The desired loglevel if logging is used.
  */
-EXPORTED_METHOD ADUC_Result Initialize(ADUC_LOG_SEVERITY logLevel)
+EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
+    UNREFERENCED_PARAMETER(initializeData); // Always NULL for curl.
     ADUC_Logging_Init(logLevel, "curl-content-downloader");
     return { ADUC_GeneralResult_Success };
 }

@@ -778,7 +778,7 @@ done:
     return result;
 }
 
-ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initializeData)
+ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
     void* lib = nullptr;
     InitializeProc _initialize = nullptr;
@@ -811,7 +811,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
 
     try
     {
-        result = _initialize(initializeData);
+        result = _initialize(initializeData, logLevel);
     }
     catch (...)
     {
@@ -989,9 +989,9 @@ done:
 
 EXTERN_C_BEGIN
 
-ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData)
+ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
-    return ExtensionManager::InitializeContentDownloader(initializeData);
+    return ExtensionManager::InitializeContentDownloader(initializeData, logLevel);
 }
 
 ADUC_Result ExtensionManager_Download(

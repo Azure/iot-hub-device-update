@@ -770,11 +770,11 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     // Send connection string to DO SDK for it to discover the Edge gateway if present.
     if (ConnectionStringUtils_IsNestedEdge(info.connectionString))
     {
-        result = ExtensionManager_InitializeContentDownloader(info.connectionString);
+        result = ExtensionManager_InitializeContentDownloader(info.connectionString, launchArgs->logLevel);
     }
     else
     {
-        result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/);
+        result = ExtensionManager_InitializeContentDownloader(NULL /*initializeData*/, launchArgs->logLevel);
     }
 
 #ifdef ADUC_COMMAND_HELPER_H

@@ -10,9 +10,10 @@
 
 #include "aduc/adu_core_exports.h"
 
+
 EXTERN_C_BEGIN
 
-typedef ADUC_Result (*InitializeProc)(const char* initializeData);
+typedef ADUC_Result (*InitializeProc)(const char* initializeData, ADUC_LOG_SEVERITY logLevel);
 
 typedef ADUC_Result (*DownloadProc)(
     const ADUC_FileEntity* entity,
