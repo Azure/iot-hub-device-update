@@ -11,6 +11,7 @@
 #include <aduc/contract_utils.h> // for ADUC_ExtensionContractInfo
 #include <aduc/types/download.h> // for ADUC_DownloadProgressCallback
 #include <aduc/types/update_content.h> // for ADUC_FileEntity
+#include <aduc/logging.h> // ADUC_Logging_*, Log_*
 
 EXTERN_C_BEGIN
 
@@ -31,10 +32,23 @@ EXPORTED_METHOD ADUC_Result Download(
     return Download_curl(entity, workflowId, workFolder, timeoutInSeconds, downloadProgressCallback);
 }
 
-EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData)
+/**
+ * @brief One-time initialization for the content downloader.
+ *
+ * @param logLevel The desired loglevel if logging is used.
+ */
+EXPORTED_METHOD ADUC_Result Initialize(ADUC_LOG_SEVERITY logLevel)
 {
-    UNREFERENCED_PARAMETER(initializeData);
+    ADUC_Logging_Init(logLevel, "curl-content-downloader");
     return { ADUC_GeneralResult_Success };
+}
+
+/**
+ * @brief Cleanup logic before library is unloaded.
+ */
+EXPORTED_METHOD void Cleanup()
+{
+    ADUC_Logging_Uninit();
 }
 
 /**
