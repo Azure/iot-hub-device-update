@@ -264,10 +264,14 @@ do_install_aduc_packages() {
         $SUDO apt-get install --yes gcc-12 g++-12 || return
         catch2_cc=/usr/bin/gcc-12
         catch2_cxx=/usr/bin/g++-12
+    elif [[ $OS == "Ubuntu" && $VER == "24.04" ]]; then
+        $SUDO apt-get install --yes gcc-13 g++-13 || return
+        catch2_cc=/usr/bin/gcc-13
+        catch2_cxx=/usr/bin/g++-13
     else
-        $SUDO apt-get install --yes gcc-8 g++-8 || return
-        catch2_cc=/usr/bin/gcc-8
-        catch2_cxx=/usr/bin/g++-8
+        echo "Warning: Unrecognized OS/version ($OS $VER). Using default system gcc/g++."
+        catch2_cc=$(which gcc)
+        catch2_cxx=$(which g++)
     fi
 
     echo "Installing packages required for static analysis..."
@@ -600,6 +604,14 @@ do_install_azure_storage_sdk() {
         azure_storage_sdk_cmake_options+=("-DCMAKE_BUILD_TYPE:STRING=Release")
     fi
 
+    # GCC 13+ no longer transitively includes <cstdint>, which breaks older SDK code
+    # that uses uint8_t/int32_t etc. without the explicit include.
+    local gcc_major
+    gcc_major=$(gcc -dumpversion | cut -d. -f1)
+    if [[ $gcc_major -ge 13 ]]; then
+        azure_storage_sdk_cmake_options+=("-DCMAKE_CXX_FLAGS=-include cstdint")
+    fi
+
     cmake "${azure_storage_sdk_cmake_options[@]}" . || return
 
     cmake --build . || return
@@ -762,6 +774,46 @@ EOF
     vcpkg_install_classic fmt || return
     vcpkg_install_classic bsdiff || return
 
+    # The vcpkg bsdiff port provides CMake find_package() integration but no
+    # pkg-config .pc file. The delta library's CMakeLists.txt uses
+    # pkg_check_modules(BSDIFF REQUIRED bsdiff), so we generate a .pc file.
+    local bsdiff_pc_dir="$vcpkg_root/installed/$vcpkg_triplet/lib/pkgconfig"
+    if [ ! -f "$bsdiff_pc_dir/bsdiff.pc" ]; then
+        echo "Generating bsdiff.pc for pkg-config..."
+        mkdir -p "$bsdiff_pc_dir" || return
+        cat > "$bsdiff_pc_dir/bsdiff.pc" << BSDIFF_PC_EOF
+prefix=$vcpkg_root/installed/$vcpkg_triplet
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+
+Name: bsdiff
+Description: BSDiff library
+Version: 1.0.0
+Libs: -L\${libdir} -lbsdiff -ldivsufsort -ldivsufsort64
+Cflags: -I\${includedir}
+Requires: bzip2
+BSDIFF_PC_EOF
+    fi
+
+    # vcpkg's ext2fs.pc puts com_err in Requires.private, but since vcpkg
+    # installs static libraries, consumers need to link com_err too.
+    # pkg_check_modules (without STATIC) only honours Requires, not
+    # Requires.private, so move com_err to Requires.
+    local ext2fs_pc="$vcpkg_root/installed/$vcpkg_triplet/lib/pkgconfig/ext2fs.pc"
+    if [ -f "$ext2fs_pc" ]; then
+        echo "Patching ext2fs.pc: moving com_err from Requires.private to Requires..."
+        sed -i 's/^Requires\.private:\s*com_err/Requires: com_err/' "$ext2fs_pc"
+    fi
+
+    # vcpkg's libconfig++.pc doesn't declare a dependency on libconfig.
+    # libconfig++ (C++ wrapper) is a static lib that calls into libconfig (C),
+    # so we must add the dependency so the linker pulls in libconfig symbols.
+    local libconfigpp_pc="$vcpkg_root/installed/$vcpkg_triplet/lib/pkgconfig/libconfig++.pc"
+    if [ -f "$libconfigpp_pc" ]; then
+        echo "Patching libconfig++.pc: adding dependency on libconfig..."
+        sed -i 's/^Requires:\s*$/Requires: libconfig/' "$libconfigpp_pc"
+    fi
+
     "$vcpkg_root/vcpkg" integrate install || true
     "$vcpkg_root/vcpkg" list
 
@@ -779,6 +831,14 @@ EOF
     export VCPKG_OVERLAY_TRIPLETS="$vcpkg_root/triplets/community"
     export VCPKG_FEATURE_FLAGS="-manifests"
 
+    # Set PKG_CONFIG_PATH so that pkg_check_modules() in CMake can find
+    # vcpkg-installed packages (e.g. bsdiff) that ship .pc files.
+    export PKG_CONFIG_PATH="$vcpkg_root/installed/$vcpkg_triplet/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+
+    # Set LIBRARY_PATH so the linker can find vcpkg-installed static libraries
+    # (pkg_check_modules only passes -l flags, not -L paths, to target_link_libraries).
+    export LIBRARY_PATH="$vcpkg_root/installed/$vcpkg_triplet/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+
     # Skip vcpkg stage since we already installed dependencies above
     # ./build.sh "$vcpkg_triplet" "$build_type" vcpkg || return
 
@@ -791,6 +851,8 @@ EOF
     # Unset vcpkg environment variables
     unset VCPKG_OVERLAY_TRIPLETS
     unset VCPKG_FEATURE_FLAGS
+    unset PKG_CONFIG_PATH
+    unset LIBRARY_PATH
 
     popd > /dev/null || return
 
