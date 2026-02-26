@@ -1,0 +1,2 @@
+add_subdirectory (startup_msg_helper_tests)
+add_subdirectory (health_management_tests)

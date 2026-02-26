@@ -23,3 +23,7 @@ target_include_directories (
 target_link_libraries (${target_name} PRIVATE aduc::logging aduc::permission_utils)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
