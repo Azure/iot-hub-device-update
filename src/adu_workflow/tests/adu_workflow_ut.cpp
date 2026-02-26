@@ -1,6 +1,6 @@
 /**
  * @file adu_workflow_ut.cpp
- * @brief Additional unit tests for agent_workflow to increase code coverage.
+ * @brief Unit tests for agent_workflow to increase code coverage.
  * Targets NULL‑argument paths, missing callback paths, Install_Complete
  * reboot/restart branches, Cancel edge cases, and full workflow flows.
  *
