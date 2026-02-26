@@ -10,7 +10,8 @@ find_package (Parson REQUIRED)
 add_executable (${target_name})
 
 target_sources (${target_name} PRIVATE src/extension_manager_ut.cpp
-                                       src/extension_manager_download_test_case.cpp)
+                                       src/extension_manager_download_test_case.cpp
+                                       src/extension_manager_helper_ut.cpp)
 
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
                                                   ${ADU_EXTENSION_INCLUDES})
@@ -18,6 +19,7 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::extension_manager
+            aduc::config_utils
             aduc::entity_utils
             aduc::parser_utils
             aduc::string_utils

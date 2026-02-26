@@ -17,3 +17,7 @@ target_sources (${target_name} PRIVATE src/shared_lib.cpp inc/aduc/plugin_call_h
 target_link_libraries (${target_name} PRIVATE aduc::hash_utils ${CMAKE_DL_LIBS})
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

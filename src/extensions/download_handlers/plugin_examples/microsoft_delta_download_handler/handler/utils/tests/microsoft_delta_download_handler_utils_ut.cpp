@@ -152,3 +152,129 @@ TEST_CASE("MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile Cache Miss")
     workflow_free(handle);
     json_value_free(updateManifestTemplate);
 }
+
+// =====================================================================
+// MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile bad-arg tests
+// =====================================================================
+
+TEST_CASE("ProcessRelatedFile returns failure when workflowHandle is nullptr")
+{
+    ADUC_RelatedFile relatedFile;
+    memset(&relatedFile, 0, sizeof(relatedFile));
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
+        nullptr, &relatedFile, "/tmp/payload", nullptr, MockProcessDeltaUpdateFn, MockDownloadDeltaUpdateFn);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("ProcessRelatedFile returns failure when relatedFile is nullptr")
+{
+    int dummy = 0;
+    ADUC_WorkflowHandle wfHandle = reinterpret_cast<ADUC_WorkflowHandle>(&dummy);
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
+        wfHandle, nullptr, "/tmp/payload", nullptr, MockProcessDeltaUpdateFn, MockDownloadDeltaUpdateFn);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("ProcessRelatedFile returns failure when payloadFilePath is nullptr")
+{
+    int dummy = 0;
+    ADUC_WorkflowHandle wfHandle = reinterpret_cast<ADUC_WorkflowHandle>(&dummy);
+
+    ADUC_RelatedFile relatedFile;
+    memset(&relatedFile, 0, sizeof(relatedFile));
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
+        wfHandle, &relatedFile, nullptr, nullptr, MockProcessDeltaUpdateFn, MockDownloadDeltaUpdateFn);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("ProcessRelatedFile returns failure when processDeltaUpdateFn is nullptr")
+{
+    int dummy = 0;
+    ADUC_WorkflowHandle wfHandle = reinterpret_cast<ADUC_WorkflowHandle>(&dummy);
+
+    ADUC_RelatedFile relatedFile;
+    memset(&relatedFile, 0, sizeof(relatedFile));
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
+        wfHandle, &relatedFile, "/tmp/payload", nullptr, nullptr /* processDeltaUpdateFn */, MockDownloadDeltaUpdateFn);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("ProcessRelatedFile returns failure when all args are nullptr")
+{
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
+        nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+// =====================================================================
+// MicrosoftDeltaDownloadHandlerUtils_GetSourceUpdateProperties bad-arg tests
+// =====================================================================
+
+TEST_CASE("GetSourceUpdateProperties returns failure when relatedFile is nullptr")
+{
+    STRING_HANDLE outHash = nullptr;
+    STRING_HANDLE outAlg = nullptr;
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_GetSourceUpdateProperties(
+        nullptr, &outHash, &outAlg);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("GetSourceUpdateProperties returns failure when outHash is nullptr")
+{
+    ADUC_RelatedFile relatedFile;
+    memset(&relatedFile, 0, sizeof(relatedFile));
+    STRING_HANDLE outAlg = nullptr;
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_GetSourceUpdateProperties(
+        &relatedFile, nullptr, &outAlg);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("GetSourceUpdateProperties returns failure when outAlg is nullptr")
+{
+    ADUC_RelatedFile relatedFile;
+    memset(&relatedFile, 0, sizeof(relatedFile));
+    STRING_HANDLE outHash = nullptr;
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_GetSourceUpdateProperties(
+        &relatedFile, &outHash, nullptr);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("GetSourceUpdateProperties returns failure when relatedFile has no hash properties")
+{
+    ADUC_RelatedFile relatedFile;
+    memset(&relatedFile, 0, sizeof(relatedFile));
+    relatedFile.PropertiesCount = 0;
+    relatedFile.Properties = nullptr;
+
+    STRING_HANDLE outHash = nullptr;
+    STRING_HANDLE outAlg = nullptr;
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandlerUtils_GetSourceUpdateProperties(
+        &relatedFile, &outHash, &outAlg);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_RELATEDFILE_BAD_OR_MISSING_HASH_PROPERTIES);
+}
