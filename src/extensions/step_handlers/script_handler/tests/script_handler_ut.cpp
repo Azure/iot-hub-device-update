@@ -17,12 +17,14 @@
 #include <catch2/catch_all.hpp>
 using Catch::Matchers::Equals;
 
+#include <algorithm>
 #include <sstream>
 #include <string>
 
 EXTERN_C_BEGIN
 
 ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo);
 
 EXTERN_C_END
 
@@ -260,6 +262,386 @@ TEST_CASE("Script Handler Prepare Arguments Test v2.1")
     results.args.clear();
 
     workflow_free(handle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+static ADUC_WorkflowHandle SetupScriptStepWorkflow(
+    const char* workflowJson,
+    ADUC_WorkflowHandle* rootHandle,
+    const ADUC_ConfigInfo** config)
+{
+    if (rootHandle != nullptr)
+    {
+        *rootHandle = nullptr;
+    }
+    if (config != nullptr)
+    {
+        *config = nullptr;
+    }
+
+    set_test_config_folder();
+
+    const ADUC_ConfigInfo* localConfig = ADUC_ConfigInfo_GetInstance();
+    if (localConfig == nullptr)
+    {
+        return nullptr;
+    }
+
+    ContentHandler* scriptHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    if (scriptHandler == nullptr)
+    {
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        return nullptr;
+    }
+
+    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", scriptHandler);
+
+    ADUC_WorkflowHandle localRootHandle = nullptr;
+    ADUC_Result result = workflow_init(workflowJson, false, &localRootHandle);
+    if (IsAducResultCodeFailure(result.ResultCode) || localRootHandle == nullptr)
+    {
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        ExtensionManager::Uninit();
+        return nullptr;
+    }
+
+    result = PrepareStepsWorkflowDataObject(localRootHandle);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        workflow_free(localRootHandle);
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        ExtensionManager::Uninit();
+        return nullptr;
+    }
+
+    ADUC_WorkflowHandle stepHandle = workflow_get_child(localRootHandle, 0);
+    if (stepHandle == nullptr)
+    {
+        workflow_free(localRootHandle);
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        ExtensionManager::Uninit();
+        return nullptr;
+    }
+
+    if (rootHandle != nullptr)
+    {
+        *rootHandle = localRootHandle;
+    }
+    if (config != nullptr)
+    {
+        *config = localConfig;
+    }
+
+    return stepHandle;
+}
+
+TEST_CASE("Script Handler exported functions smoke test (non-mock)", "[script_handler][non_mock]")
+{
+    ContentHandler* handler = CreateUpdateContentHandlerExtension(ADUC_LOG_INFO);
+    REQUIRE(handler != nullptr);
+    delete handler;
+
+    ADUC_ExtensionContractInfo info{};
+    ADUC_Result result = GetContractInfo(&info);
+    CHECK(result.ResultCode == ADUC_GeneralResult_Success);
+    CHECK(result.ExtendedResultCode == 0);
+    CHECK(info.majorVer == ADUC_V1_CONTRACT_MAJOR_VER);
+    CHECK(info.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
+}
+
+TEST_CASE("Script Handler Backup/Restore/Cancel on real workflow handle", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result initResult = workflow_init(filecopy_workflow, false, &handle);
+    REQUIRE(initResult.ResultCode != 0);
+    REQUIRE(handle != nullptr);
+
+    ADUC_WorkflowData workflowData{};
+    workflowData.WorkflowHandle = handle;
+
+    ContentHandler* handler = ScriptHandlerImpl::CreateContentHandler();
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result backupResult = handler->Backup(&workflowData);
+    CHECK(backupResult.ResultCode == ADUC_Result_Backup_Success_Unsupported);
+
+    ADUC_Result restoreResult = handler->Restore(&workflowData);
+    CHECK(restoreResult.ResultCode == ADUC_Result_Restore_Success_Unsupported);
+
+    ADUC_Result cancelResult = handler->Cancel(&workflowData);
+    CHECK(cancelResult.ResultCode == ADUC_Result_Cancel_Success);
+
+    delete handler;
+    workflow_free(handle);
+}
+
+TEST_CASE("Script Handler PrepareScriptArguments - invalid selected components JSON", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_set_selected_components(stepHandle, "not valid json"));
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
+        stepHandle,
+        "/tmp/script-result.json",
+        "/tmp/script-work",
+        scriptFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_MISSING_PRIMARY_COMPONENT);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler PrepareScriptArguments - selected components missing array", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_set_selected_components(stepHandle, "{\"x\":1}"));
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
+        stepHandle,
+        "/tmp/script-result.json",
+        "/tmp/script-work",
+        scriptFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_MISSING_PRIMARY_COMPONENT);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler PrepareScriptArguments - empty selected components array", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_set_selected_components(stepHandle, "{\"components\":[]}"));
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
+        stepHandle,
+        "/tmp/script-result.json",
+        "/tmp/script-work",
+        scriptFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_Result_Download_Skipped_NoMatchingComponents);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler PrepareScriptArguments - multi component input still succeeds", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_set_selected_components(
+        stepHandle,
+        "{\"components\":[{\"id\":\"comp-1\",\"name\":\"a\"},{\"id\":\"comp-2\",\"name\":\"b\"}]}"));
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
+        stepHandle,
+        "/tmp/script-result.json",
+        "/tmp/script-work",
+        scriptFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_Result_Success);
+    CHECK(result.ExtendedResultCode == 0);
+    CHECK_THAT(scriptFilePath, Equals("/tmp/script-work/example-du-swupdate-script.sh"));
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler PerformAction false path with real workflow", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ADUC_PerformAction_Results results = ScriptHandler_PerformAction("install", &stepWorkflow, false);
+    CHECK(IsAducResultCodeFailure(results.result.ResultCode));
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler Install and Apply wrappers on real workflow", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ContentHandler* handler = ScriptHandlerImpl::CreateContentHandler();
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result installResult = handler->Install(&stepWorkflow);
+    CHECK(IsAducResultCodeFailure(installResult.ResultCode));
+
+    ADUC_Result applyResult = handler->Apply(&stepWorkflow);
+    CHECK(IsAducResultCodeFailure(applyResult.ResultCode));
+
+    delete handler;
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler IsInstalled real workflow path", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ContentHandler* handler = ScriptHandlerImpl::CreateContentHandler();
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result result = handler->IsInstalled(&stepWorkflow);
+    CHECK(result.ResultCode != ADUC_GeneralResult_Success);
+
+    delete handler;
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler free-function null workflow guards", "[script_handler][non_mock]")
+{
+    ADUC_PerformAction_Results results = ScriptHandler_PerformAction("install", nullptr, false);
+    CHECK(results.result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(results.result.ExtendedResultCode == ADUC_ERC_SCRIPT_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
+}
+
+// clang-format off
+const char* workflow_missing_script_filename =
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 3, )"
+    R"(         "id": "d19de7fb-11d8-45f7-88e0-03872a591de8" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"30.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/swupdate:2\",\"files\":[\"fb7f654eb03c9900a\",\"ff2510f75ca8bf0d3\"],\"handlerProperties\":{\"installedCriteria\":\"dummy-criteria\"}}]},\"files\":{\"fb7f654eb03c9900a\":{\"fileName\":\"du-agent-swupdate-filecopy-test-1_1.0.swu\",\"sizeInBytes\":1536,\"hashes\":{\"sha256\":\"cWJKtVffvDj9B78lgCqWT/lKMBJ9AQ8UmUh48ad8JHA=\"}},\"ff2510f75ca8bf0d3\":{\"fileName\":\"example-du-swupdate-script.sh\",\"sizeInBytes\":24737,\"hashes\":{\"sha256\":\"Nc08FK/T5bOH07nC4GorKTgope5n3+cyb+Ar6KGaY9I=\"}}},\"createdDateTime\":\"2022-03-28T22:36:07.8445392Z\"}", )"
+    R"(     "updateManifestSignature": "dummy", )"
+    R"(     "fileUrls": { )"
+    R"(         "fb7f654eb03c9900a": "http://example/swu", )"
+    R"(         "ff2510f75ca8bf0d3": "http://example/script" )"
+    R"(      }  )"
+    R"( } )";
+
+const char* workflow_with_component_args =
+    R"( {                    )"
+    R"(     "workflow": {    )"
+    R"(         "action": 3, )"
+    R"(         "id": "d19de7fb-11d8-45f7-88e0-03872a591de8" )"
+    R"(      },  )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"30.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/swupdate:2\",\"files\":[\"fb7f654eb03c9900a\",\"ff2510f75ca8bf0d3\"],\"handlerProperties\":{\"installedCriteria\":\"dummy-criteria\",\"scriptFileName\":\"example-du-swupdate-script.sh\",\"arguments\":\"--component-id-val --component-name-val --component-manufacturer-val --component-model-val --component-version-val --component-group-val --component-prop-val path --component-prop-val --literal value\\\"quoted\\\"\"}}]},\"files\":{\"fb7f654eb03c9900a\":{\"fileName\":\"du-agent-swupdate-filecopy-test-1_1.0.swu\",\"sizeInBytes\":1536,\"hashes\":{\"sha256\":\"cWJKtVffvDj9B78lgCqWT/lKMBJ9AQ8UmUh48ad8JHA=\"}},\"ff2510f75ca8bf0d3\":{\"fileName\":\"example-du-swupdate-script.sh\",\"sizeInBytes\":24737,\"hashes\":{\"sha256\":\"Nc08FK/T5bOH07nC4GorKTgope5n3+cyb+Ar6KGaY9I=\"}}},\"createdDateTime\":\"2022-03-28T22:36:07.8445392Z\"}", )"
+    R"(     "updateManifestSignature": "dummy", )"
+    R"(     "fileUrls": { )"
+    R"(         "fb7f654eb03c9900a": "http://example/swu", )"
+    R"(         "ff2510f75ca8bf0d3": "http://example/script" )"
+    R"(      }  )"
+    R"( } )";
+// clang-format on
+
+TEST_CASE("Script Handler PrepareScriptArguments - missing scriptFileName property", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(workflow_missing_script_filename, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
+        stepHandle,
+        "/tmp/script-result.json",
+        "/tmp/script-work",
+        scriptFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SCRIPT_HANDLER_MISSING_SCRIPTFILENAME_PROPERTY);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("Script Handler PrepareScriptArguments - component placeholders and quoted args", "[script_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupScriptStepWorkflow(workflow_with_component_args, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_set_selected_components(
+        stepHandle,
+        "{\"components\":[{\"id\":\"comp-1\",\"name\":\"motor\",\"properties\":{\"path\":\"/dev/motor0\"}}]}"));
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
+        stepHandle,
+        "/tmp/script-result.json",
+        "/tmp/script-work",
+        scriptFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_Result_Success);
+    CHECK_THAT(scriptFilePath, Equals("/tmp/script-work/example-du-swupdate-script.sh"));
+    CHECK(std::find(args.begin(), args.end(), "comp-1") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "motor") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "n/a") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "/dev/motor0") != args.end());
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+    ADUC_PerformAction_Results performResult = ScriptHandler_PerformAction("install", &stepWorkflow, true);
+    CHECK(performResult.result.ResultCode == ADUC_Result_Success);
+    CHECK(performResult.scriptOutput.find("'value\"quoted\"'") != std::string::npos);
+
+    workflow_free(rootHandle);
     ADUC_ConfigInfo_ReleaseInstance(config);
     ExtensionManager::Uninit();
 }
