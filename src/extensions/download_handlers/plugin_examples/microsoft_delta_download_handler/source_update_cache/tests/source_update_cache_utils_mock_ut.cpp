@@ -20,6 +20,7 @@ extern "C"
 }
 
 #include <cstring>
+#include <fstream>
 #include <string>
 
 // ==============================================================================
@@ -207,4 +208,144 @@ TEST_CASE_METHOD(
     CHECK(result == 0);
     // File was excluded by filter, so no unlink
     CHECK(mock_unlink_call_count == 0);
+}
+
+// ==============================================================================
+// PurgeOldest: exception paths
+// ==============================================================================
+
+TEST_CASE_METHOD(
+    SucUtilsMockFixture,
+    "PurgeOldest: findFilesInDir throws std::exception -> returns -1")
+{
+    mock_findFilesInDir_throw_std_exception = true;
+
+    int dummyHandle = 0;
+    int result = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+        reinterpret_cast<ADUC_WorkflowHandle>(&dummyHandle), 1024, "/tmp/cache");
+
+    CHECK(result == -1);
+}
+
+TEST_CASE_METHOD(
+    SucUtilsMockFixture,
+    "PurgeOldest: findFilesInDir throws unknown exception -> returns -1")
+{
+    mock_findFilesInDir_throw_unknown = true;
+
+    int dummyHandle = 0;
+    int result = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+        reinterpret_cast<ADUC_WorkflowHandle>(&dummyHandle), 1024, "/tmp/cache");
+
+    CHECK(result == -1);
+}
+
+// ==============================================================================
+// PurgeOldest: unlink paths (using real temp files so stat succeeds)
+// ==============================================================================
+
+static const char* s_tmp_purge_dir = "/tmp/adutest_suc_mock_purge";
+
+/// Helper: create tmp dir and files, returns file paths
+static std::vector<std::string> createTempPurgeFiles(int count)
+{
+    std::string cmd = std::string("mkdir -p ") + s_tmp_purge_dir;
+    system(cmd.c_str());
+
+    std::vector<std::string> paths;
+    for (int i = 0; i < count; ++i)
+    {
+        std::string p = std::string(s_tmp_purge_dir) + "/file" + std::to_string(i);
+        std::ofstream ofs(p);
+        ofs << "data" << i << std::endl;
+        ofs.close();
+        paths.push_back(p);
+    }
+    return paths;
+}
+
+static void cleanupTempPurgeDir()
+{
+    std::string cmd = std::string("rm -rf ") + s_tmp_purge_dir;
+    system(cmd.c_str());
+}
+
+TEST_CASE_METHOD(
+    SucUtilsMockFixture,
+    "PurgeOldest: real files, unlink succeeds -> files deleted from queue")
+{
+    auto paths = createTempPurgeFiles(2);
+    const char* pathPtrs[] = { paths[0].c_str(), paths[1].c_str() };
+
+    mock_files_in_dir = pathPtrs;
+    mock_files_in_dir_count = 2;
+    mock_update_file_inode_return = 0; // sentinel -> no filter
+    mock_unlink_return = 0;
+
+    int dummyHandle = 0;
+    int result = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+        reinterpret_cast<ADUC_WorkflowHandle>(&dummyHandle), 10000, s_tmp_purge_dir);
+
+    CHECK(result == 0);
+    CHECK(mock_unlink_call_count == 2);
+
+    cleanupTempPurgeDir();
+}
+
+TEST_CASE_METHOD(
+    SucUtilsMockFixture,
+    "PurgeOldest: real files, unlink fails -> still returns 0 (result overwritten)")
+{
+    auto paths = createTempPurgeFiles(1);
+    const char* pathPtrs[] = { paths[0].c_str() };
+
+    mock_files_in_dir = pathPtrs;
+    mock_files_in_dir_count = 1;
+    mock_update_file_inode_return = 0;
+    mock_unlink_return = -1; // failure
+
+    int dummyHandle = 0;
+    int result = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+        reinterpret_cast<ADUC_WorkflowHandle>(&dummyHandle), 10000, s_tmp_purge_dir);
+
+    // Even though unlink failed, result = 0 because the code sets result = 0 after the loop
+    CHECK(result == 0);
+    CHECK(mock_unlink_call_count == 1);
+
+    cleanupTempPurgeDir();
+}
+
+TEST_CASE_METHOD(
+    SucUtilsMockFixture,
+    "PurgeOldest: uses default cache path when updateCacheBasePath is nullptr")
+{
+    mock_files_in_dir = nullptr;
+    mock_files_in_dir_count = 0;
+
+    int dummyHandle = 0;
+    int result = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+        reinterpret_cast<ADUC_WorkflowHandle>(&dummyHandle), 1024, nullptr);
+
+    CHECK(result == 0);
+}
+
+TEST_CASE_METHOD(
+    SucUtilsMockFixture,
+    "PurgeOldest: totalSize already <= 0 -> no unlink called")
+{
+    auto paths = createTempPurgeFiles(1);
+    const char* pathPtrs[] = { paths[0].c_str() };
+
+    mock_files_in_dir = pathPtrs;
+    mock_files_in_dir_count = 1;
+    mock_update_file_inode_return = 0;
+
+    int dummyHandle = 0;
+    int result = ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
+        reinterpret_cast<ADUC_WorkflowHandle>(&dummyHandle), 0 /* totalSize */, s_tmp_purge_dir);
+
+    CHECK(result == 0);
+    CHECK(mock_unlink_call_count == 0);
+
+    cleanupTempPurgeDir();
 }

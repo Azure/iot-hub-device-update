@@ -66,6 +66,8 @@ off_t mock_stat_sizes[10] = { 0 };
 bool mock_stat_use_array = false;
 int mock_unlink_return = 0;
 int mock_unlink_call_count = 0;
+bool mock_findFilesInDir_throw_std_exception = false;
+bool mock_findFilesInDir_throw_unknown = false;
 
 static ADUC_UpdateId s_mock_update_id;
 static ADUC_Hash s_mock_hash;
@@ -99,6 +101,8 @@ void ResetSourceUpdateCacheUtilsMocks(void)
     mock_stat_use_array = false;
     mock_unlink_return = 0;
     mock_unlink_call_count = 0;
+    mock_findFilesInDir_throw_std_exception = false;
+    mock_findFilesInDir_throw_unknown = false;
 
     memset(&s_mock_update_id, 0, sizeof(s_mock_update_id));
     memset(&s_mock_hash, 0, sizeof(s_mock_hash));
@@ -260,10 +264,16 @@ int __wrap_rename(const char* oldpath, const char* newpath)
     return mock_rename_return;
 }
 
-// Note: __wrap_stat and __wrap_unlink are intentionally omitted.
+// Note: __wrap_stat is intentionally omitted.
 // On glibc 2.39 with _FILE_OFFSET_BITS=64, stat is redirected to __stat64_time64,
-// so --wrap=stat cannot intercept it. The stat/unlink mock state variables are kept
-// for potential future use with the correct symbol wrapping.
+// so --wrap=stat cannot intercept it.
+
+int __wrap_unlink(const char* path)
+{
+    (void)path;
+    mock_unlink_call_count++;
+    return mock_unlink_return;
+}
 
 /* =====================================================================
  * Logging stubs

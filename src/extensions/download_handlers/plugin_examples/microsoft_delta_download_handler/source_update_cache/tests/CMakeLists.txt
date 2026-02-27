@@ -131,6 +131,7 @@ target_link_libraries (${suc_utils_mock_test_target} PRIVATE libaducpal)
 target_link_options (
     ${suc_utils_mock_test_target}
     PRIVATE
-        -Wl,--wrap=rename)
+        -Wl,--wrap=rename
+        -Wl,--wrap=unlink)
 
 catch_discover_tests (${suc_utils_mock_test_target})

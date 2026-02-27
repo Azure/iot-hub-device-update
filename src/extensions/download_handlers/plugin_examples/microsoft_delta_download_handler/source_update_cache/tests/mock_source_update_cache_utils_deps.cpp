@@ -13,6 +13,7 @@ extern "C"
 #include "mock_source_update_cache_utils_deps.h"
 }
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,15 @@ namespace aduc
 
 void findFilesInDir(const std::string& /*dirPath*/, std::vector<std::string>* outFiles)
 {
+    if (mock_findFilesInDir_throw_std_exception)
+    {
+        throw std::runtime_error("mock findFilesInDir exception");
+    }
+    if (mock_findFilesInDir_throw_unknown)
+    {
+        throw 42;
+    }
+
     if (outFiles == nullptr)
     {
         return;

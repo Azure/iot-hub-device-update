@@ -56,3 +56,59 @@ target_compile_definitions (
 include (CTest)
 include (Catch)
 catch_discover_tests (${PROJECT_NAME})
+
+# =====================================================================
+# Mock-based test target for script_handler.cpp coverage
+# =====================================================================
+
+set (script_handler_mock_test_target script_handler_mock_unit_tests)
+
+add_executable (
+    ${script_handler_mock_test_target}
+    script_handler_mock_ut.cpp
+    mock_script_handler_deps.cpp
+    ../src/script_handler.cpp)
+
+target_include_directories (
+    ${script_handler_mock_test_target}
+    PRIVATE ${ADUC_EXPORT_INCLUDES}
+            ${ADU_EXTENSION_INCLUDES}
+            ${ADU_SHELL_INCLUDES}
+            ${PROJECT_SOURCE_DIR}/inc
+            ${PROJECT_SOURCE_DIR}/../../inc
+            ${PROJECT_SOURCE_DIR}/../inc
+            # extension_manager headers
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../extension_manager/inc
+            # logging
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../logging/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../logging/zlog/inc
+            # utility headers
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../utils/config_utils/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../utils/parser_utils/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../utils/process_utils/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../utils/string_utils/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../utils/system_utils/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../utils/workflow_data_utils/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../../utils/workflow_utils/inc
+            # download handler headers
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../download_handlers/download_handler_factory/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../download_handlers/download_handler_plugin/inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../../shared_lib/inc)
+
+target_compile_definitions (
+    ${script_handler_mock_test_target}
+    PRIVATE ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
+            ADUC_USE_ZLOGGING=1)
+
+find_package (Parson REQUIRED)
+
+target_link_libraries (
+    ${script_handler_mock_test_target}
+    PRIVATE aduc::contract_utils
+            aduc::string_utils
+            Parson::parson
+            Catch2::Catch2WithMain)
+
+target_link_libraries (${script_handler_mock_test_target} PRIVATE libaducpal)
+
+catch_discover_tests (${script_handler_mock_test_target})

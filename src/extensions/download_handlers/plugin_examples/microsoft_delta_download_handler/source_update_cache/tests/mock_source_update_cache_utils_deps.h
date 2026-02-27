@@ -79,6 +79,10 @@ extern "C"
     extern int mock_unlink_return;
     extern int mock_unlink_call_count;
 
+    /** findFilesInDir throw control */
+    extern bool mock_findFilesInDir_throw_std_exception;
+    extern bool mock_findFilesInDir_throw_unknown;
+
     /** Mock reset */
     void ResetSourceUpdateCacheUtilsMocks(void);
 

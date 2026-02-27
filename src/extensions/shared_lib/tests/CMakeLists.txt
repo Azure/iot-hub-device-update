@@ -20,6 +20,10 @@ target_link_libraries (
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
+# Export symbols from the test binary so dlsym(dlopen(""), ...) can find
+# test functions used by CallExport unit tests.
+target_link_options (${PROJECT_NAME} PRIVATE -rdynamic)
+
 # Ensure that ctest discovers catch2 tests.
 # Use catch_discover_tests() rather than add_test()
 # See https://github.com/catchorg/Catch2/blob/master/contrib/Catch.cmake
