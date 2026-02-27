@@ -24,7 +24,18 @@ Device Update for IoT Hub is an end-to-end platform for deploying over-the-air u
 | Debian 12 (Bookworm) AMD64 | ✓ Supported | With Delivery Optimization |
 | Debian 13 (Trixie) AMD64 | ✓ Supported | curl downloader only (DO not available) |
 
-## Quick Start
+## Reference Agent
+
+While we aim to provide production-ready, high-quality Device Update agent code and installation packages, this project is intended to serve as a **reference implementation** demonstrating how devices can communicate with and receive update deployments from the Azure Device Update cloud service.
+
+We encourage you to extend, enhance, and modify the source code to best fit your specific scenario requirements. If you have ideas, suggestions, or encounter issues, please report them using [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) or the [Discussion Forum](https://github.com/Azure/iot-hub-device-update/discussions).
+
+## Getting Started
+
+* [Device Update for IoT Hub](https://aka.ms/iot-hub-device-update-docs)
+* [Getting Started with Device Update Agent](./docs/agent-reference)
+* More details on building the agent here: [How to build agent code](./docs/agent-reference/how-to-build-agent-code.md)
+* For remote diagnostics and log collection: [Diagnostics Log Collection](./docs/diagnostics-log-collection.md)
 
 For users familiar with the build process:
 
@@ -59,4 +70,3 @@ This project is licensed under the MIT License - see [LICENSE](./LICENSE) for de
 ## Support
 
 For support options, see [SUPPORT.md](./SUPPORT.md).
-
