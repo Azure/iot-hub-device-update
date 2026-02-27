@@ -1495,7 +1495,7 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
     {
         // If 'install' indicated a restart is required, go ahead and restart the agent.
         Log_Info("Install indicated success with AgentRestartRequired - restarting the agent now");
-        methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_Required;
+        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
         if (success == 0)
@@ -1612,7 +1612,7 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
     {
         // If apply indicated a restart is required, go ahead and restart the agent.
         Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
-        methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_Required;
+        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
         if (success == 0)
@@ -1695,7 +1695,7 @@ void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallD
     {
         // If restore indicated a restart is required, go ahead and restart the agent.
         Log_Info("Restore indicated success with AgentRestartRequired - restarting the agent now");
-        methodCallData->WorkflowData->AgentRestartState = ADUC_AgentRestartState_Required;
+        methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
         if (success == 0)
