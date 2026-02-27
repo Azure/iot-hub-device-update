@@ -112,8 +112,9 @@ This documentation is organized to take you from concepts to implementation:
 ### 🔍 **Operations**
 
 1. **[Monitoring & Diagnostics](monitoring-diagnostics.md)** - Logging, telemetry, and troubleshooting
-2. **[Update Manifest Schema](update-manifest-schema.md)** - Understanding update packages
-3. **[Troubleshooting Guide](troubleshooting-guide.md)** - Common issues and solutions
+2. **[Diagnostics Log Collection](../diagnostics-log-collection.md)** - Remote log collection and cloud upload
+3. **[Update Manifest Schema](update-manifest-schema.md)** - Understanding update packages
+4. **[Troubleshooting Guide](troubleshooting-guide.md)** - Common issues and solutions
 
 ### 📚 **Reference**
 
@@ -130,7 +131,7 @@ This documentation is organized to take you from concepts to implementation:
 - **📱 App Developer**: [SDK Integration](sdk-integration.md) → [Power Management](power-management.md)
 - **🔧 Device Integrator**: [Building the Agent](how-to-build-agent-code.md) → [Authentication Setup](authentication-setup.md)
 - **🏗️ Extension Developer**: [Extensibility Framework](extensibility-framework.md) → [Extension Development](extension-development.md)
-- **🛠️ DevOps Engineer**: [Running the Agent](how-to-run-agent.md) → [Monitoring & Diagnostics](monitoring-diagnostics.md)
+- **🛠️ DevOps Engineer**: [Running the Agent](how-to-run-agent.md) → [Monitoring & Diagnostics](monitoring-diagnostics.md) → [Diagnostics Log Collection](../diagnostics-log-collection.md)
 
 ### By Scenario
 
@@ -156,18 +157,40 @@ This documentation is organized to take you from concepts to implementation:
 
 ### System Requirements
 
-- **Linux**: Ubuntu 18.04+, Debian 10+, or equivalent
-- **Architecture**: x64, ARM32, ARM64
-- **Memory**: 128MB RAM minimum, 256MB recommended
-- **Storage**: 100MB for agent, additional space for updates
-- **Network**: Internet connectivity for Azure IoT Hub
+| Requirement | Minimum | Recommended | Notes |
+|-------------|---------|-------------|-------|
+| **Operating System** | Ubuntu 18.04, Debian 10 | Ubuntu 22.04, Debian 11 | [Platform compatibility matrix](how-to-build-agent-code.md#platform-compatibility-matrix) |
+| **Architecture** | x64, ARM32, ARM64 | x64, ARM64 | ARM64 recommended for ARM deployments |
+| **Memory** | 128MB RAM | 256MB RAM | Additional space needed during updates |
+| **Storage** | 100MB for agent | 500MB+ | Varies by update content size |
+| **Network** | Internet connectivity | Stable broadband | Required for Azure IoT Hub communication |
 
 ### Development Requirements
 
-- **Compiler**: GCC 7.4+ or Clang 6.0+
-- **CMake**: 3.5 or later
-- **OpenSSL**: 1.1.1+ for cryptographic operations
-- **curl**: For HTTP/HTTPS downloads (optional)
+| Tool | Version | Purpose | Installation |
+|------|---------|---------|--------------|
+| **GCC/Clang** | GCC 7.4+ or Clang 6.0+ | C/C++ compilation | [Compiler requirements](how-to-build-agent-code.md#compiler-requirements) |
+| **CMake** | 3.5+ | Build system | [Platform-specific instructions](how-to-build-agent-code.md#platform-specific-instructions) |
+| **OpenSSL** | 1.1.1+ | Cryptographic operations | Included in system packages |
+| **pkg-config** | Latest | Library configuration | [Installation guide](how-to-build-agent-code.md#installing-pkg-config-required-for-sdk-usage) |
+
+### Quick Start
+
+For most scenarios, use the automated dependency installer:
+
+```bash
+# Clone the repository
+git clone https://github.com/Azure/iot-hub-device-update.git
+cd iot-hub-device-update
+
+# Install all dependencies (recommended)
+./scripts/install-deps.sh -a
+
+# Build the agent
+./scripts/build.sh -c
+```
+
+> 📚 **Detailed Information**: See [Building the Agent](how-to-build-agent-code.md) for comprehensive dependency documentation, customization options, and platform-specific guidance.
 
 ## Getting Help
 
