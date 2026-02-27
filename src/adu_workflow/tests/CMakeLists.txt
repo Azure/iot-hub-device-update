@@ -12,7 +12,7 @@ find_package (Parson REQUIRED)
 
 add_executable (${PROJECT_NAME})
 
-target_sources (${PROJECT_NAME} PRIVATE main.cpp agent_workflow_ut.cpp adu_workflow_ut.cpp)
+target_sources (${PROJECT_NAME} PRIVATE main.cpp agent_workflow_ut.cpp)
 
 target_include_directories (${PROJECT_NAME} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 
