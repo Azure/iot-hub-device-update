@@ -342,6 +342,7 @@ void ADUC_Workflow_DoWork(ADUC_WorkflowData* workflowData)
 {
     if (workflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_DoWork called with NULL workflowData.");
         return;
     }
 
@@ -1244,6 +1245,7 @@ void ADUC_Workflow_SetUpdateState(ADUC_WorkflowData* workflowData, ADUCITF_State
 {
     if (workflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_SetUpdateState called with NULL workflowData.");
         return;
     }
 
@@ -1262,6 +1264,7 @@ void ADUC_Workflow_SetUpdateStateWithResult(
 {
     if (workflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_SetUpdateStateWithResult called with NULL workflowData.");
         return;
     }
 
@@ -1278,6 +1281,7 @@ void ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle(ADUC_WorkflowData* workflowDa
 {
     if (workflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle called with NULL workflowData.");
         return;
     }
 
@@ -1318,6 +1322,7 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 {
     if (workflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_MethodCall_Idle called with NULL workflowData.");
         return;
     }
 
@@ -1386,7 +1391,9 @@ ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* met
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
-        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        Log_Error("ADUC_Workflow_MethodCall_ProcessDeployment called with NULL methodCallData or WorkflowData.");
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure,
+                                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_NULL_PARAM };
         return failResult;
     }
 
@@ -1422,7 +1429,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
-        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        Log_Error("ADUC_Workflow_MethodCall_Download called with NULL methodCallData or WorkflowData.");
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure,
+                                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_NULL_PARAM };
         return failResult;
     }
 
@@ -1500,7 +1509,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallDat
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
-        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        Log_Error("ADUC_Workflow_MethodCall_Install called with NULL methodCallData or WorkflowData.");
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure,
+                                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_NULL_PARAM };
         return failResult;
     }
 
@@ -1543,6 +1554,7 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
 
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_MethodCall_Install_Complete called with NULL methodCallData or WorkflowData.");
         return;
     }
 
@@ -1595,7 +1607,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
-        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        Log_Error("ADUC_Workflow_MethodCall_Backup called with NULL methodCallData or WorkflowData.");
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure,
+                                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_NULL_PARAM };
         return failResult;
     }
 
@@ -1648,7 +1662,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
-        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        Log_Error("ADUC_Workflow_MethodCall_Apply called with NULL methodCallData or WorkflowData.");
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure,
+                                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_NULL_PARAM };
         return failResult;
     }
 
@@ -1689,6 +1705,7 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_MethodCall_Apply_Complete called with NULL methodCallData or WorkflowData.");
         return;
     }
 
@@ -1746,7 +1763,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallDat
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
-        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure, .ExtendedResultCode = 0 };
+        Log_Error("ADUC_Workflow_MethodCall_Restore called with NULL methodCallData or WorkflowData.");
+        ADUC_Result failResult = { .ResultCode = ADUC_Result_Failure,
+                                   .ExtendedResultCode = ADUC_ERC_UPPERLEVEL_WORKFLOW_NULL_PARAM };
         return failResult;
     }
 
@@ -1789,6 +1808,7 @@ void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallD
 {
     if (methodCallData == NULL || methodCallData->WorkflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_MethodCall_Restore_Complete called with NULL methodCallData or WorkflowData.");
         return;
     }
 
@@ -1849,6 +1869,7 @@ void ADUC_Workflow_MethodCall_Cancel(const ADUC_WorkflowData* workflowData)
 {
     if (workflowData == NULL)
     {
+        Log_Error("ADUC_Workflow_MethodCall_Cancel called with NULL workflowData.");
         return;
     }
 
