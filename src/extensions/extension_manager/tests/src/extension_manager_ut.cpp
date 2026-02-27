@@ -272,6 +272,20 @@ TEST_CASE("InitializeContentDownloader fails when downloader lib not loaded")
     CHECK(result.ResultCode == 0);
 }
 
+TEST_CASE("InitializeContentDownloader fails when contract version is unsupported")
+{
+    ExtMgrCleanup cleanup;
+
+    int fakeLib = 42;
+    ExtensionManager::SetContentDownloaderLibrary(&fakeLib);
+    ExtensionManager::SetContentDownloaderContractVersion({ 2, 0 });
+
+    ADUC_Result result = ExtensionManager::InitializeContentDownloader("test");
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION);
+}
+
 // =====================================================================
 // GetAllComponents / SelectComponents tests
 // =====================================================================

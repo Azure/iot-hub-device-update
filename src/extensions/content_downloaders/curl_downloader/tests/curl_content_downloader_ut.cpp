@@ -324,6 +324,56 @@ TEST_CASE("Download_curl skip-download reports progress on success callback")
     rmdir(tmpDir.c_str());
 }
 
+TEST_CASE("Download_curl returns external-failure when curl command fails")
+{
+    ADUC_Hash hash;
+    hash.type = const_cast<char*>("sha256");
+    hash.value = const_cast<char*>("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+
+    ADUC_FileEntity entity;
+    memset(&entity, 0, sizeof(entity));
+    entity.DownloadUri = const_cast<char*>("file:///tmp/curl_ut_does_not_exist.bin");
+    entity.TargetFilename = const_cast<char*>("missing.bin");
+    entity.FileId = const_cast<char*>("fid-curl-fail");
+    entity.HashCount = 1;
+    entity.Hash = &hash;
+    entity.SizeInBytes = 1;
+
+    ADUC_Result result = Download_curl(
+        &entity, "wf-curl-fail", "/tmp", 60, nullptr);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode != 0);
+}
+
+TEST_CASE("Download_curl reports error progress when curl command fails")
+{
+    CallbackRecord::Reset();
+
+    ADUC_Hash hash;
+    hash.type = const_cast<char*>("sha256");
+    hash.value = const_cast<char*>("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+
+    ADUC_FileEntity entity;
+    memset(&entity, 0, sizeof(entity));
+    entity.DownloadUri = const_cast<char*>("file:///tmp/curl_ut_does_not_exist_cb.bin");
+    entity.TargetFilename = const_cast<char*>("missing_cb.bin");
+    entity.FileId = const_cast<char*>("fid-curl-fail-cb");
+    entity.HashCount = 1;
+    entity.Hash = &hash;
+    entity.SizeInBytes = 123;
+
+    ADUC_Result result = Download_curl(
+        &entity, "wf-curl-fail-cb", "/tmp", 60, RecordingCallback);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode != 0);
+    CHECK(CallbackRecord::Instance().invoked);
+    CHECK(CallbackRecord::Instance().state == ADUC_DownloadProgressState_Error);
+    CHECK(CallbackRecord::Instance().bytesTransferred == 0);
+    CHECK(CallbackRecord::Instance().bytesTotal == 123);
+}
+
 // =====================================================================
 // EXPORTS functions
 // =====================================================================

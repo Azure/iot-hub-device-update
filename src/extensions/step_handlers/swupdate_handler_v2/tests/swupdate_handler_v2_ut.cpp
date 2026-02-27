@@ -735,6 +735,48 @@ TEST_CASE("SWUpdate utility functions read config/value", "[swupdate_handler_v2]
     remove(cfgFile.c_str());
 }
 
+TEST_CASE("SWUpdate PerformAction fails when workflowData is nullptr", "[swupdate_handler_v2][non_mock]")
+{
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+
+    ADUC_Result result = SWUpdateHandler_PerformAction(
+        "install",
+        nullptr,
+        true,
+        scriptFilePath,
+        args,
+        commandLineArgs,
+        scriptOutput);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
+}
+
+TEST_CASE("SWUpdate PerformAction fails when workflow handle is nullptr", "[swupdate_handler_v2][non_mock]")
+{
+    ADUC_WorkflowData workflowData = {};
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+
+    ADUC_Result result = SWUpdateHandler_PerformAction(
+        "apply",
+        &workflowData,
+        true,
+        scriptFilePath,
+        args,
+        commandLineArgs,
+        scriptOutput);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
+}
+
 TEST_CASE("SWUpdate PrepareCommandArguments guard and component branches", "[swupdate_handler_v2][non_mock]")
 {
     std::string commandFilePath;
