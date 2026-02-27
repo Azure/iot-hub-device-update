@@ -11,7 +11,7 @@ find_package (Catch2 REQUIRED)
 
 add_executable (${PROJECT_NAME} "")
 
-target_sources (${PROJECT_NAME} PRIVATE microsoft_delta_download_handler_ut.cpp mock_delta_deps.cpp)
+target_sources (${PROJECT_NAME} PRIVATE microsoft_delta_download_handler_ut.cpp)
 
 target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
 

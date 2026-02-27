@@ -12,9 +12,7 @@ find_package (Catch2 REQUIRED)
 add_executable (${PROJECT_NAME} "")
 
 # Compile curl_content_downloader.cpp and EXPORTS.cpp source directly (parent is MODULE lib, can't link to it).
-# Also compile the link-time mock for ADUC_LaunchChildProcess instead of linking aduc::process_utils.
 target_sources (${PROJECT_NAME} PRIVATE curl_content_downloader_ut.cpp
-                                        mock_process_utils.cpp
                                         ../curl_content_downloader.cpp
                                         ../curl_content_downloader.EXPORTS.cpp)
 
@@ -30,6 +28,7 @@ target_link_libraries (
     PRIVATE aduc::contract_utils
             aduc::hash_utils
             aduc::logging
+            aduc::process_utils
             Catch2::Catch2WithMain)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)

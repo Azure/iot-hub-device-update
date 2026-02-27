@@ -146,3 +146,8 @@ TEST_CASE("GetDownloadTimeoutInMinutes default value is 480 minutes (8 hours)")
 {
     CHECK(CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT == (8 * 60));
 }
+
+TEST_CASE("Default_ExtensionManager_Download_Options has default timeout")
+{
+    CHECK(Default_ExtensionManager_Download_Options.timeoutInMinutes == CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT);
+}

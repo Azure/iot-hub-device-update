@@ -36,6 +36,10 @@
 #    error "TEST_MINIMAL_PLUGIN_SO_PATH must be defined by CMakeLists.txt"
 #endif
 
+#ifndef TEST_THROWING_PLUGIN_SO_PATH
+#    error "TEST_THROWING_PLUGIN_SO_PATH must be defined by CMakeLists.txt"
+#endif
+
 // =====================================================================
 // Helpers
 // =====================================================================
@@ -249,4 +253,125 @@ TEST_CASE("GetContractInfo catches PluginException for missing export")
 
     CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
     CHECK(result.ExtendedResultCode == ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_EXPORT_CALL_GETCONTRACTINFO);
+}
+
+// =====================================================================
+// Throwing plugin tests — std::exception and non-std exception paths
+// =====================================================================
+
+/// Toggle the throwing plugin's failure mode via dlopen/dlsym.
+static void SetThrowingPluginMode(const char* soPath, int mode)
+{
+    void* handle = dlopen(soPath, RTLD_LAZY | RTLD_NOLOAD);
+    REQUIRE(handle != nullptr);
+    auto fn = reinterpret_cast<void (*)(int)>(dlsym(handle, "SetShouldFail"));
+    REQUIRE(fn != nullptr);
+    fn(mode);
+    dlclose(handle);
+}
+
+TEST_CASE("ProcessUpdate catches std::exception from plugin")
+{
+    DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 1);
+
+    ADUC_FileEntity entity{};
+    int dummyWf = 0;
+
+    ADUC_Result result = plugin.ProcessUpdate(&dummyWf, &entity, "/tmp/target");
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 0);
+}
+
+TEST_CASE("ProcessUpdate catches non-std exception from plugin")
+{
+    DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 2);
+
+    ADUC_FileEntity entity{};
+    int dummyWf = 0;
+
+    ADUC_Result result = plugin.ProcessUpdate(&dummyWf, &entity, "/tmp/target");
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 0);
+}
+
+TEST_CASE("OnUpdateWorkflowCompleted catches std::exception from plugin")
+{
+    DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 1);
+
+    int dummyWf = 0;
+
+    ADUC_Result result = plugin.OnUpdateWorkflowCompleted(&dummyWf);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 0);
+}
+
+TEST_CASE("OnUpdateWorkflowCompleted catches non-std exception from plugin")
+{
+    DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 2);
+
+    int dummyWf = 0;
+
+    ADUC_Result result = plugin.OnUpdateWorkflowCompleted(&dummyWf);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 0);
+}
+
+TEST_CASE("GetContractInfo catches std::exception from plugin")
+{
+    DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 1);
+
+    ADUC_ExtensionContractInfo ci{};
+
+    ADUC_Result result = plugin.GetContractInfo(&ci);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 0);
+}
+
+TEST_CASE("GetContractInfo catches non-std exception from plugin")
+{
+    DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 2);
+
+    ADUC_ExtensionContractInfo ci{};
+
+    ADUC_Result result = plugin.GetContractInfo(&ci);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+
+    SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 0);
+}
+
+TEST_CASE("Destructor catches std::exception from Cleanup")
+{
+    {
+        DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+        SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 3);
+        // plugin goes out of scope — destructor calls Cleanup which throws std::exception
+    }
+    SUCCEED("Destructor handled std::exception gracefully");
+}
+
+TEST_CASE("Destructor catches non-std exception from Cleanup")
+{
+    {
+        DownloadHandlerPlugin plugin(TEST_THROWING_PLUGIN_SO_PATH, ADUC_LOG_DEBUG);
+        SetThrowingPluginMode(TEST_THROWING_PLUGIN_SO_PATH, 4);
+        // plugin goes out of scope — destructor calls Cleanup which throws int
+    }
+    SUCCEED("Destructor handled non-std exception gracefully");
 }

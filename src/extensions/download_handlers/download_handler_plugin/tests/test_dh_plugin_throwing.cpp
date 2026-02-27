@@ -39,7 +39,14 @@ void Initialize(int logLevel)
 
 void Cleanup(void)
 {
-    /* Normal cleanup — non-throwing */
+    if (s_throwMode == 3)
+    {
+        throw std::runtime_error("test std exception from Cleanup");
+    }
+    if (s_throwMode == 4)
+    {
+        throw 42;
+    }
 }
 
 ADUC_Result ProcessUpdate(

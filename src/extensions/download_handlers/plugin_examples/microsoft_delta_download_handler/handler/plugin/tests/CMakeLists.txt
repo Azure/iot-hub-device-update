@@ -15,7 +15,6 @@ target_sources (
     ${PROJECT_NAME}
     PRIVATE
         microsoft_delta_download_handler_exports_ut.cpp
-        mock_exports_deps.cpp
         # Compile the source under test directly (can't link MODULE libraries)
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/microsoft_delta_download_handler_plugin.EXPORTS.c)
 
@@ -25,12 +24,8 @@ target_include_directories (
         ${ADUC_EXPORT_INCLUDES}
         ${ADU_EXTENSION_INCLUDES}
         # Include path for aduc/microsoft_delta_download_handler.h (from handler/lib)
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/inc
-        # Include paths for aduc/logging.h and zlog.h (mocked, so don't link aduc::logging)
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../../logging/inc
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../../logging/zlog/inc)
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/inc)
 
-# Need ADUC_USE_ZLOGGING so logging.h resolves correctly (but we mock the functions)
 target_compile_definitions (${PROJECT_NAME} PRIVATE ADUC_USE_ZLOGGING=1)
 
 target_link_libraries (
@@ -38,6 +33,8 @@ target_link_libraries (
     PRIVATE aduc::adu_types
             aduc::contract_utils
             aduc::c_utils
+            aduc::logging
+            aduc::microsoft-delta-download-handler
             Catch2::Catch2WithMain)
 
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
