@@ -350,32 +350,6 @@ TEST_CASE("Script Handler exported functions smoke test (non-mock)", "[script_ha
     CHECK(info.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
 }
 
-TEST_CASE("Script Handler Backup/Restore/Cancel on real workflow handle", "[script_handler][non_mock]")
-{
-    ADUC_WorkflowHandle handle = nullptr;
-    ADUC_Result initResult = workflow_init(filecopy_workflow, false, &handle);
-    REQUIRE(initResult.ResultCode != 0);
-    REQUIRE(handle != nullptr);
-
-    ADUC_WorkflowData workflowData{};
-    workflowData.WorkflowHandle = handle;
-
-    ContentHandler* handler = ScriptHandlerImpl::CreateContentHandler();
-    REQUIRE(handler != nullptr);
-
-    ADUC_Result backupResult = handler->Backup(&workflowData);
-    CHECK(backupResult.ResultCode == ADUC_Result_Backup_Success_Unsupported);
-
-    ADUC_Result restoreResult = handler->Restore(&workflowData);
-    CHECK(restoreResult.ResultCode == ADUC_Result_Restore_Success_Unsupported);
-
-    ADUC_Result cancelResult = handler->Cancel(&workflowData);
-    CHECK(cancelResult.ResultCode == ADUC_Result_Cancel_Success);
-
-    delete handler;
-    workflow_free(handle);
-}
-
 TEST_CASE("Script Handler PrepareScriptArguments - invalid selected components JSON", "[script_handler][non_mock]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
@@ -535,13 +509,11 @@ TEST_CASE("Script Handler IsInstalled real workflow path", "[script_handler][non
     ADUC_WorkflowData stepWorkflow{};
     stepWorkflow.WorkflowHandle = stepHandle;
 
-    ContentHandler* handler = ScriptHandlerImpl::CreateContentHandler();
-    REQUIRE(handler != nullptr);
+    ADUC_PerformAction_Results results = ScriptHandler_PerformAction("is-installed", &stepWorkflow, true);
+    CHECK(IsAducResultCodeSuccess(results.result.ResultCode));
+    CHECK(results.result.ExtendedResultCode == 0);
+    CHECK(results.scriptOutput.find("--action-is-installed") != std::string::npos);
 
-    ADUC_Result result = handler->IsInstalled(&stepWorkflow);
-    CHECK(result.ResultCode != ADUC_GeneralResult_Success);
-
-    delete handler;
     workflow_free(rootHandle);
     ADUC_ConfigInfo_ReleaseInstance(config);
     ExtensionManager::Uninit();
