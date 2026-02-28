@@ -49,8 +49,7 @@ install_adu=false
 work_folder="$root_dir/.workspace"
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
 cmake_bin="cmake"
-rootkeypkg_curl=false
-enable_coverage=false
+rootkeypkg_curl=true
 
 #
 # Export the compiler settings in case VM is wonky
@@ -113,9 +112,6 @@ Usage: build.sh [options...]
     --patch-version                       Patch version of ADU
 
     --rootkeypkg-curl                     Download the RootKey Package with curl instead of delivery optimization agent.
-
-    --coverage                            Enable coverage mode in build.sh:
-                                            instrumented build, force unit tests, then run test+report workflow.
 
     -h, --help                            Show this help message.
 
@@ -378,9 +374,6 @@ while [[ $1 != "" ]]; do
     --rootkeypkg-curl)
         rootkeypkg_curl="true"
         ;;
-    --coverage)
-        enable_coverage=true
-        ;;
     -h | --help)
         print_help
         $ret 0
@@ -398,16 +391,6 @@ done
 # work_folder has been set if --work-folder was specified.
 if [[ -z $cmake_dir_path ]]; then
     cmake_dir_path="${work_folder}/deviceupdate-cmake"
-fi
-
-# Coverage mode is owned by build.sh. It forces unit-test build and
-# applies instrumentation flags so the follow-up coverage step has data.
-if [[ $enable_coverage == "true" ]]; then
-    build_unittests=true
-    build_type=Debug
-    export CFLAGS="--coverage -O0 -g ${CFLAGS:-}"
-    export CXXFLAGS="--coverage -O0 -g ${CXXFLAGS:-}"
-    export LDFLAGS="--coverage ${LDFLAGS:-}"
 fi
 
 # Source build environment from install-deps.sh if it exists
@@ -469,7 +452,6 @@ bullet "Enable file log: $file_log"
 bullet "Logging library: $log_lib"
 bullet "Output directory: $output_directory"
 bullet "Build unit tests: $build_unittests"
-bullet "Coverage mode: $enable_coverage"
 bullet "Enable E2E testing: $enable_e2e_testing"
 bullet "Build packages: $build_packages"
 bullet "CMake: $cmake_bin"
@@ -642,17 +624,6 @@ if [[ $ret_val == 0 && $build_packages == "true" ]]; then
 fi
 
 popd > /dev/null || $ret
-
-if [[ $ret_val == 0 && $enable_coverage == "true" ]]; then
-    coverage_script="$script_dir/run_coverage.sh"
-    if [[ ! -x $coverage_script ]]; then
-        error "Coverage script not found or not executable: $coverage_script"
-        $ret 1
-    fi
-
-    "$coverage_script" --out-dir "$output_directory"
-    ret_val=$?
-fi
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then
     install_adu_components
