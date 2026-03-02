@@ -7,9 +7,13 @@ disablertti ()
 
 find_package (Catch2 REQUIRED)
 
+# ---------------------------------------------------------------
+# Existing integration-style tests (use real workflow_utils)
+# ---------------------------------------------------------------
 add_executable (${PROJECT_NAME} "")
 
-target_sources (${PROJECT_NAME} PRIVATE microsoft_delta_download_handler_utils_ut.cpp)
+target_sources (${PROJECT_NAME} PRIVATE microsoft_delta_download_handler_utils_ut.cpp
+                                        microsoft_delta_download_handler_utils_cpp_ut.cpp)
 
 target_link_libraries (
     ${PROJECT_NAME}

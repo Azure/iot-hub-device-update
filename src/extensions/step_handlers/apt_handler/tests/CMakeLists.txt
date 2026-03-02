@@ -11,7 +11,12 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources apt_parser_ut.cpp ../src/apt_handler.cpp ../src/apt_parser.cpp)
+set (sources
+    apt_parser_ut.cpp
+    apt_handler_ut.cpp
+    ../src/apt_handler.cpp
+    ../src/apt_parser.cpp
+    ../../../update_manifest_handlers/steps_handler/src/steps_handler.cpp)
 
 find_package (Catch2 REQUIRED)
 
@@ -20,12 +25,16 @@ add_executable (${PROJECT_NAME} ${sources})
 target_include_directories (
     ${PROJECT_NAME}
     PRIVATE ${ADUC_EXPORT_INCLUDES} ${ADU_EXTENSION_INCLUDES} ${ADU_SHELL_INCLUDES}
-            ${PROJECT_SOURCE_DIR}/inc ${PROJECT_SOURCE_DIR}/../../inc ${PROJECT_SOURCE_DIR}/../inc)
+            ${PROJECT_SOURCE_DIR}/inc
+            ${PROJECT_SOURCE_DIR}/../../inc
+            ${PROJECT_SOURCE_DIR}/../inc
+            ${PROJECT_SOURCE_DIR}/../../../update_manifest_handlers/steps_handler/inc)
 
 target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="/${ADUC_TMP_DIR_PATH}/adu-test-installedcriteria"
-            ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}")
+            ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
+            ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
 
 target_link_libraries (
     ${PROJECT_NAME}

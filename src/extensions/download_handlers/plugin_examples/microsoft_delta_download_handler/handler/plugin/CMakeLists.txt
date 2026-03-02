@@ -14,3 +14,7 @@ target_link_libraries (${target_name} PRIVATE aduc::adu_types aduc::contract_uti
                                               aduc::microsoft-delta-download-handler aduc::logging)
 
 install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

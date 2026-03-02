@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <string>
 
+#include <azure_c_shared_utility/crt_abstractions.h>
+
 struct json_value_deleter
 {
     void operator()(JSON_Value* val)
@@ -101,6 +103,12 @@ static DownloadProc mockDownloadFailureProcResolver(void* lib)
     return MockDownloadFailureProc;
 }
 
+static DownloadProc nullDownloadProcResolver(void* lib)
+{
+    UNREFERENCED_PARAMETER(lib);
+    return nullptr;
+}
+
 static void setupWorkflowHandle(const char* msgJson, ADUC_WorkflowHandle* outWorkflowHandle)
 {
     ADUC_Result result{ workflow_init(msgJson, false /* validateManifest */, outWorkflowHandle) };
@@ -131,6 +139,25 @@ void ExtensionManagerDownloadTestCase::RunScenario()
         mockProcResolver = mockDownloadFailureProcResolver;
         expected_result.ResultCode = 0;
         expected_result.ExtendedResultCode = FailureERC;
+        break;
+
+    case DownloadTestScenario::UnsupportedContractVersion:
+        ExtensionManager::SetContentDownloaderContractVersion({ 2, 0 });
+        mockProcResolver = mockDownloadSuccessProcResolver;
+        expected_result.ResultCode = ADUC_GeneralResult_Failure;
+        expected_result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION;
+        break;
+
+    case DownloadTestScenario::MissingDownloadProc:
+        mockProcResolver = nullDownloadProcResolver;
+        expected_result.ResultCode = ADUC_Result_Failure;
+        expected_result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP;
+        break;
+
+    case DownloadTestScenario::UnsupportedHashType:
+        mockProcResolver = mockDownloadSuccessProcResolver;
+        expected_result.ResultCode = ADUC_Result_Success;
+        expected_result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED;
         break;
 
     default:
@@ -166,9 +193,27 @@ void ExtensionManagerDownloadTestCase::RunCommon()
     AutoFileEntity fileEntity;
     REQUIRE(workflow_get_update_file(workflowHandle, 0, &fileEntity));
 
+    const ADUC_FileEntity* entityForDownload = &fileEntity;
+    ADUC_Hash unsupportedHash{};
+    ADUC_FileEntity unsupportedEntity{};
+
+    if (download_scenario == DownloadTestScenario::UnsupportedHashType)
+    {
+        REQUIRE(fileEntity.HashCount > 0);
+
+        unsupportedHash = fileEntity.Hash[0];
+        unsupportedHash.type = const_cast<char*>("unsupported_hash_type");
+
+        unsupportedEntity = fileEntity;
+        unsupportedEntity.Hash = &unsupportedHash;
+        unsupportedEntity.HashCount = 1;
+
+        entityForDownload = &unsupportedEntity;
+    }
+
     ExtensionManager_Download_Options downloadOptions{ 1 /*timeoutInMinutes*/ };
     actual_result = ExtensionManager::Download(
-        &fileEntity,
+        entityForDownload,
         workflowHandle,
         &downloadOptions,
         nullptr, // downloadProgressCallback
