@@ -40,7 +40,7 @@ EXPORTED_METHOD ADUC_Result Download(
  */
 EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
-    UNREFERENCED_PARAMETER(initializeData); // Always NULL for curl.
+    UNREFERENCED_PARAMETER(initializeData);
     ADUC_Logging_Init(logLevel, "curl-content-downloader");
     return { ADUC_GeneralResult_Success };
 }
