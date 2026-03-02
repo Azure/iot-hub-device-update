@@ -411,6 +411,12 @@ void ExtensionManager::UnloadAllExtensions()
 
     for (auto& lib : _libs)
     {
+        CleanupProc cleanup = nullptr;
+        cleanup = reinterpret_cast<CleanupProc>(ADUCPAL_dlsym(lib.second, CONTENT_DOWNLOADER__Cleanup__EXPORT_SYMBOL));
+        if (cleanup != nullptr)
+        {
+            cleanup();
+        }
         ADUCPAL_dlclose(lib.second);
     }
 
@@ -426,7 +432,8 @@ ADUC_Result ExtensionManager::LoadContentDownloaderLibrary(void** contentDownloa
 {
     ADUC_Result result = { ADUC_Result_Failure };
     static const char* functionNames[] = { CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL,
-                                           CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL };
+                                           CONTENT_DOWNLOADER__Download__EXPORT_SYMBOL,
+                                           CONTENT_DOWNLOADER__Cleanup__EXPORT_SYMBOL };
     void* extensionLib = nullptr;
     GET_CONTRACT_INFO_PROC getContractInfoFn = nullptr;
 
@@ -781,7 +788,7 @@ done:
 ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
     void* lib = nullptr;
-    InitializeProc _initialize = nullptr;
+    InitializeProc initialize = nullptr;
 
     ADUC_Result result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -801,8 +808,8 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
     }
 
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    _initialize = reinterpret_cast<InitializeProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
-    if (_initialize == nullptr)
+    initialize = reinterpret_cast<InitializeProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
+    if (initialize == nullptr)
     {
         result = { /* .ResultCode = */ ADUC_Result_Failure,
                    /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
@@ -811,7 +818,7 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
 
     try
     {
-        result = _initialize(initializeData, logLevel);
+        result = initialize(initializeData, logLevel);
     }
     catch (...)
     {

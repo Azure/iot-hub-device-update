@@ -28,6 +28,12 @@
 #define CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL "Initialize"
 
 /**
+ * @brief Cleanup logic before library is unloaded.
+ */
+#define CONTENT_DOWNLOADER__Cleanup__EXPORT_SYMBOL "Cleanup"
+
+
+/**
  * @brief The download export.
  *
  * @param entity The file entity.

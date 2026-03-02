@@ -22,6 +22,8 @@ typedef ADUC_Result (*DownloadProc)(
     unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback);
 
+typedef void (*CleanupProc)();
+
 EXTERN_C_END
 
 #endif // ADUC_CONTENT_DOWNLOADER_EXTENSION_HPP
