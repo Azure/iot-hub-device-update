@@ -21,8 +21,9 @@
  * @brief Initializes the content downloader.
  *
  * @param initializeData The initialization data.
+ * @param logLevel The log level for the content downloader.
  * @return ADUC_Result The result.
- * @details ADUC_Result Initialize(const char* initializeData)
+ * @details ADUC_Result Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
  */
 #define CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL "Initialize"
 
