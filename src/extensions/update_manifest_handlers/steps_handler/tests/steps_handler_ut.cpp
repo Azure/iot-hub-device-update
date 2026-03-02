@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
+#include <grp.h>
 #include <memory>
 #include <pwd.h>
 #include <string>
@@ -106,9 +107,25 @@ std::filesystem::path MakeUniqueTempWorkFolder(const std::string& suffix)
     return dir;
 }
 
-bool HasAduSystemUser()
+std::filesystem::path MakeUniqueTempPath(const std::string& suffix)
 {
-    return getpwnam("adu") != nullptr;
+    const auto nonce = static_cast<long long>(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    return std::filesystem::temp_directory_path() / ("adu-steps-" + suffix + "-" + std::to_string(nonce));
+}
+
+bool CanCreateAduSandbox()
+{
+    if (getpwnam("adu") == nullptr || getgrnam("adu") == nullptr)
+    {
+        return false;
+    }
+
+    std::filesystem::path probeDir = MakeUniqueTempPath("sandbox-probe");
+    const int createResult = ADUC_SystemUtils_MkSandboxDirRecursive(probeDir.string().c_str());
+    std::filesystem::remove_all(probeDir);
+
+    return createResult == 0;
 }
 
 // Simple test handler stubs for exercising steps handler code paths.
@@ -365,9 +382,9 @@ TEST_CASE("Steps handler download traverses inline script child path", "[steps_h
 {
     SetTestConfig();
 
-    if (!HasAduSystemUser())
+    if (!CanCreateAduSandbox())
     {
-        SUCCEED("Skipping sandbox-sensitive test because 'adu' user is not present in this environment.");
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
         return;
     }
 
@@ -435,9 +452,9 @@ TEST_CASE("Steps handler repeated inline download keeps one child workflow", "[s
 {
     SetTestConfig();
 
-    if (!HasAduSystemUser())
+    if (!CanCreateAduSandbox())
     {
-        SUCCEED("Skipping sandbox-sensitive test because 'adu' user is not present in this environment.");
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
         return;
     }
 
@@ -469,9 +486,9 @@ TEST_CASE("Steps handler restore remains success after install attempt", "[steps
 {
     SetTestConfig();
 
-    if (!HasAduSystemUser())
+    if (!CanCreateAduSandbox())
     {
-        SUCCEED("Skipping sandbox-sensitive test because 'adu' user is not present in this environment.");
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
         return;
     }
 
@@ -501,9 +518,9 @@ TEST_CASE("Steps handler download with writable workfolder exercises full loop",
 {
     SetTestConfig();
 
-    if (!HasAduSystemUser())
+    if (!CanCreateAduSandbox())
     {
-        SUCCEED("Skipping sandbox-sensitive test because 'adu' user is not present in this environment.");
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
         return;
     }
 
@@ -532,9 +549,9 @@ TEST_CASE("Steps handler install with writable workfolder exercises full loop", 
 {
     SetTestConfig();
 
-    if (!HasAduSystemUser())
+    if (!CanCreateAduSandbox())
     {
-        SUCCEED("Skipping sandbox-sensitive test because 'adu' user is not present in this environment.");
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
         return;
     }
 
@@ -562,9 +579,9 @@ TEST_CASE("Steps handler is-installed with writable workfolder exercises full lo
 {
     SetTestConfig();
 
-    if (!HasAduSystemUser())
+    if (!CanCreateAduSandbox())
     {
-        SUCCEED("Skipping sandbox-sensitive test because 'adu' user is not present in this environment.");
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
         return;
     }
 
@@ -597,9 +614,9 @@ TEST_CASE("Steps handler download install is-installed with two inline steps", "
 {
     SetTestConfig();
 
-    if (!HasAduSystemUser())
+    if (!CanCreateAduSandbox())
     {
-        SUCCEED("Skipping sandbox-sensitive test because 'adu' user is not present in this environment.");
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
         return;
     }
 
@@ -639,11 +656,18 @@ TEST_CASE("Steps handler download and install fail when handler not registered f
 {
     SetTestConfig();
 
+    if (!CanCreateAduSandbox())
+    {
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
+        return;
+    }
+
     std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
     REQUIRE(handler != nullptr);
 
     WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    workflow_set_workfolder(workflow.get(), "%s", "/tmp/adu-steps-no-handler");
+    std::filesystem::path workDir = MakeUniqueTempWorkFolder("no-handler");
+    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
 
     ADUC_Result downloadResult = handler->Download(workflow.data());
     CHECK(IsAducResultCodeFailure(downloadResult.ResultCode));
@@ -651,12 +675,18 @@ TEST_CASE("Steps handler download and install fail when handler not registered f
     ADUC_Result installResult = handler->Install(workflow.data());
     CHECK(IsAducResultCodeFailure(installResult.ResultCode));
 
-    std::filesystem::remove_all("/tmp/adu-steps-no-handler");
+    std::filesystem::remove_all(workDir);
 }
 
 TEST_CASE("Steps handler download loop processes not-installed child via stub", "[steps_handler][non_mock]")
 {
     SetTestConfig();
+
+    if (!CanCreateAduSandbox())
+    {
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
+        return;
+    }
 
     auto* stub = new SimpleNotInstalledHandler();
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", stub);
@@ -665,13 +695,14 @@ TEST_CASE("Steps handler download loop processes not-installed child via stub", 
     REQUIRE(handler != nullptr);
 
     WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    workflow_set_workfolder(workflow.get(), "%s", "/tmp/adu-steps-notinstalled-dl");
+    std::filesystem::path workDir = MakeUniqueTempWorkFolder("notinstalled-dl");
+    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
 
     ADUC_Result result = handler->Download(workflow.data());
     CHECK((result.ResultCode == ADUC_Result_Download_Success
         || IsAducResultCodeFailure(result.ResultCode)));
 
-    std::filesystem::remove_all("/tmp/adu-steps-notinstalled-dl");
+    std::filesystem::remove_all(workDir);
     ExtensionManager::Uninit();
 }
 
@@ -679,6 +710,12 @@ TEST_CASE("Steps handler install loop exercises backup install apply on child vi
 {
     SetTestConfig();
 
+    if (!CanCreateAduSandbox())
+    {
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
+        return;
+    }
+
     auto* stub = new SimpleNotInstalledHandler();
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", stub);
 
@@ -686,19 +723,26 @@ TEST_CASE("Steps handler install loop exercises backup install apply on child vi
     REQUIRE(handler != nullptr);
 
     WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    workflow_set_workfolder(workflow.get(), "%s", "/tmp/adu-steps-notinstalled-inst");
+    std::filesystem::path workDir = MakeUniqueTempWorkFolder("notinstalled-inst");
+    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
 
     ADUC_Result result = handler->Install(workflow.data());
     CHECK((result.ResultCode == ADUC_Result_Install_Success
         || IsAducResultCodeFailure(result.ResultCode)));
 
-    std::filesystem::remove_all("/tmp/adu-steps-notinstalled-inst");
+    std::filesystem::remove_all(workDir);
     ExtensionManager::Uninit();
 }
 
 TEST_CASE("Steps handler install invokes restore when child install fails via stub", "[steps_handler][non_mock]")
 {
     SetTestConfig();
+
+    if (!CanCreateAduSandbox())
+    {
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
+        return;
+    }
 
     auto* failHandler = new FailInstallHandler();
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", failHandler);
@@ -707,18 +751,25 @@ TEST_CASE("Steps handler install invokes restore when child install fails via st
     REQUIRE(handler != nullptr);
 
     WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    workflow_set_workfolder(workflow.get(), "%s", "/tmp/adu-steps-failinstall");
+    std::filesystem::path workDir = MakeUniqueTempWorkFolder("failinstall");
+    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
 
     ADUC_Result result = handler->Install(workflow.data());
     CHECK(IsAducResultCodeFailure(result.ResultCode));
 
-    std::filesystem::remove_all("/tmp/adu-steps-failinstall");
+    std::filesystem::remove_all(workDir);
     ExtensionManager::Uninit();
 }
 
 TEST_CASE("Steps handler install invokes restore when child apply fails via stub", "[steps_handler][non_mock]")
 {
     SetTestConfig();
+
+    if (!CanCreateAduSandbox())
+    {
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
+        return;
+    }
 
     auto* failHandler = new FailApplyHandler();
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", failHandler);
@@ -727,18 +778,25 @@ TEST_CASE("Steps handler install invokes restore when child apply fails via stub
     REQUIRE(handler != nullptr);
 
     WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    workflow_set_workfolder(workflow.get(), "%s", "/tmp/adu-steps-failapply");
+    std::filesystem::path workDir = MakeUniqueTempWorkFolder("failapply");
+    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
 
     ADUC_Result result = handler->Install(workflow.data());
     CHECK(IsAducResultCodeFailure(result.ResultCode));
 
-    std::filesystem::remove_all("/tmp/adu-steps-failapply");
+    std::filesystem::remove_all(workDir);
     ExtensionManager::Uninit();
 }
 
 TEST_CASE("Steps handler install propagates immediate reboot request from child via stub", "[steps_handler][non_mock]")
 {
     SetTestConfig();
+
+    if (!CanCreateAduSandbox())
+    {
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
+        return;
+    }
 
     auto* rebootHandler = new RebootHandler();
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", rebootHandler);
@@ -747,19 +805,26 @@ TEST_CASE("Steps handler install propagates immediate reboot request from child 
     REQUIRE(handler != nullptr);
 
     WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    workflow_set_workfolder(workflow.get(), "%s", "/tmp/adu-steps-reboot");
+    std::filesystem::path workDir = MakeUniqueTempWorkFolder("reboot");
+    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
 
     ADUC_Result result = handler->Install(workflow.data());
     CHECK((result.ResultCode == ADUC_Result_Install_RequiredImmediateReboot
         || IsAducResultCodeFailure(result.ResultCode)));
 
-    std::filesystem::remove_all("/tmp/adu-steps-reboot");
+    std::filesystem::remove_all(workDir);
     ExtensionManager::Uninit();
 }
 
 TEST_CASE("Steps handler download fails for unsupported child handler contract", "[steps_handler][non_mock]")
 {
     SetTestConfig();
+
+    if (!CanCreateAduSandbox())
+    {
+        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
+        return;
+    }
 
     auto* unsupported = new UnsupportedContractHandler();
     ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", unsupported);
@@ -768,7 +833,8 @@ TEST_CASE("Steps handler download fails for unsupported child handler contract",
     REQUIRE(handler != nullptr);
 
     WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    REQUIRE(workflow_set_workfolder(workflow.get(), "%s", "/tmp/adu-steps-unsupported-contract"));
+    std::filesystem::path workDir = MakeUniqueTempWorkFolder("unsupported-contract");
+    REQUIRE(workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str()));
 
     ADUC_Result result = handler->Download(workflow.data());
     CHECK(IsAducResultCodeFailure(result.ResultCode));
@@ -779,7 +845,7 @@ TEST_CASE("Steps handler download fails for unsupported child handler contract",
     bool isExpectedFailure = isUnsupportedContract || isSandboxPreconditionFailure;
     CHECK(isExpectedFailure);
 
-    std::filesystem::remove_all("/tmp/adu-steps-unsupported-contract");
+    std::filesystem::remove_all(workDir);
     ExtensionManager::Uninit();
 }
 
