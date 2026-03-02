@@ -18,6 +18,7 @@ target_include_directories (${PROJECT_NAME} PRIVATE ${ADUC_EXPORT_INCLUDES})
 target_link_libraries (
     ${PROJECT_NAME}
     PRIVATE aduc::adu_types
+            aduc::workflow_utils
             aduc::microsoft-delta-download-handler
             Catch2::Catch2WithMain)
 

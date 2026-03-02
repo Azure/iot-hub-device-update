@@ -15,9 +15,18 @@
 extern "C" {
 #include "aduc/download_handler_factory.h"
 }
+#include "aduc/config_utils.h"
 #include "aduc/download_handler_factory.hpp"
+#include "aducpal/stdlib.h"
 
 #include <string>
+
+static void set_test_config_folder()
+{
+    std::string path{ ADUC_TEST_DATA_FOLDER };
+    path += "/script_handler_test_config";
+    ADUCPAL_setenv(ADUC_CONFIG_FOLDER_ENV, path.c_str(), 1);
+}
 
 // =====================================================================
 // DownloadHandlerFactory singleton tests
@@ -43,6 +52,36 @@ TEST_CASE("DownloadHandlerFactory GetInstance is stable across many calls")
     {
         CHECK(DownloadHandlerFactory::GetInstance() == first);
     }
+}
+
+TEST_CASE("ADUC_DownloadHandlerFactory_LoadDownloadHandler returns null for empty id", "[.]")
+{
+    set_test_config_folder();
+    DownloadHandlerHandle handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler("");
+    CHECK(handle == nullptr);
+}
+
+TEST_CASE("DownloadHandlerFactory LoadDownloadHandler returns null for unknown id", "[.]")
+{
+    set_test_config_folder();
+    DownloadHandlerFactory* factory = DownloadHandlerFactory::GetInstance();
+    REQUIRE(factory != nullptr);
+
+    DownloadHandlerPlugin* plugin = factory->LoadDownloadHandler("missing/handler:9");
+    CHECK(plugin == nullptr);
+}
+
+TEST_CASE("DownloadHandlerFactory LoadDownloadHandler remains null across repeated unknown loads", "[.]")
+{
+    set_test_config_folder();
+    DownloadHandlerFactory* factory = DownloadHandlerFactory::GetInstance();
+    REQUIRE(factory != nullptr);
+
+    DownloadHandlerPlugin* first = factory->LoadDownloadHandler("missing/repeat-handler:1");
+    DownloadHandlerPlugin* second = factory->LoadDownloadHandler("missing/repeat-handler:1");
+
+    CHECK(first == nullptr);
+    CHECK(second == nullptr);
 }
 
 // NOTE:

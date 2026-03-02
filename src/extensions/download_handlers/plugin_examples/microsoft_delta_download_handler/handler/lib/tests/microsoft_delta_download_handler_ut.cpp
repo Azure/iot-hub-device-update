@@ -14,8 +14,21 @@ extern "C" {
 
 #include <aduc/result.h>
 #include <aduc/types/update_content.h>
+#include <aduc/workflow_utils.h>
 
 #include <cstring>
+
+static ADUC_WorkflowHandle CreateMinimalWorkflowHandle()
+{
+    const char* workflowJson =
+        R"({"workflow":{"action":3,"id":"99999999-1111-2222-3333-444444444444"},"updateManifest":"{\"manifestVersion\":\"5\",\"updateId\":{\"provider\":\"contoso\",\"name\":\"delta-test\",\"version\":\"1.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[]},\"files\":{},\"createdDateTime\":\"2022-01-01T00:00:00Z\"}","updateManifestSignature":"dummy","fileUrls":{}})";
+
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(workflowJson, false, &handle);
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    REQUIRE(handle != nullptr);
+    return handle;
+}
 
 static ADUC_RelatedFile MakeRelatedFileNoProps()
 {
@@ -108,4 +121,46 @@ TEST_CASE("OnUpdateWorkflowCompleted returns failure when workflowHandle is null
 
     CHECK(result.ResultCode == ADUC_Result_Failure);
     CHECK(result.ExtendedResultCode == ADUC_ERC_DDH_BAD_ARGS);
+}
+
+TEST_CASE("ProcessUpdate returns RequiredFullDownload on source cache miss")
+{
+    ADUC_WorkflowHandle workflowHandle = CreateMinimalWorkflowHandle();
+
+    ADUC_Property properties[2] = {
+        { const_cast<char*>("microsoft.sourceFileHash"), const_cast<char*>("source-hash") },
+        { const_cast<char*>("microsoft.sourceFileHashAlgorithm"), const_cast<char*>("sha256") },
+    };
+
+    ADUC_RelatedFile relatedFile{};
+    relatedFile.FileName = const_cast<char*>("delta.patch");
+    relatedFile.DownloadUri = const_cast<char*>("http://example/delta.patch");
+    relatedFile.Properties = properties;
+    relatedFile.PropertiesCount = 2;
+
+    ADUC_FileEntity entity{};
+    entity.RelatedFiles = &relatedFile;
+    entity.RelatedFileCount = 1;
+
+    ADUC_Result result = MicrosoftDeltaDownloadHandler_ProcessUpdate(
+        workflowHandle,
+        &entity,
+        "/tmp/payload.swu",
+        "/tmp/nonexistent-source-update-cache");
+
+    CHECK(result.ResultCode == ADUC_Result_Download_Handler_RequiredFullDownload);
+
+    workflow_free(workflowHandle);
+}
+
+TEST_CASE("OnUpdateWorkflowCompleted non-null workflow does not return bad-args error")
+{
+    ADUC_WorkflowHandle workflowHandle = CreateMinimalWorkflowHandle();
+
+    ADUC_Result result =
+        MicrosoftDeltaDownloadHandler_OnUpdateWorkflowCompleted(workflowHandle, "/tmp/nonexistent-source-update-cache");
+
+    CHECK(result.ExtendedResultCode != ADUC_ERC_DDH_BAD_ARGS);
+
+    workflow_free(workflowHandle);
 }

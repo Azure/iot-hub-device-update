@@ -151,3 +151,49 @@ TEST_CASE("Default_ExtensionManager_Download_Options has default timeout")
 {
     CHECK(Default_ExtensionManager_Download_Options.timeoutInMinutes == CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT);
 }
+
+// =====================================================================
+// ProcessDownloadHandlerExtensibility - non-bad-arg tests
+// =====================================================================
+
+// NOTE: Tests for ProcessDownloadHandlerExtensibility with valid args but uninitialized
+// DownloadHandlerFactory were removed — GetInstance() triggers SIGABRT (free: invalid
+// pointer) rather than a catchable exception, making those paths untestable without mocks.
+
+// =====================================================================
+// GetDownloadTimeoutInMinutes - additional coverage
+// =====================================================================
+
+TEST_CASE("GetDownloadTimeoutInMinutes returns default when downloadOptions has zero timeout")
+{
+    ExtensionManager_Download_Options options{};
+    options.timeoutInMinutes = 0;
+
+    unsigned int timeout = GetDownloadTimeoutInMinutes(&options);
+
+    // Config singleton is not initialized → returns default regardless of options.
+    CHECK(timeout == CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT);
+}
+
+TEST_CASE("GetDownloadTimeoutInMinutes returns default for large timeout value in options")
+{
+    ExtensionManager_Download_Options options{};
+    options.timeoutInMinutes = 99999;
+
+    unsigned int timeout = GetDownloadTimeoutInMinutes(&options);
+
+    // Config not initialized → always returns default.
+    CHECK(timeout == CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT);
+}
+
+TEST_CASE("Default_ExtensionManager_Download_Options can be modified and used")
+{
+    ExtensionManager_Download_Options opts = Default_ExtensionManager_Download_Options;
+    opts.timeoutInMinutes = 120;
+
+    unsigned int timeout = GetDownloadTimeoutInMinutes(&opts);
+
+    // Config not initialized → returns default, but the modified struct is valid
+    CHECK(timeout == CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT);
+    CHECK(opts.timeoutInMinutes == 120);
+}

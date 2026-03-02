@@ -374,6 +374,86 @@ TEST_CASE("Download_curl reports error progress when curl command fails")
     CHECK(CallbackRecord::Instance().bytesTotal == 123);
 }
 
+TEST_CASE("Download_curl succeeds for local file URI with valid hash")
+{
+    std::string srcDir = MakeTempDir("srcok");
+    std::string dstDir = MakeTempDir("dstok");
+    REQUIRE_FALSE(srcDir.empty());
+    REQUIRE_FALSE(dstDir.empty());
+
+    const std::string sourcePath = srcDir + "/src.bin";
+    const std::string content = "curl_local_file_success_payload";
+    std::string hashBase64 = CreateFileAndGetHash(sourcePath, content);
+    REQUIRE_FALSE(hashBase64.empty());
+
+    ADUC_Hash hash;
+    hash.type = const_cast<char*>("sha256");
+    hash.value = const_cast<char*>(hashBase64.c_str());
+
+    std::string uri = "file://" + sourcePath;
+
+    ADUC_FileEntity entity;
+    memset(&entity, 0, sizeof(entity));
+    entity.DownloadUri = const_cast<char*>(uri.c_str());
+    entity.TargetFilename = const_cast<char*>("downloaded.bin");
+    entity.FileId = const_cast<char*>("fid-local-success");
+    entity.HashCount = 1;
+    entity.Hash = &hash;
+    entity.SizeInBytes = static_cast<unsigned int>(content.size());
+
+    ADUC_Result result = Download_curl(&entity, "wf-local-success", dstDir.c_str(), 60, nullptr);
+
+    CHECK(result.ResultCode == ADUC_Result_Download_Success);
+    CHECK(result.ExtendedResultCode == 0);
+
+    remove(sourcePath.c_str());
+    remove((dstDir + "/downloaded.bin").c_str());
+    rmdir(srcDir.c_str());
+    rmdir(dstDir.c_str());
+}
+
+TEST_CASE("Download_curl fails after download when hash does not match")
+{
+    CallbackRecord::Reset();
+
+    std::string srcDir = MakeTempDir("srcbad");
+    std::string dstDir = MakeTempDir("dstbad");
+    REQUIRE_FALSE(srcDir.empty());
+    REQUIRE_FALSE(dstDir.empty());
+
+    const std::string sourcePath = srcDir + "/src_bad.bin";
+    const std::string content = "curl_local_file_bad_hash_payload";
+    std::string hashBase64 = CreateFileAndGetHash(sourcePath, content);
+    REQUIRE_FALSE(hashBase64.empty());
+
+    ADUC_Hash hash;
+    hash.type = const_cast<char*>("sha256");
+    hash.value = const_cast<char*>("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+
+    std::string uri = "file://" + sourcePath;
+
+    ADUC_FileEntity entity;
+    memset(&entity, 0, sizeof(entity));
+    entity.DownloadUri = const_cast<char*>(uri.c_str());
+    entity.TargetFilename = const_cast<char*>("downloaded_bad.bin");
+    entity.FileId = const_cast<char*>("fid-local-bad-hash");
+    entity.HashCount = 1;
+    entity.Hash = &hash;
+    entity.SizeInBytes = static_cast<unsigned int>(content.size());
+
+    ADUC_Result result = Download_curl(&entity, "wf-local-bad-hash", dstDir.c_str(), 60, RecordingCallback);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH);
+    CHECK(CallbackRecord::Instance().invoked);
+    CHECK(CallbackRecord::Instance().state == ADUC_DownloadProgressState_Error);
+
+    remove(sourcePath.c_str());
+    remove((dstDir + "/downloaded_bad.bin").c_str());
+    rmdir(srcDir.c_str());
+    rmdir(dstDir.c_str());
+}
+
 // =====================================================================
 // EXPORTS functions
 // =====================================================================

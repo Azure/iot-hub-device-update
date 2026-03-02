@@ -9,12 +9,15 @@
 #include "aduc/apt_handler.hpp"
 #include "aduc/config_utils.h"
 #include "aduc/extension_manager.hpp"
+#include "aduc/installed_criteria_utils.hpp"
 #include "aducpal/stdlib.h"
 #include "aduc/workflow_utils.h"
 
 #include <catch2/catch_all.hpp>
 
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <string>
 
@@ -32,6 +35,18 @@ static void reset_installed_criteria_file()
     std::remove(ADUC_INSTALLEDCRITERIA_FILE_PATH);
 }
 
+static bool write_file_text(const std::string& path, const std::string& content)
+{
+    std::ofstream out(path, std::ios::out | std::ios::trunc);
+    if (!out.good())
+    {
+        return false;
+    }
+
+    out << content;
+    return out.good();
+}
+
 // clang-format off
 const char* action_parent_update =
     R"( {                                                          )"
@@ -45,6 +60,19 @@ const char* action_parent_update =
     R"(         "f483750ebb885d32c": "http://duinstance2.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/e5cc19d5e9174c93ada35cc315f1fb1d/apt-manifest-tree-1.0.json"      )"
     R"(     }                                                      )"
     R"( }                                                          )";
+
+// clang-format off
+const char* action_parent_update_missing_fileentity =
+    R"( {                                                          )"
+    R"(     "workflow": {                                          )"
+    R"(         "action": 3,                                       )"
+    R"(         "id": "dcb112da-bfc9-47b7-b7ed-617feba1e6c4"       )"
+    R"(     },                                                     )"
+    R"(     "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"20.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/apt:1\",\"files\":[\"missing-file-id\"],\"handlerProperties\":{\"installedCriteria\":\"apt-update-tree-1.0\"}}]},\"files\":{},\"createdDateTime\":\"2022-01-27T13:45:05.8993329Z\"}", )"
+    R"(     "updateManifestSignature": "dummy", )"
+    R"(     "fileUrls": {}                                          )"
+    R"( }                                                          )";
+// clang-format on
 // clang-format on
 
 static void set_test_config_folder()
@@ -251,6 +279,267 @@ TEST_CASE("APT handler install/apply/cancel paths with local apt manifest", "[ap
     CHECK(workflow_request_cancel(stepHandle));
     ADUC_Result cancelledInstall = handler->Install(&stepWorkflow);
     CHECK(cancelledInstall.ResultCode == ADUC_Result_Cancel_Success);
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler download fails with wrong file count", "[apt_handler][non_mock]")
+{
+    set_test_config_folder();
+
+    const char* workflowWithNoFiles =
+        R"({"workflow":{"action":3,"id":"9a9a9a9a-1111-2222-3333-444444444444"},"updateManifest":"{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"Virtual-Vacuum\",\"version\":\"20.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/apt:1\",\"files\":[],\"handlerProperties\":{\"installedCriteria\":\"apt-update-tree-1.0\"}}]},\"files\":{},\"createdDateTime\":\"2022-01-27T13:45:05.8993329Z\"}","updateManifestSignature":"dummy","fileUrls":{}})";
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_Result initResult = workflow_init(workflowWithNoFiles, false, &rootHandle);
+    REQUIRE(IsAducResultCodeSuccess(initResult.ResultCode));
+    REQUIRE(rootHandle != nullptr);
+
+    ContentHandler* aptHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    REQUIRE(aptHandler != nullptr);
+    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/apt:1", aptHandler);
+
+    ADUC_Result prepResult = PrepareStepsWorkflowDataObject(rootHandle);
+    REQUIRE(IsAducResultCodeSuccess(prepResult.ResultCode));
+
+    ADUC_WorkflowHandle stepHandle = workflow_get_child(rootHandle, 0);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result result = handler->Download(&stepWorkflow);
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_APT_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_FILECOUNT);
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler download/install/apply fail when file entity is unresolved", "[apt_handler][non_mock]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_Result initResult = workflow_init(action_parent_update_missing_fileentity, false, &rootHandle);
+    REQUIRE(IsAducResultCodeSuccess(initResult.ResultCode));
+    REQUIRE(rootHandle != nullptr);
+
+    ContentHandler* aptHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    REQUIRE(aptHandler != nullptr);
+    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/apt:1", aptHandler);
+
+    ADUC_Result prepResult = PrepareStepsWorkflowDataObject(rootHandle);
+    REQUIRE(IsAducResultCodeSuccess(prepResult.ResultCode));
+
+    ADUC_WorkflowHandle stepHandle = workflow_get_child(rootHandle, 0);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result downloadResult = handler->Download(&stepWorkflow);
+    CHECK(downloadResult.ResultCode == ADUC_Result_Failure);
+    CHECK(downloadResult.ExtendedResultCode == ADUC_ERC_APT_HANDLER_PACKAGE_PREPARE_FAILURE_WRONG_FILECOUNT);
+
+    ADUC_Result installResult = handler->Install(&stepWorkflow);
+    CHECK(installResult.ResultCode == ADUC_Result_Failure);
+    CHECK(installResult.ExtendedResultCode == ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE);
+
+    ADUC_Result applyResult = handler->Apply(&stepWorkflow);
+    CHECK(applyResult.ResultCode == ADUC_Result_Failure);
+    CHECK(applyResult.ExtendedResultCode == ADUC_ERC_APT_HANDLER_GET_FILEENTITY_FAILURE);
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler apply returns immediate agent restart when manifest requests it", "[apt_handler][non_mock]")
+{
+    reset_installed_criteria_file();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(stepHandle != nullptr);
+
+    const std::string workFolder = std::string(ADUC_TEST_DATA_FOLDER) + "/apt_handler_apply_restart_required";
+    std::filesystem::create_directories(workFolder);
+    REQUIRE(workflow_set_workfolder(stepHandle, workFolder.c_str()));
+
+    const std::string manifestPath = workFolder + "/apt-manifest-tree-1.0.json";
+    REQUIRE(write_file_text(
+        manifestPath,
+        "{\"name\":\"du-agent-update\",\"version\":\"0.7.0\",\"packages\":[{\"name\":\"deviceupdate-agent\",\"version\":\"0.7.0~public~preview\"}],\"agentRestartRequired\":true}"));
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ADUC_Result applyResult = handler->Apply(&stepWorkflow);
+    CHECK(applyResult.ResultCode == ADUC_Result_Apply_RequiredImmediateAgentRestart);
+    CHECK(applyResult.ExtendedResultCode == 0);
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler apply returns success when manifest does not require agent restart", "[apt_handler][non_mock]")
+{
+    reset_installed_criteria_file();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(stepHandle != nullptr);
+
+    const std::string workFolder = std::string(ADUC_TEST_DATA_FOLDER) + "/apt_handler_apply_no_restart";
+    std::filesystem::create_directories(workFolder);
+    REQUIRE(workflow_set_workfolder(stepHandle, workFolder.c_str()));
+
+    const std::string manifestPath = workFolder + "/apt-manifest-tree-1.0.json";
+    REQUIRE(write_file_text(
+        manifestPath,
+        "{\"name\":\"du-agent-update\",\"version\":\"0.7.0\",\"packages\":[{\"name\":\"tree\",\"version\":\"1.0\"}],\"agentRestartRequired\":false}"));
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ADUC_Result applyResult = handler->Apply(&stepWorkflow);
+    CHECK(applyResult.ResultCode == ADUC_Result_Apply_Success);
+    CHECK(applyResult.ExtendedResultCode == 0);
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler download exercises path up to content download", "[apt_handler][non_mock]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(stepHandle != nullptr);
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    // Download proceeds through file-count check, file-entity retrieval,
+    // installedCriteria check, config retrieval, manifest filename construction,
+    // then fails at ExtensionManager::Download (no content downloader registered).
+    ADUC_Result result = handler->Download(&stepWorkflow);
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler install returns cancel result when cancel requested", "[apt_handler][non_mock]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_request_cancel(stepHandle));
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ADUC_Result result = handler->Install(&stepWorkflow);
+    CHECK(result.ResultCode == ADUC_Result_Cancel_Success);
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler apply returns cancel result when cancel requested", "[apt_handler][non_mock]")
+{
+    reset_installed_criteria_file();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_request_cancel(stepHandle));
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ADUC_Result result = handler->Apply(&stepWorkflow);
+    CHECK(result.ResultCode == ADUC_Result_Cancel_Success);
+
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler is-installed returns installed when criteria is persisted", "[apt_handler][non_mock]")
+{
+    reset_installed_criteria_file();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(stepHandle != nullptr);
+
+    // Persist criteria matching the workflow's installedCriteria
+    REQUIRE(PersistInstalledCriteria(ADUC_INSTALLEDCRITERIA_FILE_PATH, "apt-update-tree-1.0"));
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ADUC_Result result = handler->IsInstalled(&stepWorkflow);
+    CHECK(result.ResultCode == ADUC_Result_IsInstalled_Installed);
+
+    reset_installed_criteria_file();
+    workflow_free(rootHandle);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("APT handler download fails with empty installed criteria", "[apt_handler][non_mock]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(stepHandle != nullptr);
+
+    std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    // Download on root handle has no installed criteria → fails
+    ADUC_WorkflowData rootWorkflow{};
+    rootWorkflow.WorkflowHandle = rootHandle;
+
+    ADUC_Result result = handler->Download(&rootWorkflow);
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
 
     workflow_free(rootHandle);
     ExtensionManager::Uninit();

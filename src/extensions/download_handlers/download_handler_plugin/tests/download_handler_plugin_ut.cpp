@@ -204,6 +204,26 @@ TEST_CASE("C API OnUpdateWorkflowCompleted with valid handle delegates to plugin
     delete plugin;
 }
 
+TEST_CASE("C API OnUpdateWorkflowCompleted returns plugin failure when plugin reports failure")
+{
+    std::string pluginPath(TEST_PLUGIN_SO_PATH);
+    auto* plugin = new DownloadHandlerPlugin(pluginPath, ADUC_LOG_DEBUG);
+
+    SetPluginShouldFail(TEST_PLUGIN_SO_PATH, 1);
+    DownloadHandlerHandle handle = reinterpret_cast<DownloadHandlerHandle>(plugin);
+
+    int dummyWf = 0;
+    ADUC_WorkflowHandle wfHandle = &dummyWf;
+
+    ADUC_Result result = ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(handle, wfHandle);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == static_cast<int>(0x87654321));
+
+    SetPluginShouldFail(TEST_PLUGIN_SO_PATH, 0);
+    delete plugin;
+}
+
 // =====================================================================
 // Minimal plugin tests — PluginException catch blocks
 // =====================================================================

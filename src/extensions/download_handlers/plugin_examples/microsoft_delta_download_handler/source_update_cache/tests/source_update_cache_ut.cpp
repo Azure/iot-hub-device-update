@@ -14,6 +14,7 @@ extern "C" {
 }
 
 #include <aducpal/unistd.h>
+#include <aducpal/sys_stat.h>
 
 #include <azure_c_shared_utility/strings.h>
 
@@ -68,4 +69,54 @@ TEST_CASE("Lookup returns success when cache file exists and is readable")
 
     STRING_delete(outPath);
     STRING_delete(expectedPath);
+}
+
+TEST_CASE("Lookup returns failure with LOOKUP_CREATE_PATH when provider is null")
+{
+    STRING_HANDLE outPath = nullptr;
+    ADUC_Result result = ADUC_SourceUpdateCache_Lookup(nullptr, kHash, kAlg, kTestBaseDir.c_str(), &outPath);
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_LOOKUP_CREATE_PATH);
+    CHECK(outPath == nullptr);
+}
+
+TEST_CASE("Lookup returns cache-miss when cached file is unreadable")
+{
+    std::filesystem::remove_all(kTestBaseDir);
+    std::filesystem::create_directories(kTestBaseDir);
+
+    STRING_HANDLE expectedPath =
+        ADUC_SourceUpdateCacheUtils_CreateSourceUpdateCachePath(kProvider, kHash, kAlg, kTestBaseDir.c_str());
+    REQUIRE(expectedPath != nullptr);
+
+    std::filesystem::path filePath{ STRING_c_str(expectedPath) };
+    std::filesystem::create_directories(filePath.parent_path());
+
+    {
+        std::ofstream out(filePath.string());
+        REQUIRE(out.good());
+        out << "cached-but-unreadable";
+    }
+
+    REQUIRE(chmod(filePath.c_str(), 0) == 0);
+
+    STRING_HANDLE outPath = nullptr;
+    ADUC_Result result = ADUC_SourceUpdateCache_Lookup(kProvider, kHash, kAlg, kTestBaseDir.c_str(), &outPath);
+
+    CHECK(result.ResultCode == ADUC_Result_Success_Cache_Miss);
+    CHECK(outPath == nullptr);
+
+    REQUIRE(chmod(filePath.c_str(), S_IRUSR | S_IWUSR) == 0);
+    std::filesystem::remove_all(kTestBaseDir);
+    STRING_delete(expectedPath);
+}
+
+TEST_CASE("Move succeeds when workflow has no payload files")
+{
+    ADUC_Result result =
+        ADUC_SourceUpdateCache_Move(nullptr /* workflowHandle */, "/tmp/adutest/source_update_cache_move_cache");
+
+    CHECK(result.ResultCode == ADUC_Result_Success);
+    CHECK((result.ExtendedResultCode == ADUC_ERC_MOVE_PREPURGE || result.ExtendedResultCode == ADUC_ERC_MOVE_POSTPURGE));
 }
