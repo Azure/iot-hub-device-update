@@ -119,12 +119,14 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 #    ifdef ADUC_E2E_TESTING_ENABLED
     if (!rootKeyPackage.protectedProperties.isTest)
     {
+        Log_Error("Prod rootkey package rejected on test agent, ERC 0x%08x", ADUC_ERC_ROOTKEY_PROD_PKG_ON_TEST_AGENT);
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_PROD_PKG_ON_TEST_AGENT;
         goto done;
     }
 #    else
     if (rootKeyPackage.protectedProperties.isTest)
     {
+        Log_Error("Test rootkey package rejected on prod agent, ERC 0x%08x", ADUC_ERC_ROOTKEY_TEST_PKG_ON_PROD_AGENT);
         result.ExtendedResultCode = ADUC_ERC_ROOTKEY_TEST_PKG_ON_PROD_AGENT;
         goto done;
     }
@@ -145,6 +147,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (fileDest == NULL)
     {
+        Log_Error("Failed STRING_construct for rootkey store path '%s' (out of memory)", ADUC_ROOTKEY_STORE_PACKAGE_PATH);
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
