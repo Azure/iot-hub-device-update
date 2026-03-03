@@ -51,7 +51,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
 
     if ((targetDir = STRING_construct_sprintf("%s/%s", downloaderInfo->downloadBaseDir, workflowId)) == NULL)
     {
-        Log_Error("Failed to construct target dir string from '%s/%s' (out of memory)", downloaderInfo->downloadBaseDir, workflowId);
+        Log_Error("Failed to construct target dir string (out of memory)");
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
@@ -119,7 +119,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_DownloadPackage(
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("Unable to download root key pkg from '%s' using '%s', ERC: 0x%08x", STRING_c_str(targetUrl), downloaderInfo->name, result.ExtendedResultCode);
+        Log_Error("Unable to download root key pkg using '%s', ERC: 0x%08x", downloaderInfo->name, result.ExtendedResultCode);
         goto done;
     }
 

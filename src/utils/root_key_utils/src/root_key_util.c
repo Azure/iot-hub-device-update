@@ -48,6 +48,7 @@ CryptoKeyHandle MakeCryptoKeyHandleFromADUC_RootKey(const ADUC_RootKey* rootKey)
 {
     if (rootKey == NULL)
     {
+        Log_Error("MakeCryptoKeyHandleFromADUC_RootKey called with NULL rootKey");
         return NULL;
     }
 
@@ -127,6 +128,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
 
     if (rootKey == NULL || rsaKey == NULL || rsaKey->N == NULL || IsNullOrEmpty(rsaKey->kid))
     {
+        Log_Error("InitializeADUC_RootKey_From_RSARootKey: bad args (rootKey=%p, rsaKey=%p)", (const void*)rootKey, (const void*)rsaKey);
         goto done;
     }
 
@@ -136,6 +138,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
 
     if (kid == NULL)
     {
+        Log_Error("Failed STRING_construct for kid '%s' (out of memory)", rsaKey->kid);
         goto done;
     }
 
@@ -153,6 +156,7 @@ static bool InitializeADUC_RootKey_From_RSARootKey(ADUC_RootKey* rootKey, const 
 
     if (rootKey->rsaParameters.n == NULL)
     {
+        Log_Error("CONSTBUFFER_Create failed for modulus of kid '%s' (out of memory)", rsaKey->kid);
         goto done;
     }
 
@@ -194,6 +198,7 @@ bool RootKeyUtility_GetSignatureForKey(
 
         if (root_key == NULL)
         {
+            Log_Error("NULL root_key element at index %zu while searching for kid '%s'", i, seekKid);
             return false;
         }
 
@@ -223,6 +228,7 @@ bool RootKeyUtility_GetHardcodedKeysAsAducRootKeys(VECTOR_HANDLE* aducRootKeyVec
 
     if (tempHandle == NULL)
     {
+        Log_Error("VECTOR_create failed for hardcoded root keys (out of memory)");
         goto done;
     }
 
@@ -294,6 +300,7 @@ ADUC_Result RootKeyUtility_ValidatePackageWithKey(const ADUC_RootKeyPackage* roo
 
     if (rootKeyPackage == NULL)
     {
+        Log_Error("RootKeyUtility_ValidatePackageWithKey called with NULL rootKeyPackage");
         goto done;
     }
 
@@ -384,7 +391,7 @@ ADUC_Result RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys(const ADUC_Ro
 
         if (IsAducResultCodeFailure(validationResult.ResultCode))
         {
-            Log_Error("Failed validate pkg with key, ERC: ", validationResult.ExtendedResultCode);
+            Log_Error("Failed validate pkg with key, ERC: 0x%08x", validationResult.ExtendedResultCode);
             result = validationResult;
             goto done;
         }
@@ -428,6 +435,7 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
 
     if (rootKeyPackage == NULL || fileDest == NULL || STRING_length(fileDest) == 0)
     {
+        Log_Error("WriteRootKeyPackageToFileAtomically: bad args (rootKeyPackage=%p, fileDest=%p)", (const void*)rootKeyPackage, (const void*)fileDest);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_BAD_ARGS;
         goto done;
     }
@@ -452,6 +460,7 @@ ADUC_Result RootKeyUtility_WriteRootKeyPackageToFileAtomically(
 
     if (tempFileName == NULL)
     {
+        Log_Error("Failed to construct temp filename for '%s' (out of memory)", STRING_c_str(fileDest));
         goto done;
     }
 
@@ -562,6 +571,7 @@ ADUC_Result RootKeyUtility_LoadPackageFromDisk(
 
     if (tempPkg == NULL)
     {
+        Log_Error("malloc failed for ADUC_RootKeyPackage (out of memory)");
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ERRNOMEM;
         goto done;
     }
@@ -790,6 +800,7 @@ ADUC_Result RootKeyUtility_GetKeyForKid(CryptoKeyHandle* key, const char* kid)
 
     if (tempKey == NULL)
     {
+        Log_Error("No root key found for kid '%s' in hardcoded or local store", kid);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_NO_ROOTKEY_FOUND_FOR_KEYID;
         goto done;
     }
@@ -863,6 +874,7 @@ bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, cons
 
     if (packageToTest == NULL)
     {
+        Log_Warn("IsUpdateStoreNeeded called with NULL packageToTest, defaulting to update needed");
         goto done;
     }
 
@@ -910,6 +922,7 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
     disabledSigningKeyList = VECTOR_create(sizeof(ADUC_RootKeyPackage_Signature));
     if (disabledSigningKeyList == NULL)
     {
+        Log_Error("VECTOR_create failed for disabled signing key list (out of memory)");
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }
@@ -920,6 +933,7 @@ ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSign
                 disabledSigningKeyList, VECTOR_element(s_localStore->protectedProperties.disabledSigningKeys, i), 1)
             != 0)
         {
+            Log_Error("VECTOR_push_back failed for disabled signing key at index %zu (out of memory)", i);
             result.ExtendedResultCode = ADUC_ERC_NOMEM;
             goto done;
         }

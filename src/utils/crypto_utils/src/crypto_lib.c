@@ -151,23 +151,27 @@ bool VerifyRS256Signature(
 
     if ((mdctx = EVP_MD_CTX_new()) == NULL)
     {
+        Log_Error("VerifyRS256Signature: EVP_MD_CTX_new failed");
         goto done;
     }
 
     const EVP_MD* hash_alg = EVP_sha256();
     if (EVP_DigestInit_ex(mdctx, hash_alg, NULL) != 1)
     {
+        LogOpenSSLErrors("VerifyRS256Signature: EVP_DigestInit_ex");
         goto done;
     }
 
     if (EVP_DigestUpdate(mdctx, blob, blobLength) != 1)
     {
+        LogOpenSSLErrors("VerifyRS256Signature: EVP_DigestUpdate");
         goto done;
     }
 
     unsigned int digest_len_temp = (unsigned int)digest_len;
     if (EVP_DigestFinal_ex(mdctx, digest, &digest_len_temp) != 1)
     {
+        LogOpenSSLErrors("VerifyRS256Signature: EVP_DigestFinal_ex");
         goto done;
     }
 
@@ -176,21 +180,25 @@ bool VerifyRS256Signature(
 
     if (ctx == NULL)
     {
+        LogOpenSSLErrors("VerifyRS256Signature: EVP_PKEY_CTX_new");
         goto done;
     }
 
     if (EVP_PKEY_verify_init(ctx) <= 0)
     {
+        LogOpenSSLErrors("VerifyRS256Signature: EVP_PKEY_verify_init");
         goto done;
     }
 
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
     {
+        LogOpenSSLErrors("VerifyRS256Signature: EVP_PKEY_CTX_set_rsa_padding");
         goto done;
     }
 
     if (EVP_PKEY_CTX_set_signature_md(ctx, hash_alg) <= 0)
     {
+        LogOpenSSLErrors("VerifyRS256Signature: EVP_PKEY_CTX_set_signature_md");
         goto done;
     }
 
@@ -238,6 +246,7 @@ bool CryptoUtils_IsValidSignature(
 {
     if (alg == NULL || expectedSignature == NULL || sigLength == 0 || blob == NULL || blobLength == 0)
     {
+        Log_Error("CryptoUtils_IsValidSignature: bad args (alg=%p, sigLen=%zu, blob=%p, blobLen=%zu)", (const void*)alg, sigLength, (const void*)blob, blobLength);
         return false;
     }
     bool result = false;
@@ -252,6 +261,7 @@ bool CryptoUtils_IsValidSignature(
 
     default:
     case Alg_NotSupported:
+        Log_Error("Unsupported signature algorithm: '%s'", alg);
         result = false;
     }
 
@@ -912,12 +922,14 @@ CryptoKeyHandle RSAKey_ObjFromB64Strings(const char* encodedN, const char* encod
     BUFFER_HANDLE nBuff = Azure_Base64_Decode(encodedN);
     if (nBuff == NULL)
     {
+        Log_Error("RSAKey_ObjFromB64Strings: Base64 decode of modulus failed");
         goto done;
     }
 
     eBuff = Azure_Base64_Decode(encodedE);
     if (eBuff == NULL)
     {
+        Log_Error("RSAKey_ObjFromB64Strings: Base64 decode of exponent failed");
         goto done;
     }
 
@@ -960,36 +972,42 @@ CONSTBUFFER_HANDLE CryptoUtils_CreateSha256Hash(const CONSTBUFFER_HANDLE buf)
 
     if (buf == NULL)
     {
+        Log_Error("CryptoUtils_CreateSha256Hash: NULL input buffer");
         return NULL;
     }
 
     // Initialize OpenSSL digest context
     if ((mdctx = EVP_MD_CTX_new()) == NULL)
     {
+        Log_Error("CryptoUtils_CreateSha256Hash: EVP_MD_CTX_new failed");
         goto done;
     }
 
     msg_digest = GetEvpMdFromShaAlg("sha256");
     if (msg_digest == NULL)
     {
+        Log_Error("CryptoUtils_CreateSha256Hash: GetEvpMdFromShaAlg returned NULL");
         goto done;
     }
 
     // Initialize OpenSSL digest operation
     if (1 != EVP_DigestInit_ex(mdctx, msg_digest, NULL))
     {
+        LogOpenSSLErrors("CryptoUtils_CreateSha256Hash: EVP_DigestInit_ex");
         goto done;
     }
 
     // Hash the input data
     if (1 != EVP_DigestUpdate(mdctx, constbuf->buffer, constbuf->size))
     {
+        LogOpenSSLErrors("CryptoUtils_CreateSha256Hash: EVP_DigestUpdate");
         goto done;
     }
 
     // Finalize the digest and get the output
     if (1 != EVP_DigestFinal_ex(mdctx, &hashBuf[0], NULL))
     {
+        LogOpenSSLErrors("CryptoUtils_CreateSha256Hash: EVP_DigestFinal_ex");
         goto done;
     }
 
