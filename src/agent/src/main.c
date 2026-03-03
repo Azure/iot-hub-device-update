@@ -424,6 +424,7 @@ bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionStr
 
     if (!ConnectionStringUtils_GetDeviceIdFromConnectionString(connectionString, &deviceId))
     {
+        Log_Error("Failed to extract device ID from connection string for diagnostics.");
         goto done;
     }
 
@@ -432,6 +433,10 @@ bool ADUC_SetDiagnosticsDeviceNameFromConnectionString(const char* connectionStr
 
     if (!DiagnosticsComponent_SetDeviceName(deviceId, moduleId))
     {
+        Log_Error(
+            "DiagnosticsComponent_SetDeviceName failed (deviceId: '%s', moduleId: '%s').",
+            deviceId != NULL ? deviceId : "(null)",
+            moduleId != NULL ? moduleId : "(null)");
         goto done;
     }
 
@@ -538,6 +543,7 @@ static void ADUC_PnP_ComponentClient_PropertyUpdate_Callback(
     if (componentName == NULL)
     {
         // We only support named-components.
+        Log_Warn("Received property update with NULL component name (propertyName: '%s'). Ignoring.", propertyName);
         goto done;
     }
 
@@ -677,6 +683,11 @@ static bool RetryUpdateCommandHandler(const char* command, void* commandContext)
         ADUC_PnPDeviceTwin_RetryUpdateCommand_Callback,
         &g_deviceInitiatedRetryPnPPropertyChangeContext);
 
+    if (iothubResult != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("ClientHandle_GetTwinAsync failed for retry-update command (result: %d).", iothubResult);
+    }
+
     return iothubResult == IOTHUB_CLIENT_OK;
 }
 
@@ -701,6 +712,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 
     if (!ADUC_D2C_Messaging_Init())
     {
+        Log_Error("ADUC_D2C_Messaging_Init failed.");
         goto done;
     }
 
@@ -738,6 +750,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     {
         if (!GetAgentConfigInfo(&info))
         {
+            Log_Error("GetAgentConfigInfo failed. Could not load agent configuration.");
             goto done;
         }
 
@@ -815,11 +828,16 @@ void ShutdownAgent()
     Log_Warn("Agent is shutting down.");
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
+    Log_Debug("Shutdown step: UninitializeCommandListenerThread");
     UninitializeCommandListenerThread();
 #endif
+    Log_Info("Shutdown step: Tearing down PnP components.");
     ADUC_PnP_Components_Destroy();
+    Log_Info("Shutdown step: Deinitializing IoTHub communication manager");
     IoTHub_CommunicationManager_Deinit();
+    Log_Info("Shutdown step: Destroying diagnostics component device name");
     DiagnosticsComponent_DestroyDeviceName();
+    Log_Info("Agent shutdown sequence complete.");
     ADUC_Logging_Uninit();
     ExtensionManager_Uninit();
 }
@@ -961,6 +979,13 @@ int main(int argc, char** argv)
             {
                 ret = 0;
             }
+            else
+            {
+                Log_Error(
+                    "RegisterUpdateContentHandler failed (id: '%s', path: '%s').",
+                    launchArgs.extensionId,
+                    launchArgs.extensionFilePath);
+            }
 
             goto done;
 
@@ -969,6 +994,10 @@ int main(int argc, char** argv)
             {
                 ret = 0;
             }
+            else
+            {
+                Log_Error("RegisterComponentEnumeratorExtension failed (path: '%s').", launchArgs.extensionFilePath);
+            }
 
             goto done;
 
@@ -976,6 +1005,10 @@ int main(int argc, char** argv)
             if (RegisterContentDownloaderExtension(launchArgs.extensionFilePath))
             {
                 ret = 0;
+            }
+            else
+            {
+                Log_Error("RegisterContentDownloaderExtension failed (path: '%s').", launchArgs.extensionFilePath);
             }
 
             goto done;
@@ -990,6 +1023,13 @@ int main(int argc, char** argv)
             if (RegisterDownloadHandler(launchArgs.extensionId, launchArgs.extensionFilePath))
             {
                 ret = 0;
+            }
+            else
+            {
+                Log_Error(
+                    "RegisterDownloadHandler failed (id: '%s', path: '%s').",
+                    launchArgs.extensionId,
+                    launchArgs.extensionFilePath);
             }
 
             goto done;
@@ -1021,6 +1061,7 @@ int main(int argc, char** argv)
         goto done;
     }
 
+    Log_Info("Successfully set process identity for agent execution.");
     Log_Info("Agent (%s; %s) starting.", ADUC_PLATFORM_LAYER, ADUC_VERSION);
 #ifdef ADUC_GIT_INFO
     Log_Info("Git Info: %s", ADUC_GIT_INFO);

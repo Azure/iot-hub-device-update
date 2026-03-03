@@ -197,6 +197,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     if (startupMsgValue == NULL)
     {
+        Log_Error("ReportStartupMsg: json_value_init_object failed.");
         goto done;
     }
 
@@ -204,6 +205,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     if (startupMsgObj == NULL)
     {
+        Log_Error("ReportStartupMsg: json_value_get_object returned NULL.");
         goto done;
     }
 
@@ -211,6 +213,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     if (config == NULL)
     {
+        Log_Error("ReportStartupMsg: ADUC_ConfigInfo_GetInstance returned NULL.");
         goto done;
     }
 
@@ -257,6 +260,7 @@ bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv
     ADUC_WorkflowData* workflowData = calloc(1, sizeof(ADUC_WorkflowData));
     if (workflowData == NULL)
     {
+        Log_Error("Failed to allocate memory for ADUC_WorkflowData (size: %zu).", sizeof(ADUC_WorkflowData));
         goto done;
     }
 
@@ -287,7 +291,14 @@ done:
 
 void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
 {
+    if (componentContext == NULL)
+    {
+        Log_Error("AzureDeviceUpdateCoreInterface_Connected called with NULL context.");
+        return;
+    }
+
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
+    Log_Info("AzureDeviceUpdateCoreInterface connected to IoT Hub.");
 
     if (workflowData->WorkflowHandle == NULL)
     {
@@ -303,6 +314,12 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
 
 void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext)
 {
+    if (componentContext == NULL)
+    {
+        Log_Error("AzureDeviceUpdateCoreInterface_DoWork called with NULL context.");
+        return;
+    }
+
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
     ADUC_Workflow_DoWork(workflowData);
 }
