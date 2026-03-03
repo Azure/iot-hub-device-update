@@ -370,6 +370,38 @@ TEST_CASE("PnP_CopyPayloadToString", "[pnp_helper]")
     }
 }
 
+TEST_CASE("PnP_CreateTelemetryMessageHandle", "[pnp_helper]")
+{
+    SECTION("Creates telemetry message without component")
+    {
+        IOTHUB_MESSAGE_HANDLE messageHandle =
+            PnP_CreateTelemetryMessageHandle(nullptr, "{\"temp\":25}");
+
+        REQUIRE(messageHandle != nullptr);
+        IoTHubMessage_Destroy(messageHandle);
+    }
+
+    SECTION("Creates telemetry message with component property")
+    {
+        IOTHUB_MESSAGE_HANDLE messageHandle =
+            PnP_CreateTelemetryMessageHandle("deviceUpdate", "{\"state\":\"ok\"}");
+
+        REQUIRE(messageHandle != nullptr);
+
+        const char* value = IoTHubMessage_GetProperty(messageHandle, "$.sub");
+        REQUIRE(value != nullptr);
+        CHECK_THAT(value, Equals("deviceUpdate"));
+
+        IoTHubMessage_Destroy(messageHandle);
+    }
+
+    SECTION("Returns nullptr for invalid telemetry payload")
+    {
+        IOTHUB_MESSAGE_HANDLE messageHandle = PnP_CreateTelemetryMessageHandle("deviceUpdate", nullptr);
+        CHECK(messageHandle == nullptr);
+    }
+}
+
 /**
  * @brief Test PnP status codes
  */

@@ -118,6 +118,15 @@ TEST_CASE("ADUC_RestartAgent tests")
     }
 }
 
+TEST_CASE("ADUC_RebootSystem tests")
+{
+    SECTION("RebootSystem executes and returns an exit status")
+    {
+        int result = ADUC_RebootSystem();
+        CHECK(result >= 0);
+    }
+}
+
 //
 // Unit Tests for AducResultCodeIndicatesInProgress macro
 //

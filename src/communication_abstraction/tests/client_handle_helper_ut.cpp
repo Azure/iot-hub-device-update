@@ -118,3 +118,80 @@ TEST_CASE("ClientHandle_CreateFromConnectionString parameter validation")
         CHECK(result == false);
     }
 }
+
+TEST_CASE("ClientHandle wrapper methods return invalid arg before initialization")
+{
+    IOTHUB_MESSAGE_HANDLE message = nullptr;
+
+    CHECK(
+        ClientHandle_SetConnectionStatusCallback(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SendEventAsync(
+            nullptr,
+            message,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    ClientHandle_DoWork(nullptr);
+
+    CHECK(
+        ClientHandle_SetOption(
+            nullptr,
+            "logtrace",
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_GetTwinAsync(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SetClientTwinCallback(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SendReportedState(
+            nullptr,
+            nullptr,
+            0,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SetDeviceMethodCallback(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    ClientHandle_Destroy(nullptr);
+    CHECK(true);
+}
+
+TEST_CASE("ClientHandle_CreateFromConnectionString invalid conn type returns false")
+{
+    ADUC_ClientHandle handle = reinterpret_cast<ADUC_ClientHandle>(0x1);
+    const char* connectionString = "HostName=test.azure-devices.net;DeviceId=device1;SharedAccessKey=key";
+
+    bool result = ClientHandle_CreateFromConnectionString(
+        &handle,
+        ADUC_ConnType_NotSet,
+        connectionString,
+        nullptr);
+
+    CHECK(result == false);
+    CHECK(handle == nullptr);
+}

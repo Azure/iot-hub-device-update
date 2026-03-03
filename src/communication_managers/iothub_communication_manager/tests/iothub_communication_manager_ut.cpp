@@ -670,3 +670,123 @@ TEST_CASE("Boundary tests for connection strings")
         CHECK((result == ADUC_ConnType_Device || result == ADUC_ConnType_NotSet));
     }
 }
+
+TEST_CASE("GetConnectionInfoFromConnectionString parameter validation and success paths")
+{
+    SECTION("Returns false when info is NULL")
+    {
+        CHECK(
+            GetConnectionInfoFromConnectionString(
+                nullptr,
+                "HostName=hub;DeviceId=device;SharedAccessKey=key",
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr)
+            == false);
+    }
+
+    SECTION("Returns false when connection string is NULL")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        CHECK(GetConnectionInfoFromConnectionString(&info, nullptr, nullptr, nullptr, nullptr, nullptr) == false);
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("Returns false for invalid connection string")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        CHECK(
+            GetConnectionInfoFromConnectionString(
+                &info,
+                "HostName=hub;SharedAccessKey=key",
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr)
+            == false);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("Returns true for valid SAS device connection string")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        CHECK(
+            GetConnectionInfoFromConnectionString(
+                &info,
+                "HostName=hub;DeviceId=device;SharedAccessKey=key",
+                nullptr,
+                nullptr,
+                nullptr,
+                nullptr)
+            == true);
+
+        CHECK(info.connType == ADUC_ConnType_Device);
+        CHECK(info.authType == ADUC_AuthType_SASToken);
+        CHECK(info.connectionString != nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("Returns true for valid X509 module connection string with engine")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        CHECK(
+            GetConnectionInfoFromConnectionString(
+                &info,
+                "HostName=hub;DeviceId=device;ModuleId=module;SharedAccessKey=key",
+                "x509-cert",
+                "x509-private-key",
+                "openssl-engine",
+                "x509-ca-cert")
+            == true);
+
+        CHECK(info.connType == ADUC_ConnType_Module);
+        const bool isExpectedAuthType =
+            (info.authType == ADUC_AuthType_X509) || (info.authType == ADUC_AuthType_NestedEdgeCert);
+        CHECK(isExpectedAuthType);
+        CHECK(info.connectionString != nullptr);
+        CHECK(info.clientCertificateString != nullptr);
+        CHECK(info.opensslPrivateKey != nullptr);
+        CHECK(info.certificateString != nullptr);
+        CHECK(info.opensslEngine != nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+}
+
+TEST_CASE("IoTHub connection status callback updates auth state")
+{
+    SECTION("Authenticated status toggles IsAuthenticated true")
+    {
+        IoTHub_CommunicationManager_ConnectionStatus_Callback(
+            IOTHUB_CLIENT_CONNECTION_AUTHENTICATED,
+            IOTHUB_CLIENT_CONNECTION_OK,
+            nullptr);
+        CHECK(IoTHub_CommunicationManager_IsAuthenticated() == true);
+    }
+
+    SECTION("Unauthenticated status toggles IsAuthenticated false")
+    {
+        IoTHub_CommunicationManager_ConnectionStatus_Callback(
+            IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED,
+            IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL,
+            nullptr);
+        CHECK(IoTHub_CommunicationManager_IsAuthenticated() == false);
+    }
+}
+
+TEST_CASE("Agent and identity config helpers validate null inputs")
+{
+    CHECK(GetAgentConfigInfo(nullptr) == false);
+    CHECK(GetConnectionInfoFromIdentityService(nullptr) == false);
+}

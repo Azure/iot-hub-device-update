@@ -158,3 +158,28 @@ TEST_CASE_METHOD(CommandHelperTestFixture, "UnregisterCommand", "[command_helper
         UnregisterCommand(&cmd);
     }
 }
+
+TEST_CASE_METHOD(CommandHelperTestFixture, "SendCommand guard paths", "[command_helper]")
+{
+    SECTION("SendCommand returns false for empty command")
+    {
+        CHECK(SendCommand("") == false);
+    }
+
+    SECTION("SendCommand returns false for command over max length")
+    {
+        std::string tooLong(80, 'A');
+        CHECK(SendCommand(tooLong.c_str()) == false);
+    }
+}
+
+TEST_CASE_METHOD(CommandHelperTestFixture, "Command listener thread lifecycle", "[command_helper]")
+{
+    SECTION("Uninitialize is safe to call repeatedly")
+    {
+        // Avoid starting the FIFO listener in unit tests because it can block on platform-specific FIFO behavior.
+        UninitializeCommandListenerThread();
+        UninitializeCommandListenerThread();
+        CHECK(true);
+    }
+}
