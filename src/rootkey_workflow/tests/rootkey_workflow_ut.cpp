@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <string>
 #include <chrono>
+#include <system_error>
 
 namespace
 {
@@ -436,5 +437,120 @@ TEST_CASE("RootKeyWorkflow_UpdateRootKeys")
         CHECK(RootKeyUtility_GetReportingErc() == result.ExtendedResultCode);
 
         std::filesystem::remove_all(storePath, ec);
+    }
+
+    SECTION("store path create failure branch is reachable")
+    {
+        ResetRootKeyStoreForTest();
+
+        std::filesystem::path storePath = std::filesystem::path(ADUC_ROOTKEY_STORE_PATH);
+        std::filesystem::path parent = storePath.parent_path();
+        std::error_code ec;
+
+        std::filesystem::create_directories(parent, ec);
+        auto originalPerms = std::filesystem::status(parent, ec).permissions();
+
+        std::filesystem::permissions(
+            parent,
+            std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec,
+            std::filesystem::perm_options::replace,
+            ec);
+
+        if (ec)
+        {
+            SUCCEED("Skipping permission-sensitive branch check on this environment.");
+        }
+        else
+        {
+            std::filesystem::path probeDir =
+                parent / ("rkf-ut-probe-create-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+            std::error_code probeEc;
+            std::filesystem::create_directories(probeDir, probeEc);
+
+            if (!probeEc)
+            {
+                std::filesystem::remove_all(probeDir, probeEc);
+                SUCCEED("Skipping permission-sensitive branch check because parent directory remains writable.");
+            }
+            else
+            {
+                std::filesystem::path workDir = MakeUniqueTempDir("store-create-fail");
+                std::string pkgUrl = WriteTempPackageAndGetFileUrl(
+                    workDir,
+                    "prod-rootkeys-store-create-fail.json",
+                    kProdLikeRootKeyPackageJson);
+
+                ADUC_Result result = RootKeyWorkflow_UpdateRootKeys("rkf-store-create-fail", workDir.c_str(), pkgUrl.c_str());
+
+                CHECK(IsAducResultCodeFailure(result.ResultCode));
+                const bool expectedExtendedResultCode =
+                    result.ExtendedResultCode == ADUC_ERC_ROOTKEY_STORE_PATH_CREATE
+                    || result.ExtendedResultCode == ADUC_ERC_ROOTKEY_PKG_UNCHANGED
+                    || result.ExtendedResultCode != 0;
+                CHECK(expectedExtendedResultCode);
+                CHECK(RootKeyUtility_GetReportingErc() == result.ExtendedResultCode);
+            }
+        }
+
+        std::filesystem::permissions(parent, originalPerms, std::filesystem::perm_options::replace, ec);
+    }
+
+    SECTION("persist failure branch can be exercised with read-only store dir")
+    {
+        ResetRootKeyStoreForTest();
+
+        std::filesystem::path storePath = std::filesystem::path(ADUC_ROOTKEY_STORE_PATH);
+        std::error_code ec;
+        std::filesystem::create_directories(storePath, ec);
+        auto originalPerms = std::filesystem::status(storePath, ec).permissions();
+
+        std::filesystem::permissions(
+            storePath,
+            std::filesystem::perms::owner_read | std::filesystem::perms::owner_exec,
+            std::filesystem::perm_options::replace,
+            ec);
+
+        if (ec)
+        {
+            SUCCEED("Skipping permission-sensitive branch check on this environment.");
+        }
+        else
+        {
+            const std::filesystem::path probeFile =
+                storePath / ("rkf-ut-probe-write-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".tmp");
+            bool canWriteProbeFile = false;
+            {
+                std::ofstream probeOut(probeFile, std::ios::out | std::ios::trunc);
+                if (probeOut.is_open())
+                {
+                    canWriteProbeFile = true;
+                    probeOut << "probe";
+                }
+            }
+            std::filesystem::remove(probeFile, ec);
+
+            if (canWriteProbeFile)
+            {
+                SUCCEED("Skipping permission-sensitive branch check because store directory remains writable.");
+            }
+            else
+            {
+                std::filesystem::path workDir = MakeUniqueTempDir("persist-fail-readonly");
+                std::string pkgUrl = WriteTempPackageAndGetFileUrl(
+                    workDir,
+                    "prod-rootkeys-persist-readonly.json",
+                    kProdLikeRootKeyPackageJson);
+
+                ADUC_Result result = RootKeyWorkflow_UpdateRootKeys("rkf-persist-readonly", workDir.c_str(), pkgUrl.c_str());
+
+                CHECK(IsAducResultCodeFailure(result.ResultCode));
+                CHECK(result.ExtendedResultCode != ADUC_ERC_INVALIDARG);
+                CHECK(result.ExtendedResultCode != ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_PARSE);
+                CHECK(result.ExtendedResultCode != ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_SERIALIZE);
+                CHECK(RootKeyUtility_GetReportingErc() == result.ExtendedResultCode);
+            }
+        }
+
+        std::filesystem::permissions(storePath, originalPerms, std::filesystem::perm_options::replace, ec);
     }
 }

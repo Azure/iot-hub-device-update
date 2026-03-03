@@ -7,6 +7,11 @@
 #include <fstream>
 #include <string>
 
+extern "C" {
+ADUC_LOG_SEVERITY ZLogLevelToAducLogSeverity(enum ZLOG_SEVERITY logLevel);
+void zlog_ensure_at_most_n_logfiles(int max_num);
+}
+
 namespace
 {
 std::filesystem::path MakeUniqueTempDir(const std::string& suffix)
@@ -36,6 +41,26 @@ std::filesystem::path FindFirstLogFile(const std::filesystem::path& dir, const s
     }
 
     return std::filesystem::path();
+}
+
+size_t CountLogFiles(const std::filesystem::path& dir, const std::string& prefix)
+{
+    size_t count = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(dir))
+    {
+        if (!entry.is_regular_file())
+        {
+            continue;
+        }
+
+        const std::string name = entry.path().filename().string();
+        if (name.find(prefix + ".") == 0 && entry.path().extension() == ".log")
+        {
+            ++count;
+        }
+    }
+
+    return count;
 }
 } // namespace
 
@@ -85,4 +110,53 @@ TEST_CASE("zlog supports disabled and file-backed logging")
         CHECK(content.find("short message") != std::string::npos);
         CHECK(content.find("MULTI-LINE LOG BEGIN") != std::string::npos);
     }
+}
+
+TEST_CASE("zlog severity mappings cover all branches")
+{
+    CHECK(ZLogLevelToAducLogSeverity(ZLOG_DEBUG) == ADUC_LOG_DEBUG);
+    CHECK(ZLogLevelToAducLogSeverity(ZLOG_INFO) == ADUC_LOG_INFO);
+    CHECK(ZLogLevelToAducLogSeverity(ZLOG_WARN) == ADUC_LOG_WARN);
+    CHECK(ZLogLevelToAducLogSeverity(ZLOG_ERROR) == ADUC_LOG_ERROR);
+
+    ADUC_Logging_Init(ADUC_LOG_DEBUG, "zlog-ut-map");
+    CHECK(ADUC_Logging_GetLevel() == ADUC_LOG_DEBUG);
+    ADUC_Logging_Uninit();
+
+    ADUC_Logging_Init(ADUC_LOG_INFO, "zlog-ut-map");
+    CHECK(ADUC_Logging_GetLevel() == ADUC_LOG_INFO);
+    ADUC_Logging_Uninit();
+
+    ADUC_Logging_Init(ADUC_LOG_WARN, "zlog-ut-map");
+    CHECK(ADUC_Logging_GetLevel() == ADUC_LOG_WARN);
+    ADUC_Logging_Uninit();
+
+    ADUC_Logging_Init(ADUC_LOG_ERROR, "zlog-ut-map");
+    CHECK(ADUC_Logging_GetLevel() == ADUC_LOG_ERROR);
+    ADUC_Logging_Uninit();
+}
+
+TEST_CASE("zlog file retention deletes older matching logs")
+{
+    std::filesystem::path logDir = MakeUniqueTempDir("retention");
+    const std::string prefix = "zlog-ut-retention";
+
+    REQUIRE(zlog_init(logDir.string().c_str(), prefix.c_str(), ZLOG_DISABLED, ZLOG_ENABLED, ZLOG_DEBUG, ZLOG_DEBUG) == 0);
+    zlog_log(ZLOG_INFO, __FUNCTION__, __LINE__, "seed file");
+    zlog_flush_buffer();
+    zlog_finish();
+
+    for (int i = 0; i < 4; ++i)
+    {
+        std::filesystem::path fake = logDir / (prefix + ".19990101-00000" + std::to_string(i) + ".log");
+        std::ofstream out(fake, std::ios::out | std::ios::trunc);
+        REQUIRE(out.is_open());
+        out << "old";
+    }
+
+    REQUIRE(zlog_init(logDir.string().c_str(), prefix.c_str(), ZLOG_DISABLED, ZLOG_ENABLED, ZLOG_DEBUG, ZLOG_DEBUG) == 0);
+    zlog_ensure_at_most_n_logfiles(1);
+    zlog_finish();
+
+    CHECK(CountLogFiles(logDir, prefix) <= 1);
 }
