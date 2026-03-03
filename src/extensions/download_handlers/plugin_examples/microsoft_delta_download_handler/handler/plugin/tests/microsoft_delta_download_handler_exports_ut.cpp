@@ -1,6 +1,6 @@
 /**
  * @file microsoft_delta_download_handler_exports_ut.cpp
- * @brief Non-mock unit tests for EXPORTS.c plugin export functions.
+ * @brief Unit tests for EXPORTS.c plugin export functions.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.

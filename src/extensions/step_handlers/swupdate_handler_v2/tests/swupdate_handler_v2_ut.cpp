@@ -652,7 +652,7 @@ TEST_CASE("SWUpdate sample script --action-cancel")
     ADUC_ConfigInfo_ReleaseInstance(config);
 }
 
-TEST_CASE("SWUpdate handler_create exported contract info", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate handler_create exported contract info", "[swupdate_handler_v2]")
 {
     ADUC_ExtensionContractInfo info{};
     ADUC_Result result = GetContractInfo(&info);
@@ -737,7 +737,7 @@ static ADUC_WorkflowHandle SetupSwupdateStepWorkflow(
     return stepHandle;
 }
 
-TEST_CASE("SWUpdate utility functions read config/value", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate utility functions read config/value", "[swupdate_handler_v2]")
 {
     CHECK(SWUpdateHandlerImpl::ReadValueFromFile("").empty());
     CHECK(SWUpdateHandlerImpl::ReadValueFromFile(std::string(PATH_MAX + 10, 'a')).empty());
@@ -777,7 +777,7 @@ TEST_CASE("SWUpdate utility functions read config/value", "[swupdate_handler_v2]
     remove(cfgFile.c_str());
 }
 
-TEST_CASE("SWUpdate PerformAction fails when workflowData is nullptr", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PerformAction fails when workflowData is nullptr", "[swupdate_handler_v2]")
 {
     std::string scriptFilePath;
     std::vector<std::string> args;
@@ -797,7 +797,7 @@ TEST_CASE("SWUpdate PerformAction fails when workflowData is nullptr", "[swupdat
     CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
 }
 
-TEST_CASE("SWUpdate PerformAction fails when workflow handle is nullptr", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PerformAction fails when workflow handle is nullptr", "[swupdate_handler_v2]")
 {
     ADUC_WorkflowData workflowData = {};
 
@@ -819,7 +819,7 @@ TEST_CASE("SWUpdate PerformAction fails when workflow handle is nullptr", "[swup
     CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
 }
 
-TEST_CASE("SWUpdate PrepareCommandArguments guard and component branches", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PrepareCommandArguments guard and component branches", "[swupdate_handler_v2]")
 {
     std::string commandFilePath;
     std::vector<std::string> args;
@@ -879,7 +879,7 @@ TEST_CASE("SWUpdate PrepareCommandArguments guard and component branches", "[swu
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate content handler direct methods on real step workflow", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate content handler direct methods on real step workflow", "[swupdate_handler_v2]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -922,7 +922,7 @@ TEST_CASE("SWUpdate content handler direct methods on real step workflow", "[swu
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate PrepareCommandArguments fails when scriptFileName is missing", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PrepareCommandArguments fails when scriptFileName is missing", "[swupdate_handler_v2]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -948,7 +948,7 @@ TEST_CASE("SWUpdate PrepareCommandArguments fails when scriptFileName is missing
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate PrepareCommandArguments fails when swuFileName is missing", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PrepareCommandArguments fails when swuFileName is missing", "[swupdate_handler_v2]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -974,7 +974,7 @@ TEST_CASE("SWUpdate PrepareCommandArguments fails when swuFileName is missing", 
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate PerformAction prepare path with unknown apiVersion", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PerformAction prepare path with unknown apiVersion", "[swupdate_handler_v2]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -1020,7 +1020,7 @@ static std::string get_workflow_script_not_matching_files()
 })";
 }
 
-TEST_CASE("SWUpdate Download fails via handler when scriptFileName is missing", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate Download fails via handler when scriptFileName is missing", "[swupdate_handler_v2]")
 {
     set_test_config_folder();
 
@@ -1045,7 +1045,7 @@ TEST_CASE("SWUpdate Download fails via handler when scriptFileName is missing", 
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate Download fails via handler when file count is insufficient", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate Download fails via handler when file count is insufficient", "[swupdate_handler_v2]")
 {
     set_test_config_folder();
 
@@ -1070,7 +1070,7 @@ TEST_CASE("SWUpdate Download fails via handler when file count is insufficient",
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate Download fails when script file entity not found by name", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate Download fails when script file entity not found by name", "[swupdate_handler_v2]")
 {
     set_test_config_folder();
 
@@ -1095,7 +1095,7 @@ TEST_CASE("SWUpdate Download fails when script file entity not found by name", "
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate PerformAction non-prepare exercises result file parsing", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PerformAction non-prepare exercises result file parsing", "[swupdate_handler_v2]")
 {
     set_test_config_folder();
     const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
@@ -1150,7 +1150,7 @@ TEST_CASE("SWUpdate PerformAction non-prepare exercises result file parsing", "[
     ADUC_ConfigInfo_ReleaseInstance(config);
 }
 
-TEST_CASE("SWUpdate handler Backup and Restore methods", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate handler Backup and Restore methods", "[swupdate_handler_v2]")
 {
     set_test_config_folder();
 
@@ -1180,7 +1180,7 @@ TEST_CASE("SWUpdate handler Backup and Restore methods", "[swupdate_handler_v2][
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("SWUpdate Apply routes through Cancel when operation cancel is requested", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate Apply routes through Cancel when operation cancel is requested", "[swupdate_handler_v2]")
 {
     set_test_config_folder();
 
@@ -1221,7 +1221,7 @@ static std::string get_workflow_with_component_args()
 })";
 }
 
-TEST_CASE("SWUpdate PrepareCommandArguments covers non-null component property branches", "[swupdate_handler_v2][non_mock]")
+TEST_CASE("SWUpdate PrepareCommandArguments covers non-null component property branches", "[swupdate_handler_v2]")
 {
     // Uses a workflow with --component-*-val argument placeholders and a full component JSON
     // to exercise the val != nullptr branches for manufacturer, model, version, group.

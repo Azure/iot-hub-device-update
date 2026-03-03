@@ -1,6 +1,6 @@
 /**
  * @file microsoft_delta_download_handler_utils_cpp_ut.cpp
- * @brief Non-mock tests for microsoft_delta_download_handler_utils.cpp.
+ * @brief Unit tests for microsoft_delta_download_handler_utils.cpp.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.

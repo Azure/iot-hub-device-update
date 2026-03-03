@@ -1,6 +1,6 @@
 /**
  * @file source_update_cache_ut.cpp
- * @brief Non-mock unit tests for source_update_cache.c.
+ * @brief Unit tests for source_update_cache.c.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.

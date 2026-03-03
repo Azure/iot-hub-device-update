@@ -337,7 +337,7 @@ static ADUC_WorkflowHandle SetupScriptStepWorkflow(
     return stepHandle;
 }
 
-TEST_CASE("Script Handler exported functions smoke test (non-mock)", "[script_handler][non_mock]")
+TEST_CASE("Script Handler exported functions smoke test", "[script_handler]")
 {
     ContentHandler* handler = CreateUpdateContentHandlerExtension(ADUC_LOG_INFO);
     REQUIRE(handler != nullptr);
@@ -351,7 +351,7 @@ TEST_CASE("Script Handler exported functions smoke test (non-mock)", "[script_ha
     CHECK(info.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
 }
 
-TEST_CASE("Script Handler PrepareScriptArguments - invalid selected components JSON", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments - invalid selected components JSON", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -362,8 +362,10 @@ TEST_CASE("Script Handler PrepareScriptArguments - invalid selected components J
 
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        stepHandle,
+        &stepWorkflow,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -377,7 +379,7 @@ TEST_CASE("Script Handler PrepareScriptArguments - invalid selected components J
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PrepareScriptArguments - selected components missing array", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments - selected components missing array", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -388,8 +390,10 @@ TEST_CASE("Script Handler PrepareScriptArguments - selected components missing a
 
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        stepHandle,
+        &stepWorkflow,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -403,7 +407,7 @@ TEST_CASE("Script Handler PrepareScriptArguments - selected components missing a
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PrepareScriptArguments - empty selected components array", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments - empty selected components array", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -414,8 +418,10 @@ TEST_CASE("Script Handler PrepareScriptArguments - empty selected components arr
 
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        stepHandle,
+        &stepWorkflow,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -428,7 +434,7 @@ TEST_CASE("Script Handler PrepareScriptArguments - empty selected components arr
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PrepareScriptArguments - multi component input still succeeds", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments - multi component input still succeeds", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -441,8 +447,10 @@ TEST_CASE("Script Handler PrepareScriptArguments - multi component input still s
 
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        stepHandle,
+        &stepWorkflow,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -457,7 +465,7 @@ TEST_CASE("Script Handler PrepareScriptArguments - multi component input still s
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PerformAction false path with real workflow", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PerformAction false path with real workflow", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -475,7 +483,7 @@ TEST_CASE("Script Handler PerformAction false path with real workflow", "[script
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler Install and Apply wrappers on real workflow", "[script_handler][non_mock]")
+TEST_CASE("Script Handler Install and Apply wrappers on real workflow", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -500,7 +508,7 @@ TEST_CASE("Script Handler Install and Apply wrappers on real workflow", "[script
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler IsInstalled real workflow path", "[script_handler][non_mock]")
+TEST_CASE("Script Handler IsInstalled real workflow path", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -520,14 +528,14 @@ TEST_CASE("Script Handler IsInstalled real workflow path", "[script_handler][non
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler free-function null workflow guards", "[script_handler][non_mock]")
+TEST_CASE("Script Handler free-function null workflow guards", "[script_handler]")
 {
     ADUC_PerformAction_Results results = ScriptHandler_PerformAction("install", nullptr, false);
     CHECK(results.result.ResultCode == ADUC_GeneralResult_Failure);
     CHECK(results.result.ExtendedResultCode == ADUC_ERC_SCRIPT_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
 }
 
-TEST_CASE("Script Handler free-function null workflow handle guard", "[script_handler][non_mock]")
+TEST_CASE("Script Handler free-function null workflow handle guard", "[script_handler]")
 {
     ADUC_WorkflowData wf{};
     wf.WorkflowHandle = nullptr;
@@ -537,13 +545,15 @@ TEST_CASE("Script Handler free-function null workflow handle guard", "[script_ha
     CHECK(results.result.ExtendedResultCode == ADUC_ERC_SCRIPT_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
 }
 
-TEST_CASE("Script Handler PrepareScriptArguments null workflow handle guard", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments null workflow handle guard", "[script_handler]")
 {
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData wf{};
+    wf.WorkflowHandle = nullptr;
 
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        nullptr,
+        &wf,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -616,7 +626,7 @@ const char* workflow_script_unknown_apiver =
     R"( } )";
 // clang-format on
 
-TEST_CASE("Script Handler PrepareScriptArguments - missing scriptFileName property", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments - missing scriptFileName property", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -625,8 +635,10 @@ TEST_CASE("Script Handler PrepareScriptArguments - missing scriptFileName proper
 
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        stepHandle,
+        &stepWorkflow,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -640,7 +652,7 @@ TEST_CASE("Script Handler PrepareScriptArguments - missing scriptFileName proper
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PrepareScriptArguments - component placeholders and quoted args", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments - component placeholders and quoted args", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -653,8 +665,10 @@ TEST_CASE("Script Handler PrepareScriptArguments - component placeholders and qu
 
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        stepHandle,
+        &stepWorkflow,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -667,8 +681,6 @@ TEST_CASE("Script Handler PrepareScriptArguments - component placeholders and qu
     CHECK(std::find(args.begin(), args.end(), "n/a") != args.end());
     CHECK(std::find(args.begin(), args.end(), "/dev/motor0") != args.end());
 
-    ADUC_WorkflowData stepWorkflow{};
-    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_PerformAction_Results performResult = ScriptHandler_PerformAction("install", &stepWorkflow, true);
     CHECK(performResult.result.ResultCode == ADUC_Result_Success);
     CHECK(performResult.scriptOutput.find("'value\"quoted\"'") != std::string::npos);
@@ -678,7 +690,7 @@ TEST_CASE("Script Handler PrepareScriptArguments - component placeholders and qu
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PrepareScriptArguments - full component properties cover non-null branches", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PrepareScriptArguments - full component properties cover non-null branches", "[script_handler]")
 {
     // This test exercises the val != nullptr branches for manufacturer, model, version, and group
     // in PrepareScriptArguments, which the existing test (with only id/name/properties) leaves as n/a.
@@ -697,8 +709,10 @@ TEST_CASE("Script Handler PrepareScriptArguments - full component properties cov
 
     std::string scriptFilePath;
     std::vector<std::string> args;
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
     ADUC_Result result = ScriptHandlerImpl::PrepareScriptArguments(
-        stepHandle,
+        &stepWorkflow,
         "/tmp/script-result.json",
         "/tmp/script-work",
         scriptFilePath,
@@ -726,7 +740,7 @@ TEST_CASE("Script Handler PrepareScriptArguments - full component properties cov
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler Download and IsInstalled fail when scriptFileName is missing", "[script_handler][non_mock]")
+TEST_CASE("Script Handler Download and IsInstalled fail when scriptFileName is missing", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -752,7 +766,7 @@ TEST_CASE("Script Handler Download and IsInstalled fail when scriptFileName is m
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler Download and IsInstalled fail when file count is zero", "[script_handler][non_mock]")
+TEST_CASE("Script Handler Download and IsInstalled fail when file count is zero", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -778,7 +792,7 @@ TEST_CASE("Script Handler Download and IsInstalled fail when file count is zero"
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler Download and IsInstalled fail when primary file entity cannot be resolved", "[script_handler][non_mock]")
+TEST_CASE("Script Handler Download and IsInstalled fail when primary file entity cannot be resolved", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -804,7 +818,7 @@ TEST_CASE("Script Handler Download and IsInstalled fail when primary file entity
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PerformAction prepare path with unknown apiVersion", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PerformAction prepare path with unknown apiVersion", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -825,7 +839,7 @@ TEST_CASE("Script Handler PerformAction prepare path with unknown apiVersion", "
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler wrapper methods backup restore cancel", "[script_handler][non_mock]")
+TEST_CASE("Script Handler wrapper methods backup restore cancel", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -852,7 +866,7 @@ TEST_CASE("Script Handler wrapper methods backup restore cancel", "[script_handl
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PerformAction non-prepare with pre-created result file", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PerformAction non-prepare with pre-created result file", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -885,7 +899,7 @@ TEST_CASE("Script Handler PerformAction non-prepare with pre-created result file
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PerformAction with debug logging enabled", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PerformAction with debug logging enabled", "[script_handler]")
 {
     ADUCPAL_setenv("DU_AGENT_ENABLE_SCRIPT_HANDLER_EXTRA_DEBUG_LOGS", "1", 1);
 
@@ -909,7 +923,7 @@ TEST_CASE("Script Handler PerformAction with debug logging enabled", "[script_ha
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PerformAction maps script failure with zero ERC to actionable ERC", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PerformAction maps script failure with zero ERC to actionable ERC", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -946,7 +960,7 @@ TEST_CASE("Script Handler PerformAction maps script failure with zero ERC to act
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PerformAction requests reboot when script result requires reboot", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PerformAction requests reboot when script result requires reboot", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -983,7 +997,7 @@ TEST_CASE("Script Handler PerformAction requests reboot when script result requi
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler Download exercises is-installed check", "[script_handler][non_mock]")
+TEST_CASE("Script Handler Download exercises is-installed check", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -1006,7 +1020,7 @@ TEST_CASE("Script Handler Download exercises is-installed check", "[script_handl
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler Install calls PerformAction with install action", "[script_handler][non_mock]")
+TEST_CASE("Script Handler Install calls PerformAction with install action", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -1028,7 +1042,7 @@ TEST_CASE("Script Handler Install calls PerformAction with install action", "[sc
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler Apply calls PerformAction with apply action", "[script_handler][non_mock]")
+TEST_CASE("Script Handler Apply calls PerformAction with apply action", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -1050,7 +1064,7 @@ TEST_CASE("Script Handler Apply calls PerformAction with apply action", "[script
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler IsInstalled calls PerformAction with is-installed action", "[script_handler][non_mock]")
+TEST_CASE("Script Handler IsInstalled calls PerformAction with is-installed action", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;
@@ -1072,7 +1086,7 @@ TEST_CASE("Script Handler IsInstalled calls PerformAction with is-installed acti
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Script Handler PerformAction api version 1.1 branch", "[script_handler][non_mock]")
+TEST_CASE("Script Handler PerformAction api version 1.1 branch", "[script_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     const ADUC_ConfigInfo* config = nullptr;

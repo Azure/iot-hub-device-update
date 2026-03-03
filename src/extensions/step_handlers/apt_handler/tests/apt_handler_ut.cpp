@@ -1,6 +1,6 @@
 /**
  * @file apt_handler_ut.cpp
- * @brief Non-mock unit tests for apt_handler.cpp
+ * @brief Unit tests for apt_handler.cpp
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -142,7 +142,7 @@ static ADUC_WorkflowHandle SetupAptStepWorkflow(ADUC_WorkflowHandle* rootHandle)
     return stepHandle;
 }
 
-TEST_CASE("APT handler exported functions smoke test", "[apt_handler][non_mock]")
+TEST_CASE("APT handler exported functions smoke test", "[apt_handler]")
 {
     ContentHandler* handler = CreateUpdateContentHandlerExtension(ADUC_LOG_INFO);
     REQUIRE(handler != nullptr);
@@ -156,7 +156,7 @@ TEST_CASE("APT handler exported functions smoke test", "[apt_handler][non_mock]"
     CHECK(info.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
 }
 
-TEST_CASE("APT handler backup and restore return unsupported", "[apt_handler][non_mock]")
+TEST_CASE("APT handler backup and restore return unsupported", "[apt_handler]")
 {
     std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
     REQUIRE(handler != nullptr);
@@ -169,7 +169,7 @@ TEST_CASE("APT handler backup and restore return unsupported", "[apt_handler][no
     CHECK(restoreResult.ResultCode == ADUC_Result_Restore_Success_Unsupported);
 }
 
-TEST_CASE("APT handler cancel/download paths on real workflows", "[apt_handler][non_mock]")
+TEST_CASE("APT handler cancel/download paths on real workflows", "[apt_handler]")
 {
     reset_installed_criteria_file();
 
@@ -201,7 +201,7 @@ TEST_CASE("APT handler cancel/download paths on real workflows", "[apt_handler][
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler install/apply parse-failure paths on missing manifest", "[apt_handler][non_mock]")
+TEST_CASE("APT handler install/apply parse-failure paths on missing manifest", "[apt_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
@@ -226,7 +226,7 @@ TEST_CASE("APT handler install/apply parse-failure paths on missing manifest", "
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler is-installed returns not-installed without persisted criteria", "[apt_handler][non_mock]")
+TEST_CASE("APT handler is-installed returns not-installed without persisted criteria", "[apt_handler]")
 {
     reset_installed_criteria_file();
 
@@ -248,7 +248,7 @@ TEST_CASE("APT handler is-installed returns not-installed without persisted crit
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler install/apply/cancel paths with local apt manifest", "[apt_handler][non_mock]")
+TEST_CASE("APT handler install/apply/cancel paths with local apt manifest", "[apt_handler]")
 {
     reset_installed_criteria_file();
 
@@ -284,7 +284,7 @@ TEST_CASE("APT handler install/apply/cancel paths with local apt manifest", "[ap
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler download fails with wrong file count", "[apt_handler][non_mock]")
+TEST_CASE("APT handler download fails with wrong file count", "[apt_handler]")
 {
     set_test_config_folder();
 
@@ -320,7 +320,7 @@ TEST_CASE("APT handler download fails with wrong file count", "[apt_handler][non
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler download/install/apply fail when file entity is unresolved", "[apt_handler][non_mock]")
+TEST_CASE("APT handler download/install/apply fail when file entity is unresolved", "[apt_handler]")
 {
     set_test_config_folder();
 
@@ -361,7 +361,7 @@ TEST_CASE("APT handler download/install/apply fail when file entity is unresolve
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler apply returns immediate agent restart when manifest requests it", "[apt_handler][non_mock]")
+TEST_CASE("APT handler apply returns immediate agent restart when manifest requests it", "[apt_handler]")
 {
     reset_installed_criteria_file();
 
@@ -393,7 +393,7 @@ TEST_CASE("APT handler apply returns immediate agent restart when manifest reque
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler apply returns success when manifest does not require agent restart", "[apt_handler][non_mock]")
+TEST_CASE("APT handler apply returns success when manifest does not require agent restart", "[apt_handler]")
 {
     reset_installed_criteria_file();
 
@@ -425,7 +425,7 @@ TEST_CASE("APT handler apply returns success when manifest does not require agen
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler download exercises path up to content download", "[apt_handler][non_mock]")
+TEST_CASE("APT handler download exercises path up to content download", "[apt_handler]")
 {
     set_test_config_folder();
 
@@ -450,7 +450,7 @@ TEST_CASE("APT handler download exercises path up to content download", "[apt_ha
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler install returns cancel result when cancel requested", "[apt_handler][non_mock]")
+TEST_CASE("APT handler install returns cancel result when cancel requested", "[apt_handler]")
 {
     ADUC_WorkflowHandle rootHandle = nullptr;
     ADUC_WorkflowHandle stepHandle = SetupAptStepWorkflow(&rootHandle);
@@ -472,7 +472,7 @@ TEST_CASE("APT handler install returns cancel result when cancel requested", "[a
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler apply returns cancel result when cancel requested", "[apt_handler][non_mock]")
+TEST_CASE("APT handler apply returns cancel result when cancel requested", "[apt_handler]")
 {
     reset_installed_criteria_file();
 
@@ -496,7 +496,7 @@ TEST_CASE("APT handler apply returns cancel result when cancel requested", "[apt
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler is-installed returns installed when criteria is persisted", "[apt_handler][non_mock]")
+TEST_CASE("APT handler is-installed returns installed when criteria is persisted", "[apt_handler]")
 {
     reset_installed_criteria_file();
 
@@ -522,7 +522,7 @@ TEST_CASE("APT handler is-installed returns installed when criteria is persisted
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("APT handler download fails with empty installed criteria", "[apt_handler][non_mock]")
+TEST_CASE("APT handler download fails with empty installed criteria", "[apt_handler]")
 {
     set_test_config_folder();
 

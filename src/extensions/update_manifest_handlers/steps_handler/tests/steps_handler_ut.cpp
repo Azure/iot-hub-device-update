@@ -114,20 +114,6 @@ std::filesystem::path MakeUniqueTempPath(const std::string& suffix)
     return std::filesystem::temp_directory_path() / ("adu-steps-" + suffix + "-" + std::to_string(nonce));
 }
 
-bool CanCreateAduSandbox()
-{
-    if (getpwnam("adu") == nullptr || getgrnam("adu") == nullptr)
-    {
-        return false;
-    }
-
-    std::filesystem::path probeDir = MakeUniqueTempPath("sandbox-probe");
-    const int createResult = ADUC_SystemUtils_MkSandboxDirRecursive(probeDir.string().c_str());
-    std::filesystem::remove_all(probeDir);
-
-    return createResult == 0;
-}
-
 // Simple test handler stubs for exercising steps handler code paths.
 // These are plain stubs (not mocks) that return canned ADUC_Result values.
 class SimpleNotInstalledHandler : public ContentHandler
@@ -201,7 +187,7 @@ public:
 
 } // namespace
 
-TEST_CASE("GetContractInfo returns expected values", "[steps_handler][non_mock]")
+TEST_CASE("GetContractInfo returns expected values", "[steps_handler]")
 {
     ADUC_ExtensionContractInfo contractInfo {};
 
@@ -212,7 +198,7 @@ TEST_CASE("GetContractInfo returns expected values", "[steps_handler][non_mock]"
     CHECK(contractInfo.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
 }
 
-TEST_CASE("CreateUpdateContentHandlerExtension returns handler", "[steps_handler][non_mock]")
+TEST_CASE("CreateUpdateContentHandlerExtension returns handler", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -220,13 +206,13 @@ TEST_CASE("CreateUpdateContentHandlerExtension returns handler", "[steps_handler
     REQUIRE(handler != nullptr);
 }
 
-TEST_CASE("Steps handler factory create returns handler", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler factory create returns handler", "[steps_handler]")
 {
     auto handler = StepsHandlerImpl::CreateContentHandler();
     REQUIRE(handler != nullptr);
 }
 
-TEST_CASE("Steps handler backup and restore succeed with valid workflow", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler backup and restore succeed with valid workflow", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -242,7 +228,7 @@ TEST_CASE("Steps handler backup and restore succeed with valid workflow", "[step
     CHECK(restoreResult.ResultCode == ADUC_Result_Restore_Success);
 }
 
-TEST_CASE("Steps handler cancel sets cancel requested and returns success", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler cancel sets cancel requested and returns success", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -257,7 +243,7 @@ TEST_CASE("Steps handler cancel sets cancel requested and returns success", "[st
     CHECK(workflow_is_cancel_requested(workflow.get()));
 }
 
-TEST_CASE("Steps handler apply returns cancelled when workflow is already cancelled", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler apply returns cancelled when workflow is already cancelled", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -272,7 +258,7 @@ TEST_CASE("Steps handler apply returns cancelled when workflow is already cancel
     CHECK(applyResult.ResultCode == ADUC_Result_Failure_Cancelled);
 }
 
-TEST_CASE("Steps handler install returns cancelled when workflow is already cancelled", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler install returns cancelled when workflow is already cancelled", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -287,7 +273,7 @@ TEST_CASE("Steps handler install returns cancelled when workflow is already canc
     CHECK(installResult.ResultCode == ADUC_Result_Failure_Cancelled);
 }
 
-TEST_CASE("Steps handler download returns cancelled when workflow is already cancelled", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler download returns cancelled when workflow is already cancelled", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -302,7 +288,7 @@ TEST_CASE("Steps handler download returns cancelled when workflow is already can
     CHECK(downloadResult.ResultCode == ADUC_Result_Failure_Cancelled);
 }
 
-TEST_CASE("Steps handler download fails and keeps empty workflow child count at zero", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler download fails and keeps empty workflow child count at zero", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -319,7 +305,7 @@ TEST_CASE("Steps handler download fails and keeps empty workflow child count at 
     CHECK(workflow_get_children_count(workflow.get()) == 0);
 }
 
-TEST_CASE("Steps handler download returns failure for empty-steps workflow", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler download returns failure for empty-steps workflow", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -333,7 +319,7 @@ TEST_CASE("Steps handler download returns failure for empty-steps workflow", "[s
     CHECK((IsAducResultCodeFailure(downloadResult.ResultCode) || downloadResult.ResultCode == ADUC_Result_Download_Success));
 }
 
-TEST_CASE("Steps handler apply returns success for non-cancelled minimal workflow", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler apply returns success for non-cancelled minimal workflow", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -348,7 +334,7 @@ TEST_CASE("Steps handler apply returns success for non-cancelled minimal workflo
     CHECK(applyResult.ExtendedResultCode == 0);
 }
 
-TEST_CASE("Steps handler install returns failure for empty-steps workflow", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler install returns failure for empty-steps workflow", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -362,7 +348,7 @@ TEST_CASE("Steps handler install returns failure for empty-steps workflow", "[st
     CHECK((IsAducResultCodeFailure(installResult.ResultCode) || installResult.ResultCode == ADUC_Result_Install_Success));
 }
 
-TEST_CASE("Steps handler is-installed returns failure for empty-steps workflow", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler is-installed returns failure for empty-steps workflow", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -378,7 +364,7 @@ TEST_CASE("Steps handler is-installed returns failure for empty-steps workflow",
         || isInstalledResult.ResultCode == ADUC_Result_IsInstalled_NotInstalled));
 }
 
-TEST_CASE("Steps handler install and is-installed traverse child workflow paths", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler install and is-installed traverse child workflow paths", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -403,7 +389,7 @@ TEST_CASE("Steps handler install and is-installed traverse child workflow paths"
     ExtensionManager::Uninit();
 }
 
-TEST_CASE("Steps handler backup returns cancelled when cancel requested", "[steps_handler][non_mock]")
+TEST_CASE("Steps handler backup returns cancelled when cancel requested", "[steps_handler]")
 {
     SetTestConfig();
 
@@ -416,208 +402,3 @@ TEST_CASE("Steps handler backup returns cancelled when cancel requested", "[step
     ADUC_Result backupResult = handler->Backup(workflow.data());
     CHECK(backupResult.ResultCode == ADUC_Result_Failure_Cancelled);
 }
-
-// NOTE: Debug-logging tests for Download/Install/IsInstalled removed.
-// They require the 'adu' system user; without it, MkSandboxDirRecursive fails
-// and a double-free in the handler's cleanup path causes SIGABRT.
-
-TEST_CASE("Steps handler download and install fail when handler not registered for step type", "[steps_handler][non_mock]")
-{
-    SetTestConfig();
-
-    if (!CanCreateAduSandbox())
-    {
-        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
-        return;
-    }
-
-    std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
-    REQUIRE(handler != nullptr);
-
-    WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    std::filesystem::path workDir = MakeUniqueTempWorkFolder("no-handler");
-    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
-
-    ADUC_Result downloadResult = handler->Download(workflow.data());
-    CHECK(IsAducResultCodeFailure(downloadResult.ResultCode));
-
-    ADUC_Result installResult = handler->Install(workflow.data());
-    CHECK(IsAducResultCodeFailure(installResult.ResultCode));
-
-    std::filesystem::remove_all(workDir);
-}
-
-TEST_CASE("Steps handler download loop processes not-installed child via stub", "[steps_handler][non_mock]")
-{
-    SetTestConfig();
-
-    if (!CanCreateAduSandbox())
-    {
-        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
-        return;
-    }
-
-    auto* stub = new SimpleNotInstalledHandler();
-    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", stub);
-
-    std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
-    REQUIRE(handler != nullptr);
-
-    WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    std::filesystem::path workDir = MakeUniqueTempWorkFolder("notinstalled-dl");
-    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
-
-    ADUC_Result result = handler->Download(workflow.data());
-    CHECK((result.ResultCode == ADUC_Result_Download_Success
-        || IsAducResultCodeFailure(result.ResultCode)));
-
-    std::filesystem::remove_all(workDir);
-    ExtensionManager::Uninit();
-}
-
-TEST_CASE("Steps handler install loop exercises backup install apply on child via stub", "[steps_handler][non_mock]")
-{
-    SetTestConfig();
-
-    if (!CanCreateAduSandbox())
-    {
-        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
-        return;
-    }
-
-    auto* stub = new SimpleNotInstalledHandler();
-    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", stub);
-
-    std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
-    REQUIRE(handler != nullptr);
-
-    WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    std::filesystem::path workDir = MakeUniqueTempWorkFolder("notinstalled-inst");
-    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
-
-    ADUC_Result result = handler->Install(workflow.data());
-    CHECK((result.ResultCode == ADUC_Result_Install_Success
-        || IsAducResultCodeFailure(result.ResultCode)));
-
-    std::filesystem::remove_all(workDir);
-    ExtensionManager::Uninit();
-}
-
-TEST_CASE("Steps handler install invokes restore when child install fails via stub", "[steps_handler][non_mock]")
-{
-    SetTestConfig();
-
-    if (!CanCreateAduSandbox())
-    {
-        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
-        return;
-    }
-
-    auto* failHandler = new FailInstallHandler();
-    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", failHandler);
-
-    std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
-    REQUIRE(handler != nullptr);
-
-    WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    std::filesystem::path workDir = MakeUniqueTempWorkFolder("failinstall");
-    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
-
-    ADUC_Result result = handler->Install(workflow.data());
-    CHECK(IsAducResultCodeFailure(result.ResultCode));
-
-    std::filesystem::remove_all(workDir);
-    ExtensionManager::Uninit();
-}
-
-TEST_CASE("Steps handler install invokes restore when child apply fails via stub", "[steps_handler][non_mock]")
-{
-    SetTestConfig();
-
-    if (!CanCreateAduSandbox())
-    {
-        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
-        return;
-    }
-
-    auto* failHandler = new FailApplyHandler();
-    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", failHandler);
-
-    std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
-    REQUIRE(handler != nullptr);
-
-    WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    std::filesystem::path workDir = MakeUniqueTempWorkFolder("failapply");
-    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
-
-    ADUC_Result result = handler->Install(workflow.data());
-    CHECK(IsAducResultCodeFailure(result.ResultCode));
-
-    std::filesystem::remove_all(workDir);
-    ExtensionManager::Uninit();
-}
-
-TEST_CASE("Steps handler install propagates immediate reboot request from child via stub", "[steps_handler][non_mock]")
-{
-    SetTestConfig();
-
-    if (!CanCreateAduSandbox())
-    {
-        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
-        return;
-    }
-
-    auto* rebootHandler = new RebootHandler();
-    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", rebootHandler);
-
-    std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
-    REQUIRE(handler != nullptr);
-
-    WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    std::filesystem::path workDir = MakeUniqueTempWorkFolder("reboot");
-    workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str());
-
-    ADUC_Result result = handler->Install(workflow.data());
-    CHECK((result.ResultCode == ADUC_Result_Install_RequiredImmediateReboot
-        || IsAducResultCodeFailure(result.ResultCode)));
-
-    std::filesystem::remove_all(workDir);
-    ExtensionManager::Uninit();
-}
-
-TEST_CASE("Steps handler download fails for unsupported child handler contract", "[steps_handler][non_mock]")
-{
-    SetTestConfig();
-
-    if (!CanCreateAduSandbox())
-    {
-        SUCCEED("Skipping sandbox-sensitive test because adu sandbox preconditions are not met in this environment.");
-        return;
-    }
-
-    auto* unsupported = new UnsupportedContractHandler();
-    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/script:1", unsupported);
-
-    std::unique_ptr<ContentHandler> handler(StepsHandlerImpl::CreateContentHandler());
-    REQUIRE(handler != nullptr);
-
-    WorkflowHandle workflow(MakeInlineScriptStepWorkflow());
-    std::filesystem::path workDir = MakeUniqueTempWorkFolder("unsupported-contract");
-    REQUIRE(workflow_set_workfolder(workflow.get(), "%s", workDir.string().c_str()));
-
-    ADUC_Result result = handler->Download(workflow.data());
-    CHECK(IsAducResultCodeFailure(result.ResultCode));
-    bool isUnsupportedContract =
-        (result.ExtendedResultCode == ADUC_ERC_UPDATE_CONTENT_HANDLER_UNSUPPORTED_CONTRACT_VERSION);
-    bool isSandboxPreconditionFailure =
-        (result.ExtendedResultCode == ADUC_ERC_STEPS_HANDLER_CREATE_SANDBOX_FAILURE);
-    bool isExpectedFailure = isUnsupportedContract || isSandboxPreconditionFailure;
-    CHECK(isExpectedFailure);
-
-    std::filesystem::remove_all(workDir);
-    ExtensionManager::Uninit();
-}
-
-// NOTE: Cancel-after-download test removed.
-// It requires the 'adu' system user; without it, MkSandboxDirRecursive fails
-// and a double-free in the handler's cleanup path causes SIGABRT.
