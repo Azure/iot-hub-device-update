@@ -31,6 +31,7 @@ printf "Demo root dir: %s\n" $demo_dir
 printf "Virtual devices root dir: %s\n" $demo_devices_dir
 printf "Target devices dir: %s\n" $target_devices_dir
 
+
 printf "\n - Create a virtual device 'contoso vacuum-1' for testing purposes..."
 sudo rm -f -r "$target_devices_dir"
 sudo mkdir -p "$target_devices_dir"
@@ -41,3 +42,4 @@ sudo chmod 555 -R "$target_devices_dir"
 printf "\n - Reset installed-criteria data..."
 sudo rm -f -r /var/lib/adu/installedcriteria
 printf "\n\nDone\n"
+
