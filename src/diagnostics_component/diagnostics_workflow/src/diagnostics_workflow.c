@@ -73,6 +73,7 @@ STRING_HANDLE DiagnosticsComponent_CreateSasCredential(const char* sasCredential
     STRING_HANDLE handle = NULL;
     if (memory == NULL || sasCredential == NULL)
     {
+        Log_Error("DiagnosticsComponent_CreateSasCredential: NULL parameter %s", memory == NULL ? "<memory>" : "<sasCredential>");
         goto done;
     }
 
@@ -111,6 +112,7 @@ Diagnostics_Result DiagnosticsWorkflow_GetFilesForComponent(
 {
     if (logComponent == NULL || maxUploadSize == 0 || fileNames == 0)
     {
+        Log_Error("DiagnosticsWorkflow_GetFilesForComponent: invalid parameters");
         return Diagnostics_Result_Failure;
     }
 
@@ -151,6 +153,7 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
     if (fileNames == NULL || logComponent == NULL || deviceName == NULL || operationId == NULL
         || storageSasUrl == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_UploadFilesForComponent: NULL parameter detected");
         return Diagnostics_Result_Failure;
     }
 
@@ -171,6 +174,7 @@ Diagnostics_Result DiagnosticsWorkflow_UploadFilesForComponent(
 
     if (blobInfo.storageSasCredential == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_UploadFilesForComponent: failed to create SAS credential");
         goto done;
     }
 
@@ -261,11 +265,13 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     if (jsonString == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_DiscoverAndUploadLogs: jsonString is NULL");
         goto done;
     }
 
     if (workflowData == NULL)
     {
+        Log_Warn("DiagnosticsWorkflow_DiscoverAndUploadLogs: workflowData is NULL, no diagnostics components");
         result = Diagnostics_Result_NoDiagnosticsComponents;
         goto done;
     }
@@ -274,6 +280,7 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     if (numComponents == 0)
     {
+        Log_Warn("DiagnosticsWorkflow_DiscoverAndUploadLogs: no diagnostics components configured");
         result = Diagnostics_Result_NoDiagnosticsComponents;
         goto done;
     }
@@ -282,6 +289,7 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     if (cloudMsgJson == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_DiscoverAndUploadLogs: failed to parse cloud message JSON");
         goto done;
     }
 
@@ -289,6 +297,7 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     if (cloudMsgObj == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_DiscoverAndUploadLogs: json_value_get_object returned NULL");
         goto done;
     }
 
@@ -296,15 +305,19 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     if (operationId == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_DiscoverAndUploadLogs: no operationId in cloud message");
         result = Diagnostics_Result_NoOperationId;
         goto done;
     }
+
+    Log_Info("DiagnosticsWorkflow processing operationId: %s", STRING_c_str(operationId));
 
     storageSasCredential = DiagnosticsComponent_CreateSasCredential(
         json_object_get_string(cloudMsgObj, DIAGNOSTICSITF_FIELDNAME_SASURL), &storageSasCredentialMemory);
 
     if (storageSasCredential == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_DiscoverAndUploadLogs: failed to create SAS credential from cloud message");
         result = Diagnostics_Result_NoSasCredential;
         goto done;
     }
@@ -318,6 +331,7 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     if (!DiagnosticsComponent_GetDeviceName(&deviceName))
     {
+        Log_Error("DiagnosticsWorkflow_DiscoverAndUploadLogs: DiagnosticsComponent_GetDeviceName failed");
         goto done;
     }
 
@@ -325,6 +339,7 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
 
     if (logComponentFileNames == NULL)
     {
+        Log_Error("DiagnosticsWorkflow_DiscoverAndUploadLogs: VECTOR_create failed (out of memory)");
         goto done;
     }
 
@@ -392,6 +407,7 @@ void DiagnosticsWorkflow_DiscoverAndUploadLogs(const DiagnosticsWorkflowData* wo
     }
 
     result = Diagnostics_Result_Success;
+    Log_Info("Diagnostics Log Upload completed successfully for operationId: %s", STRING_c_str(operationId));
 
 done:
 

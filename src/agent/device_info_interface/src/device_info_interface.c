@@ -98,6 +98,7 @@ static void ApplyDeviceInfoPropertyConstraints(char* value)
         if ((curr - value) == max_cch)
         {
             // Force truncation at max_cch characters.
+            Log_Warn("ApplyDeviceInfoPropertyConstraints: truncating value to %u characters", max_cch);
             *curr = '\0';
             break;
         }
@@ -228,7 +229,10 @@ void DeviceInfoInterface_ReportChangedPropertiesAsync()
 
         if (data->Type == DIIDT_String)
         {
-            json_object_set_string(root_object, propertyName, propertyValue);
+            if (json_object_set_string(root_object, propertyName, propertyValue) != JSONSuccess)
+            {
+                Log_Error("Failed to set DeviceInfo string property '%s'.", propertyName);
+            }
         }
         else
         {

@@ -60,6 +60,7 @@ bool DiagnosticsInterface_Create(void** componentContext, int argc, char** argv)
 
     if (workflowData == NULL)
     {
+        Log_Error("DiagnosticsInterface_Create: failed to allocate DiagnosticsWorkflowData");
         goto done;
     }
 
@@ -75,9 +76,14 @@ done:
 
     if (!succeeded)
     {
+        Log_Error("DiagnosticsInterface_Create: initialization failed, cleaning up");
         DiagnosticsConfigUtils_UnInit(workflowData);
         free(workflowData);
         workflowData = NULL;
+    }
+    else
+    {
+        Log_Info("DiagnosticsInterface_Create: diagnostics interface created successfully");
     }
 
     *componentContext = workflowData;
@@ -99,6 +105,7 @@ void DiagnosticsInterface_Connected(void* componentContext)
 
 void DiagnosticsInterface_Destroy(void** componentContext)
 {
+    Log_Info("DiagnosticsInterface_Destroy: destroying diagnostics interface");
     if (componentContext == NULL)
     {
         Log_Error("DiagnosticsInterface_Destroy called before initialization");
@@ -293,6 +300,7 @@ void DiagnosticsInterface_ReportStateAndResultAsync(const Diagnostics_Result res
 
     if (jsonStatus != JSONSuccess)
     {
+        Log_Error("DiagnosticsInterface_ReportStateAndResultAsync: failed to set result code in JSON");
         goto done;
     }
 
@@ -300,6 +308,7 @@ void DiagnosticsInterface_ReportStateAndResultAsync(const Diagnostics_Result res
 
     if (jsonStatus != JSONSuccess)
     {
+        Log_Error("DiagnosticsInterface_ReportStateAndResultAsync: failed to set operationId in JSON");
         goto done;
     }
 
@@ -307,6 +316,7 @@ void DiagnosticsInterface_ReportStateAndResultAsync(const Diagnostics_Result res
 
     if (jsonString == NULL)
     {
+        Log_Error("DiagnosticsInterface_ReportStateAndResultAsync: json_serialize_to_string failed");
         goto done;
     }
 

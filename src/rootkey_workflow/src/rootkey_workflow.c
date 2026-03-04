@@ -37,6 +37,11 @@
  */
 ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* workFolder, const char* rootKeyPkgUrl)
 {
+    Log_Info(
+        "RootKeyWorkflow_UpdateRootKeys called (workflowId: '%s', rootKeyPkgUrl: '%s')",
+        workflowId != NULL ? workflowId : "(null)",
+        rootKeyPkgUrl != NULL ? rootKeyPkgUrl : "(null)");
+
     ADUC_Result result = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
     ADUC_Result tmpResult = { .ResultCode = ADUC_GeneralResult_Failure, .ExtendedResultCode = 0 };
 
@@ -145,6 +150,7 @@ ADUC_Result RootKeyWorkflow_UpdateRootKeys(const char* workflowId, const char* w
 
     if (fileDest == NULL)
     {
+        Log_Error("STRING_construct failed for ADUC_ROOTKEY_STORE_PACKAGE_PATH (out of memory)");
         result.ExtendedResultCode = ADUC_ERC_NOMEM;
         goto done;
     }

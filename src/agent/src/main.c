@@ -217,6 +217,7 @@ ADUC_ExtensionRegistrationType GetRegistrationTypeFromArg(const char* arg)
         return ExtensionRegistrationType_DownloadHandler;
     }
 
+    Log_Warn("GetRegistrationTypeFromArg: unrecognized extension type '%s'", arg);
     return ExtensionRegistrationType_None;
 }
 
@@ -716,6 +717,8 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
+    Log_Info("StartupAgent: D2C messaging initialized successfully.");
+
     if (launchArgs->connectionString != NULL)
     {
         ADUC_ConnType connType = GetConnTypeFromConnectionString(launchArgs->connectionString);
@@ -808,7 +811,10 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     {
         // Since it is nested edge and if DO fails to accept the connection string, then we go ahead and
         // fail the startup.
-        Log_Error("Failed to set DO connection string in Nested Edge scenario, result: 0x%08x", result.ResultCode);
+        Log_Error(
+            "Failed to set DO connection string in Nested Edge scenario, result: 0x%08x, erc: 0x%08x",
+            result.ResultCode,
+            result.ExtendedResultCode);
         goto done;
     }
 
@@ -1094,7 +1100,7 @@ int main(int argc, char** argv)
     int dir_result = ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_DATA_FOLDER);
     if (dir_result != 0)
     {
-        Log_Error("Cannot create data folder.");
+        Log_Error("Cannot create data folder '%s' (result: %d, errno: %d).", ADUC_DATA_FOLDER, dir_result, errno);
         goto done;
     }
 
@@ -1106,6 +1112,7 @@ int main(int argc, char** argv)
 
     if (!StartupAgent(&launchArgs))
     {
+        Log_Error("StartupAgent failed. Agent will not run.");
         goto done;
     }
 
