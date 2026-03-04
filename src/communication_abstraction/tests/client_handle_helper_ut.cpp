@@ -13,6 +13,16 @@
 #include "aduc/client_handle_helper.h"
 #include "aduc/adu_types.h"
 
+// Forward-declare internal (non-static) helpers from client_handle_helper.c.
+// The actual return types are IOTHUB_DEVICE_CLIENT_LL_HANDLE / IOTHUB_MODULE_CLIENT_LL_HANDLE
+// which are opaque typedef'd pointers (void*).  We use void* here to avoid
+// pulling in the low-level IoT Hub SDK device/module headers.
+extern "C"
+{
+    void* GetDeviceClientHandle(ADUC_ClientHandle handle);
+    void* GetModuleClientHandle(ADUC_ClientHandle handle);
+}
+
 using Catch::Matchers::Equals;
 
 //
@@ -194,4 +204,40 @@ TEST_CASE("ClientHandle_CreateFromConnectionString invalid conn type returns fal
 
     CHECK(result == false);
     CHECK(handle == nullptr);
+}
+
+//
+// Unit Tests for GetDeviceClientHandle / GetModuleClientHandle internal helpers
+//
+
+TEST_CASE("GetDeviceClientHandle returns NULL when type is NotSet")
+{
+    SECTION("Returns NULL for nullptr handle")
+    {
+        void* result = GetDeviceClientHandle(nullptr);
+        CHECK(result == nullptr);
+    }
+
+    SECTION("Returns NULL for non-null handle when ConnType is not Device")
+    {
+        ADUC_ClientHandle fakeHandle = reinterpret_cast<ADUC_ClientHandle>(0x1234);
+        void* result = GetDeviceClientHandle(fakeHandle);
+        CHECK(result == nullptr);
+    }
+}
+
+TEST_CASE("GetModuleClientHandle returns NULL when type is NotSet")
+{
+    SECTION("Returns NULL for nullptr handle")
+    {
+        void* result = GetModuleClientHandle(nullptr);
+        CHECK(result == nullptr);
+    }
+
+    SECTION("Returns NULL for non-null handle when ConnType is not Module")
+    {
+        ADUC_ClientHandle fakeHandle = reinterpret_cast<ADUC_ClientHandle>(0x5678);
+        void* result = GetModuleClientHandle(fakeHandle);
+        CHECK(result == nullptr);
+    }
 }

@@ -790,3 +790,141 @@ TEST_CASE("Agent and identity config helpers validate null inputs")
     CHECK(GetAgentConfigInfo(nullptr) == false);
     CHECK(GetConnectionInfoFromIdentityService(nullptr) == false);
 }
+
+//
+// Tests for IoTHub_CommunicationManager_Init / Deinit / GetHandle lifecycle
+//
+
+TEST_CASE("IoTHub_CommunicationManager_Init and Deinit lifecycle")
+{
+    SECTION("Init succeeds with valid parameters")
+    {
+        ADUC_ClientHandle clientHandle = nullptr;
+
+        bool result = IoTHub_CommunicationManager_Init(
+            &clientHandle, nullptr /* device_twin_callback */, nullptr /* handle_updated */, nullptr /* context */);
+
+        CHECK(result == true);
+
+        // After successful init, GetHandle should return the initial value (nullptr since no connection yet)
+        ADUC_ClientHandle handle = IoTHub_CommunicationManager_GetHandle();
+        CHECK(handle == nullptr);
+
+        // Deinit should not crash
+        IoTHub_CommunicationManager_Deinit();
+    }
+
+    SECTION("Init called twice returns true on second call (already initialized)")
+    {
+        ADUC_ClientHandle clientHandle = nullptr;
+
+        bool result1 = IoTHub_CommunicationManager_Init(
+            &clientHandle, nullptr, nullptr, nullptr);
+        CHECK(result1 == true);
+
+        // Second init should succeed with "already initialized" path
+        bool result2 = IoTHub_CommunicationManager_Init(
+            &clientHandle, nullptr, nullptr, nullptr);
+        CHECK(result2 == true);
+
+        IoTHub_CommunicationManager_Deinit();
+    }
+}
+
+//
+// Tests for ConnectionStatus_Callback exercising the "broken for X seconds" sub-branch
+//
+
+TEST_CASE("ConnectionStatus_Callback exercises both unauthenticated sub-branches")
+{
+    SECTION("First unauthenticated triggers 'connection is broken' path")
+    {
+        // Set authenticated first to ensure g_last_authenticated_time >= g_first_unauthenticated_time
+        IoTHub_CommunicationManager_ConnectionStatus_Callback(
+            IOTHUB_CLIENT_CONNECTION_AUTHENTICATED,
+            IOTHUB_CLIENT_CONNECTION_OK,
+            nullptr);
+        CHECK(IoTHub_CommunicationManager_IsAuthenticated() == true);
+
+        // First unauthenticated - hits "IoTHub connection is broken." branch
+        IoTHub_CommunicationManager_ConnectionStatus_Callback(
+            IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED,
+            IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN,
+            nullptr);
+        CHECK(IoTHub_CommunicationManager_IsAuthenticated() == false);
+    }
+
+    SECTION("Second unauthenticated triggers 'broken for N seconds' path")
+    {
+        // Authenticate first
+        IoTHub_CommunicationManager_ConnectionStatus_Callback(
+            IOTHUB_CLIENT_CONNECTION_AUTHENTICATED,
+            IOTHUB_CLIENT_CONNECTION_OK,
+            nullptr);
+
+        // First unauthenticated
+        IoTHub_CommunicationManager_ConnectionStatus_Callback(
+            IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED,
+            IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED,
+            nullptr);
+
+        // Second unauthenticated - hits the "else" branch with "broken for %d seconds"
+        IoTHub_CommunicationManager_ConnectionStatus_Callback(
+            IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED,
+            IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL,
+            nullptr);
+        CHECK(IoTHub_CommunicationManager_IsAuthenticated() == false);
+    }
+}
+
+//
+// Additional GetConnectionInfoFromConnectionString edge cases
+//
+
+TEST_CASE("GetConnectionInfoFromConnectionString X509 paths")
+{
+    SECTION("X509 without opensslEngine succeeds")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        bool result = GetConnectionInfoFromConnectionString(
+            &info,
+            "HostName=hub;DeviceId=device;SharedAccessKey=key",
+            "x509-cert",
+            "x509-private-key",
+            nullptr,          // no openssl engine
+            "x509-ca-cert");
+
+        CHECK(result == true);
+        const bool isX509Auth =
+            (info.authType == ADUC_AuthType_X509) || (info.authType == ADUC_AuthType_NestedEdgeCert);
+        CHECK(isX509Auth);
+        CHECK(info.connType == ADUC_ConnType_Device);
+        CHECK(info.clientCertificateString != nullptr);
+        CHECK(info.opensslPrivateKey != nullptr);
+        CHECK(info.certificateString != nullptr);
+        // opensslEngine should remain NULL when not provided
+        CHECK(info.opensslEngine == nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("SAS module connection string succeeds")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        bool result = GetConnectionInfoFromConnectionString(
+            &info,
+            "HostName=hub;DeviceId=device;ModuleId=mod;SharedAccessKey=key",
+            nullptr, nullptr, nullptr, nullptr);
+
+        CHECK(result == true);
+        CHECK(info.connType == ADUC_ConnType_Module);
+        CHECK(info.authType == ADUC_AuthType_SASToken);
+        CHECK(info.connectionString != nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+}

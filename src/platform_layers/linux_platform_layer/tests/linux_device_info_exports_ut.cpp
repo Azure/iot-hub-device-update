@@ -359,3 +359,46 @@ TEST_CASE("DI_GetDeviceInformationValue - Memory management")
         }
     }
 }
+
+//
+// Unit Tests for DI_GetDeviceInformationValue - Enumeration boundary tests
+//
+
+TEST_CASE("DI_GetDeviceInformationValue - Boundary and sequential access")
+{
+    SECTION("All valid properties return non-null or nullptr without crashing")
+    {
+        // Iterate over all known valid property values.
+        // Some may return nullptr (dirty-flag already tripped or config not present).
+        // The goal is to exercise every function dispatch path in the DI_GetDeviceInformationValue map.
+        const DI_DeviceInfoProperty allProperties[] = {
+            DIIP_Manufacturer,
+            DIIP_Model,
+            DIIP_OsName,
+            DIIP_ProcessorArchitecture,
+            DIIP_ProcessorManufacturer,
+            DIIP_SoftwareVersion,
+            DIIP_TotalMemory,
+            DIIP_TotalStorage,
+        };
+
+        for (auto prop : allProperties)
+        {
+            char* value = DI_GetDeviceInformationValue(prop);
+            // Free if non-null (first call may return value; subsequent calls return nullptr)
+            if (value != nullptr)
+            {
+                CHECK(strlen(value) > 0);
+                free(value);
+            }
+        }
+        CHECK(true); // no crash
+    }
+
+    SECTION("Large out-of-range enum values return nullptr")
+    {
+        CHECK(DI_GetDeviceInformationValue(static_cast<DI_DeviceInfoProperty>(100)) == nullptr);
+        CHECK(DI_GetDeviceInformationValue(static_cast<DI_DeviceInfoProperty>(255)) == nullptr);
+        CHECK(DI_GetDeviceInformationValue(static_cast<DI_DeviceInfoProperty>(INT32_MAX)) == nullptr);
+    }
+}
