@@ -13,11 +13,14 @@ target_sources (${target_name} PRIVATE main.cpp)
 # The rootkeypackage_utils library only compiles one downloader (curl or DO)
 # based on the ROOTKEY_PKG_DOWNLOAD_USE_CURL flag. We want both available at
 # runtime, so compile the other downloader source directly into this tool.
+# DO download is only possible when the DO SDK is available.
 if (ROOTKEY_PKG_DOWNLOAD_USE_CURL)
-    # rootkeypackage_utils already has curl download; add DO download
-    target_sources (
-        ${target_name}
-        PRIVATE ${CMAKE_SOURCE_DIR}/src/utils/rootkeypackage_utils/src/rootkeypackage_do_download.cpp)
+    if (ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION)
+        # rootkeypackage_utils already has curl download; add DO download
+        target_sources (
+            ${target_name}
+            PRIVATE ${CMAKE_SOURCE_DIR}/src/utils/rootkeypackage_utils/src/rootkeypackage_do_download.cpp)
+    endif ()
 else ()
     # rootkeypackage_utils already has DO download; add curl download
     target_sources (
@@ -44,6 +47,10 @@ target_link_libraries (${target_name} PRIVATE aduc::process_utils)
 
 # Link DO SDK for DO download
 target_link_dosdk (${target_name} PRIVATE)
+
+if (ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION)
+    target_compile_definitions (${target_name} PRIVATE ADUC_HAVE_DO_DOWNLOAD=1)
+endif ()
 
 target_compile_definitions (
     ${target_name}

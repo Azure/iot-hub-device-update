@@ -17,8 +17,11 @@
 
 #include <aduc/c_utils.h>
 #include <aduc/rootkeypackage_curl_download.h>
-#include <aduc/rootkeypackage_do_download.h>
 #include <aduc/rootkeypackage_download.h>
+
+#if ADUC_HAVE_DO_DOWNLOAD
+#include <aduc/rootkeypackage_do_download.h>
+#endif
 #include <aduc/rootkeypackage_parse.h>
 #include <aduc/rootkeypackage_utils.h>
 #include <azure_c_shared_utility/strings.h>
@@ -42,7 +45,9 @@
 enum DownloaderType
 {
     Downloader_Curl,
+#if ADUC_HAVE_DO_DOWNLOAD
     Downloader_DO,
+#endif
 };
 
 static void print_usage(const char* argv0)
@@ -52,7 +57,11 @@ static void print_usage(const char* argv0)
     fprintf(stderr, "                Default: %s\n\n", DEFAULT_URL);
     fprintf(stderr, "  --workdir     Working directory for downloads.\n");
     fprintf(stderr, "                Default: %s\n\n", DEFAULT_WORKDIR);
+#if ADUC_HAVE_DO_DOWNLOAD
     fprintf(stderr, "  --downloader  Download method: 'curl' or 'do' (DeliveryOptimization).\n");
+#else
+    fprintf(stderr, "  --downloader  Download method: 'curl'.\n");
+#endif
     fprintf(stderr, "                Default: curl\n\n");
 }
 
@@ -92,13 +101,19 @@ int main(int argc, char** argv)
             {
                 downloaderType = Downloader_Curl;
             }
+#if ADUC_HAVE_DO_DOWNLOAD
             else if (strcmp(argv[i], "do") == 0)
             {
                 downloaderType = Downloader_DO;
             }
+#endif
             else
             {
+#if ADUC_HAVE_DO_DOWNLOAD
                 fprintf(stderr, "Unknown downloader: '%s'. Must be 'curl' or 'do'.\n", argv[i]);
+#else
+                fprintf(stderr, "Unknown downloader: '%s'. Only 'curl' is supported in this build.\n", argv[i]);
+#endif
                 print_usage(argv[0]);
                 return 1;
             }
@@ -116,9 +131,14 @@ int main(int argc, char** argv)
         }
     }
 
+#if ADUC_HAVE_DO_DOWNLOAD
     const char* downloaderName = (downloaderType == Downloader_Curl) ? "Curl" : "DeliveryOptimization";
     RootKeyPkgDownloadFunc downloadFn =
         (downloaderType == Downloader_Curl) ? DownloadRootKeyPkg_Curl : DownloadRootKeyPkg_DO;
+#else
+    const char* downloaderName = "Curl";
+    RootKeyPkgDownloadFunc downloadFn = DownloadRootKeyPkg_Curl;
+#endif
 
     printf("=== Root Key Package Validator Tool ===\n\n");
     printf("URL:        %s\n", url);
