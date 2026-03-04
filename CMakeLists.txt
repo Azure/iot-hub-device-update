@@ -115,7 +115,7 @@ set_cache_with_env_or_default (ADUC_VERSION_MINOR "2" STRING
 set_cache_with_env_or_default (ADUC_VERSION_PATCH "0" STRING
                                "The patch part of the semantic version")
 
-set_cache_with_env_or_default (ADUC_VERSION_PRERELEASE "rootkey-dbg" STRING
+set_cache_with_env_or_default (ADUC_VERSION_PRERELEASE "" STRING
                                "The pre-release part of the semantic version")
 
 set_cache_with_env_or_default (ADUC_VERSION_BUILD "" STRING

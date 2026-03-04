@@ -96,6 +96,3 @@ add_subdirectory (logging)
 add_subdirectory (platform_layers)
 add_subdirectory (rootkey_workflow)
 add_subdirectory (utils)
-
-# Tools
-add_subdirectory (${CMAKE_SOURCE_DIR}/tools/rootkey_validator ${CMAKE_BINARY_DIR}/tools/rootkey_validator)
