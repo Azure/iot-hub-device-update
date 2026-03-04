@@ -836,6 +836,16 @@ ADUC_Result_t RootKeyUtility_GetReportingErc()
     return s_rootKeyErc;
 }
 
+void RootKeyUtility_ClearLocalStore()
+{
+    if (s_localStore != NULL)
+    {
+        ADUC_RootKeyPackageUtils_Destroy(s_localStore);
+        free(s_localStore);
+        s_localStore = NULL;
+    }
+}
+
 /**
  * @brief Checks if the local store needs to be updated with the package @p packageToTest
  * @details This function will load the local store if it is not already loaded and then compare the local store with @p packageToTest

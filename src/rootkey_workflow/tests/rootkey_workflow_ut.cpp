@@ -117,6 +117,7 @@ std::string WriteTempPackageAndGetFileUrl(
 
 void ResetRootKeyStoreForTest()
 {
+    RootKeyUtility_ClearLocalStore();
 #ifdef ADUC_ROOTKEY_STORE_PATH
     std::error_code ec;
     std::filesystem::remove_all(std::filesystem::path(ADUC_ROOTKEY_STORE_PATH), ec);
