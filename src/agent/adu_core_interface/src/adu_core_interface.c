@@ -294,7 +294,6 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
     if (componentContext == NULL)
     {
         Log_Error("AzureDeviceUpdateCoreInterface_Connected called with NULL context.");
-        return;
     }
 
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
@@ -317,7 +316,6 @@ void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext)
     if (componentContext == NULL)
     {
         Log_Error("AzureDeviceUpdateCoreInterface_DoWork called with NULL context.");
-        return;
     }
 
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;

@@ -865,12 +865,5 @@ void IoTHub_CommunicationManager_DoWork(void* user_context)
 {
     UNREFERENCED_PARAMETER(user_context);
     Connection_Maintenance();
-    if (g_aduc_client_handle_address != NULL && *g_aduc_client_handle_address != NULL)
-    {
-        ClientHandle_DoWork(*g_aduc_client_handle_address);
-    }
-    else
-    {
-        Log_Debug("IoTHub_CommunicationManager_DoWork: client handle is NULL, skipping DoWork");
-    }
+    ClientHandle_DoWork(*g_aduc_client_handle_address);
 }
