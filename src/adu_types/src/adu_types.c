@@ -41,12 +41,6 @@ const char* ADUC_ConnType_ToString(const ADUC_ConnType connType)
  */
 void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
 {
-    if (info == NULL)
-    {
-        Log_Debug("ADUC_ConnectionInfo_DeAlloc called with NULL info");
-        return;
-    }
-
     free(info->connectionString);
     info->connectionString = NULL;
 
