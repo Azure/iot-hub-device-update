@@ -8,6 +8,7 @@
 
 #include <catch2/catch_all.hpp>
 #include <cstring>
+#include <ctime> // nanosleep
 #include <string>
 
 extern "C"
@@ -156,5 +157,66 @@ TEST_CASE_METHOD(CommandHelperTestFixture, "UnregisterCommand", "[command_helper
         REQUIRE(UnregisterCommand(&cmd) == true);
         REQUIRE(RegisterCommand(&cmd) >= 0);
         UnregisterCommand(&cmd);
+    }
+}
+
+TEST_CASE_METHOD(CommandHelperTestFixture, "SendCommand guard paths", "[command_helper]")
+{
+    SECTION("SendCommand returns false for empty command")
+    {
+        CHECK(SendCommand("") == false);
+    }
+
+    SECTION("SendCommand returns false for command over max length")
+    {
+        std::string tooLong(80, 'A');
+        CHECK(SendCommand(tooLong.c_str()) == false);
+    }
+
+    SECTION("SendCommand with valid short command fails without FIFO pipe")
+    {
+        // Valid command passes null/length checks, then hits SecurityChecks or open() failure.
+        // Either way returns false because there is no real FIFO to write to.
+        bool result = SendCommand("reprocess");
+        CHECK(result == false);
+    }
+
+    SECTION("SendCommand with maximum-length command fails without FIFO pipe")
+    {
+        // 63 chars is the max (COMMAND_MAX_LEN - 1 = 64 - 1 = 63)
+        std::string maxLen(63, 'X');
+        bool result = SendCommand(maxLen.c_str());
+        CHECK(result == false);
+    }
+}
+
+TEST_CASE_METHOD(CommandHelperTestFixture, "Command listener thread lifecycle", "[command_helper]")
+{
+    SECTION("Uninitialize is safe to call repeatedly")
+    {
+        UninitializeCommandListenerThread();
+        UninitializeCommandListenerThread();
+        CHECK(true);
+    }
+
+    SECTION("InitializeCommandListenerThread and immediate UninitializeCommandListenerThread")
+    {
+        // Start the listener thread, then immediately cancel it.
+        // The thread will attempt TryCreateFIFOPipe + SecurityChecks;
+        // if either fails (likely in a test env without 'adu' group) the thread exits on its own.
+        bool initResult = InitializeCommandListenerThread();
+        CHECK(initResult == true);
+
+        // Small sleep to give the thread a chance to start.
+        // Use usleep or nanosleep-style: this is sufficient for thread startup.
+        struct timespec ts = { 0, 50000000 }; // 50ms
+        nanosleep(&ts, nullptr);
+
+        // Calling Init again while the thread is running should return false.
+        bool secondInit = InitializeCommandListenerThread();
+        CHECK(secondInit == false);
+
+        // Clean up the thread.
+        UninitializeCommandListenerThread();
     }
 }

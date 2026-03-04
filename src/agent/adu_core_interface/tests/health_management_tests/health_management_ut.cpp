@@ -36,6 +36,7 @@ extern "C"
     static bool mock_configInfo_available = true;
     static ADUC_ConfigInfo mock_configInfo;
     static ADUC_AgentInfo mock_agentInfo;
+    static bool mock_agent_available = true;
     static bool mock_connection_info_valid = true;
 
     // Mock permission utils
@@ -147,6 +148,10 @@ extern "C"
     {
         (void)config;
         (void)index;
+        if (!mock_agent_available)
+        {
+            return NULL;
+        }
         return &mock_agentInfo;
     }
 
@@ -225,6 +230,7 @@ public:
         mock_is_dir = true;
         mock_is_file = true;
         mock_is_dir_err = 0;
+        mock_agent_available = true;
         mock_configInfo_available = true;
         mock_connection_info_valid = true;
 
@@ -382,5 +388,53 @@ TEST_CASE_METHOD(HealthManagementTestFixture, "IsConnectionInfoValid", "[health_
         mock_connection_info_valid = false;
         bool result = IsConnectionInfoValid(&launchArgs, &mock_configInfo);
         REQUIRE(result == false);
+    }
+
+    SECTION("Returns false when agent info is unavailable")
+    {
+        // Exercise the ADUC_ConfigInfo_GetAgent-returns-NULL path (lines 95-96).
+        mock_agent_available = false;
+        bool result = IsConnectionInfoValid(&launchArgs, &mock_configInfo);
+        REQUIRE(result == false);
+    }
+}
+
+TEST_CASE_METHOD(HealthManagementTestFixture, "HealthCheck - directory stat error", "[health_management]")
+{
+    SECTION("Returns false when directory stat returns error")
+    {
+        // Exercise the CheckLogDir / CheckDirOwnershipAndVerifyFilemodeExact path
+        // where SystemUtils_IsDir returns false WITH a non-zero errno.
+        mock_is_dir = false;
+        mock_is_dir_err = 2; // ENOENT
+        bool result = HealthCheck(&launchArgs);
+        REQUIRE(result == false);
+    }
+}
+
+TEST_CASE_METHOD(HealthManagementTestFixture, "HealthCheck - GID failure while UID passes", "[health_management]")
+{
+    SECTION("Returns false when GID check fails but UID passes")
+    {
+        // Exercise the CheckAgentBinary path where UID check passes
+        // but GID check fails (lines 469-470).
+        mock_check_owner_uid = true;
+        mock_check_owner_gid = false;
+        bool result = HealthCheck(&launchArgs);
+        REQUIRE(result == false);
+    }
+}
+
+TEST_CASE_METHOD(HealthManagementTestFixture, "HealthCheck - group membership warning paths", "[health_management]")
+{
+    SECTION("HealthCheck still passes when optional group membership fails")
+    {
+        // The required_group_memberships array is {NULL}, so the required loop
+        // never executes.  Optional memberships only produce warnings.
+        // Therefore HealthCheck should still return true even when
+        // PermissionUtils_UserInSupplementaryGroup returns false.
+        mock_user_in_group = false;
+        bool result = HealthCheck(&launchArgs);
+        REQUIRE(result == true);
     }
 }

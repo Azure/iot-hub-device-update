@@ -13,6 +13,16 @@
 #include "aduc/client_handle_helper.h"
 #include "aduc/adu_types.h"
 
+// Forward-declare internal (non-static) helpers from client_handle_helper.c.
+// The actual return types are IOTHUB_DEVICE_CLIENT_LL_HANDLE / IOTHUB_MODULE_CLIENT_LL_HANDLE
+// which are opaque typedef'd pointers (void*).  We use void* here to avoid
+// pulling in the low-level IoT Hub SDK device/module headers.
+extern "C"
+{
+    void* GetDeviceClientHandle(ADUC_ClientHandle handle);
+    void* GetModuleClientHandle(ADUC_ClientHandle handle);
+}
+
 using Catch::Matchers::Equals;
 
 //
@@ -116,5 +126,118 @@ TEST_CASE("ClientHandle_CreateFromConnectionString parameter validation")
         );
 
         CHECK(result == false);
+    }
+}
+
+TEST_CASE("ClientHandle wrapper methods return invalid arg before initialization")
+{
+    IOTHUB_MESSAGE_HANDLE message = nullptr;
+
+    CHECK(
+        ClientHandle_SetConnectionStatusCallback(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SendEventAsync(
+            nullptr,
+            message,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    ClientHandle_DoWork(nullptr);
+
+    CHECK(
+        ClientHandle_SetOption(
+            nullptr,
+            "logtrace",
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_GetTwinAsync(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SetClientTwinCallback(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SendReportedState(
+            nullptr,
+            nullptr,
+            0,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    CHECK(
+        ClientHandle_SetDeviceMethodCallback(
+            nullptr,
+            nullptr,
+            nullptr)
+        == IOTHUB_CLIENT_INVALID_ARG);
+
+    ClientHandle_Destroy(nullptr);
+    CHECK(true);
+}
+
+TEST_CASE("ClientHandle_CreateFromConnectionString invalid conn type returns false")
+{
+    ADUC_ClientHandle handle = reinterpret_cast<ADUC_ClientHandle>(0x1);
+    const char* connectionString = "HostName=test.azure-devices.net;DeviceId=device1;SharedAccessKey=key";
+
+    bool result = ClientHandle_CreateFromConnectionString(
+        &handle,
+        ADUC_ConnType_NotSet,
+        connectionString,
+        nullptr);
+
+    CHECK(result == false);
+    CHECK(handle == nullptr);
+}
+
+//
+// Unit Tests for GetDeviceClientHandle / GetModuleClientHandle internal helpers
+//
+
+TEST_CASE("GetDeviceClientHandle returns NULL when type is NotSet")
+{
+    SECTION("Returns NULL for nullptr handle")
+    {
+        void* result = GetDeviceClientHandle(nullptr);
+        CHECK(result == nullptr);
+    }
+
+    SECTION("Returns NULL for non-null handle when ConnType is not Device")
+    {
+        ADUC_ClientHandle fakeHandle = reinterpret_cast<ADUC_ClientHandle>(0x1234);
+        void* result = GetDeviceClientHandle(fakeHandle);
+        CHECK(result == nullptr);
+    }
+}
+
+TEST_CASE("GetModuleClientHandle returns NULL when type is NotSet")
+{
+    SECTION("Returns NULL for nullptr handle")
+    {
+        void* result = GetModuleClientHandle(nullptr);
+        CHECK(result == nullptr);
+    }
+
+    SECTION("Returns NULL for non-null handle when ConnType is not Module")
+    {
+        ADUC_ClientHandle fakeHandle = reinterpret_cast<ADUC_ClientHandle>(0x5678);
+        void* result = GetModuleClientHandle(fakeHandle);
+        CHECK(result == nullptr);
     }
 }
