@@ -45,6 +45,7 @@ ADUC_Result DownloadRootKeyPkg_DO(const char* url, const char* targetFilePath)
     }
     catch (...)
     {
+        Log_Error("Exception during DO download of rootkey package, ERC: 0x%08x", ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION;
     }
 

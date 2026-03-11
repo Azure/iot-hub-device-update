@@ -189,6 +189,7 @@ ADUC_Result RootKeyPackage_ParsePublished(JSON_Object* protectedPropertiesObj, A
 
     if (protectedPropertiesObj == NULL || outPackage == NULL)
     {
+        Log_Error("RootKeyPackage_ParsePublished called with NULL arg (protectedPropertiesObj=%p, outPackage=%p)", (const void*)protectedPropertiesObj, (const void*)outPackage);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
         return result;
     }
@@ -231,6 +232,7 @@ ADUC_Result RootKeyPackage_ParseDisabledRootKeys(JSON_Object* protectedPropertie
 
     if (protectedPropertiesObj == NULL || outPackage == NULL)
     {
+        Log_Error("RootKeyPackage_ParseDisabledRootKeys called with NULL arg (protectedPropertiesObj=%p, outPackage=%p)", (const void*)protectedPropertiesObj, (const void*)outPackage);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
         return result;
     }
@@ -311,6 +313,7 @@ ADUC_Result RootKeyPackage_ParseHashAlg(JSON_Object* jsonObj, SHAversion* outAlg
 
     if (jsonObj == NULL || outAlg == NULL)
     {
+        Log_Error("RootKeyPackage_ParseHashAlg called with NULL arg (jsonObj=%p, outAlg=%p)", (const void*)jsonObj, (const void*)outAlg);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
         return result;
     }
@@ -355,6 +358,7 @@ ADUC_Result RootKeyPackage_ParseSigningAlg(JSON_Object* jsonObj, ADUC_RootKeySig
 
     if (jsonObj == NULL || outAlg == NULL)
     {
+        Log_Error("RootKeyPackage_ParseSigningAlg called with NULL arg (jsonObj=%p, outAlg=%p)", (const void*)jsonObj, (const void*)outAlg);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
         return result;
     }
@@ -415,6 +419,7 @@ ADUC_Result RootKeyPackage_ParseBase64URLUIntJsonString(
 
     if (jsonObj == NULL || IsNullOrEmpty(propertyName) || outHashBuffer == NULL)
     {
+        Log_Error("RootKeyPackage_ParseBase64URLUIntJsonString called with bad arg (jsonObj=%p, propertyName=%p, outHashBuffer=%p)", (const void*)jsonObj, (const void*)propertyName, (const void*)outHashBuffer);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
         return result;
     }
@@ -475,6 +480,7 @@ RootKeyPackage_ParseDisabledSigningKeys(JSON_Object* protectedPropertiesObj, ADU
 
     if (protectedPropertiesObj == NULL || outPackage == NULL)
     {
+        Log_Error("RootKeyPackage_ParseDisabledSigningKeys called with NULL arg (protectedPropertiesObj=%p, outPackage=%p)", (const void*)protectedPropertiesObj, (const void*)outPackage);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
         return result;
     }
@@ -549,6 +555,11 @@ done:
         }
 
         VECTOR_destroy(hashes);
+    }
+
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        Log_Error("ERC 0x%08x parsing '" ADUC_ROOTKEY_PACKAGE_PROPERTY_DISABLED_SIGNING_KEYS "' property.", result.ExtendedResultCode);
     }
 
     return result;
@@ -646,6 +657,7 @@ static ADUC_Result ParseRootKey(JSON_Object* rootKeysObj, size_t index, VECTOR_H
     }
     else
     {
+        Log_Error("Unsupported key type: '%s'", keytypeStr);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_PARSE_UNSUPPORTED_KEYTYPE;
         goto done;
     }

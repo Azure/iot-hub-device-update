@@ -42,6 +42,7 @@ ADUC_Result ADUC_RootKeyPackageUtils_Parse(const char* jsonString, ADUC_RootKeyP
 
     if (IsNullOrEmpty(jsonString) || outRootKeyPackage == NULL)
     {
+        Log_Error("ADUC_RootKeyPackageUtils_Parse called with bad args (jsonString=%p, outRootKeyPackage=%p)", (const void*)jsonString, (const void*)outRootKeyPackage);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYPKG_UTIL_ERROR_BAD_ARG;
         return result;
     }
@@ -331,6 +332,7 @@ STRING_HANDLE RootKeyPackage_SigningAlgToString(const ADUC_RootKeySigningAlgorit
         break;
     case ADUC_RootKeySigningAlgorithm_INVALID:
     default:
+        Log_Error("Invalid or unsupported signing algorithm: %d", (int)alg);
         break;
     }
 
@@ -348,6 +350,7 @@ JSON_Value* ADUC_RootKeyPackageUtils_SignatureToJsonValue(const ADUC_RootKeyPack
 
     if (sigJsonValue == NULL)
     {
+        Log_Error("Failed json_value_init_object for signature JSON");
         goto done;
     }
 
@@ -434,6 +437,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
 
     if (rootKeyPackage == NULL)
     {
+        Log_Error("SerializePackageToJsonString called with NULL rootKeyPackage");
         goto done;
     }
 
@@ -441,6 +445,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
 
     if (rootKeyPackageJsonValue == NULL)
     {
+        Log_Error("Failed json_value_init_object for rootkey package serialization");
         goto done;
     }
 
@@ -477,6 +482,7 @@ char* ADUC_RootKeyPackageUtils_SerializePackageToJsonString(const ADUC_RootKeyPa
     rootKeySignatureArrayValue = json_value_init_array();
     if (rootKeySignatureArrayValue == NULL)
     {
+        Log_Error("Failed json_value_init_array for rootkey signatures");
         goto done;
     }
 

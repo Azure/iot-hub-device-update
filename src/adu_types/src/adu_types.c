@@ -32,6 +32,7 @@ const char* ADUC_ConnType_ToString(const ADUC_ConnType connType)
         return "ADUC_ConnType_Module";
     }
 
+    Log_Warn("ADUC_ConnType_ToString: unrecognized connType value %d", (int)connType);
     return "<Unknown>";
 }
 /**
@@ -66,9 +67,23 @@ void ADUC_ConnectionInfo_DeAlloc(ADUC_ConnectionInfo* info)
  */
 bool ADUC_IsValidUpdateId(const ADUC_UpdateId* updateId)
 {
-    return !(
-        updateId == NULL || IsNullOrEmpty(updateId->Provider) || IsNullOrEmpty(updateId->Name)
-        || IsNullOrEmpty(updateId->Version));
+    if (updateId == NULL)
+    {
+        Log_Error("ADUC_IsValidUpdateId: updateId is NULL");
+        return false;
+    }
+
+    if (IsNullOrEmpty(updateId->Provider) || IsNullOrEmpty(updateId->Name) || IsNullOrEmpty(updateId->Version))
+    {
+        Log_Error(
+            "ADUC_IsValidUpdateId: invalid updateId (Provider='%s', Name='%s', Version='%s')",
+            updateId->Provider ? updateId->Provider : "(null)",
+            updateId->Name ? updateId->Name : "(null)",
+            updateId->Version ? updateId->Version : "(null)");
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -130,6 +145,7 @@ const char* ADUCITF_StateToString(ADUCITF_State updateState)
         return "Failed";
     }
 
+    Log_Warn("ADUCITF_StateToString: unrecognized updateState value %d", (int)updateState);
     return "<Unknown>";
 }
 
@@ -157,5 +173,6 @@ const char* ADUCITF_UpdateActionToString(ADUCITF_UpdateAction updateAction)
         return "Undefined";
     }
 
+    Log_Warn("ADUCITF_UpdateActionToString: unrecognized updateAction value %d", (int)updateAction);
     return "<Unknown>";
 }
