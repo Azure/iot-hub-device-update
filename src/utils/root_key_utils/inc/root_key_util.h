@@ -26,6 +26,7 @@ ADUC_Result RootKeyUtility_LoadSerializedPackage(const char* fileLocation, char*
 void RootKeyUtility_SetReportingErc(ADUC_Result_t erc);
 void RootKeyUtility_ClearReportingErc();
 ADUC_Result_t RootKeyUtility_GetReportingErc();
+void RootKeyUtility_ClearLocalStore();
 bool ADUC_RootKeyUtility_IsUpdateStoreNeeded(const STRING_HANDLE storePath, const ADUC_RootKeyPackage* packageToTest);
 ADUC_Result RootKeyUtility_GetDisabledSigningKeys(VECTOR_HANDLE* outDisabledSigningKeyList);
 bool RootKeyUtility_RootKeyIsDisabled(const ADUC_RootKeyPackage* rootKeyPackage, const char* keyId);
