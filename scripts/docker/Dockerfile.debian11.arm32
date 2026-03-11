@@ -1,0 +1,82 @@
+# Dockerfile for ADU Agent build environment
+# Target: Debian 11 (Bullseye) ARM32
+#
+# Installs all prerequisites assumed by install-deps.sh so the script
+# (and subsequent builds) can run without missing tools or libraries.
+#
+# Build (on an arm32 host or with buildx):
+#   docker buildx build --platform linux/arm/v7 \
+#       -f Dockerfile.debian11.arm32 -t adu-build:debian11-arm32 .
+
+FROM arm32v7/debian:bullseye
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── 1. Basic utilities the script assumes are present ─────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        sudo \
+        bash \
+        ca-certificates \
+        lsb-release \
+        gnupg \
+        apt-transport-https \
+        software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 2. ADU Agent package dependencies (aduc_packages in install-deps.sh) ──────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        make \
+        build-essential \
+        cmake \
+        ninja-build \
+        libcurl4-openssl-dev \
+        libssl-dev \
+        uuid-dev \
+        curl \
+        wget \
+        pkg-config \
+        libxml2-dev \
+        file \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 3. Debian 11 specific compilers ──────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc-10 \
+        g++-10 \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 4. Static-analysis packages ──────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        clang \
+        clang-tidy \
+        cppcheck \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 5. Delivery Optimization dependencies ─────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libboost-filesystem-dev \
+        libboost-system-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 6. Shellcheck build dependencies (built from source on arm32) ─────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        cabal-install \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 7. Valgrind build-from-source dependencies ───────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        libtool \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── 8. Directories the script / build expect ─────────────────────────────────
+RUN mkdir -p /usr/local/inc /usr/local/pal/linux /tmp/adu
+
+# ── 9. Set default compilers ─────────────────────────────────────────────────
+ENV CC=/usr/bin/gcc-10
+ENV CXX=/usr/bin/g++-10
+
+# ── 10. Workspace directory ──────────────────────────────────────────────────
+WORKDIR /src
