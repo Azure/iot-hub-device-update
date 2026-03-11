@@ -43,3 +43,64 @@ jobs:
           name: deb-packages-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}
           path: out/*.deb
           retention-days: 3
+
+  # ARM32 builds require QEMU emulation on amd64 runners.
+  # The container: block starts before any steps, so QEMU must be set up
+  # first via docker/setup-qemu-action, then the build runs inside
+  # a manually launched Docker container.
+  arm32-container-job:
+    strategy:
+      matrix:
+        os: ["debian:11"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU for ARM32 emulation
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm
+
+      - name: Make artifact name valid
+        id: make-artifact-name-valid
+        run: |
+          OS_NAME=$(echo "${{ matrix.os }}" | tr ':' '-')
+          echo "os_name=$OS_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build in ARM32 container
+        run: |
+          docker run --rm --platform linux/arm/v7 \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            -e DEBIAN_FRONTEND=noninteractive \
+            "${{ matrix.os }}" \
+            bash -c '
+              set -euo pipefail
+
+              echo "=== Architecture check ==="
+              uname -m
+              dpkg --print-architecture
+
+              echo "=== Install prereqs ==="
+              apt-get update
+              apt-get install -y tzdata
+              dpkg-reconfigure -f noninteractive tzdata
+
+              echo "=== Install dependencies ==="
+              scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck
+
+              echo "=== Build packages and tests ==="
+              scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel
+
+              echo "=== Run tests ==="
+              cd out
+              ctest --output-on-failure
+            '
+
+      - name: Upload Debian packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-packages-${{ steps.make-artifact-name-valid.outputs.os_name }}-arm32
+          path: out/*.deb
+          retention-days: 3
