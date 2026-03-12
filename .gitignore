@@ -47,6 +47,7 @@ cscope.po.out
 out/
 build/
 Testing/
+out*/
 
 ### VCPKG
 .vcpkg/
