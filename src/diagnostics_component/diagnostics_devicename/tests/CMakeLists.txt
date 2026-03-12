@@ -16,6 +16,14 @@ target_link_libraries (${PROJECT_NAME} PRIVATE diagnostics_component::diagnostic
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
+# Wrap external functions to allow mocking in unit tests
+target_link_options (
+    ${PROJECT_NAME}
+    PRIVATE
+    -Wl,--wrap=STRING_new
+    -Wl,--wrap=STRING_sprintf
+    -Wl,--wrap=mallocAndStrcpy_s)
+
 include (CTest)
 include (Catch)
 if (NOT CMAKE_CROSSCOMPILING)

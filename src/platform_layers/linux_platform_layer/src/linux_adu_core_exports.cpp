@@ -27,12 +27,14 @@ EXTERN_C_BEGIN
  */
 ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, int /*argc*/, const char** /*argv*/)
 {
+    Log_Info("ADUC_RegisterPlatformLayer: registering Linux platform layer");
     try
     {
         std::unique_ptr<ADUC::LinuxPlatformLayer> pImpl{ ADUC::LinuxPlatformLayer::Create() };
         ADUC_Result result{ pImpl->SetUpdateActionCallbacks(data) };
         // The platform layer object is now owned by the UpdateActionCallbacks object.
         pImpl.release();
+        Log_Info("ADUC_RegisterPlatformLayer: platform layer registered successfully");
         return result;
     }
     catch (const ADUC::Exception& e)
@@ -47,6 +49,7 @@ ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, int /*a
     }
     catch (...)
     {
+        Log_Error("Unhandled unknown exception in ADUC_RegisterPlatformLayer");
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
     }
 }
@@ -58,6 +61,7 @@ ADUC_Result ADUC_RegisterPlatformLayer(ADUC_UpdateActionCallbacks* data, int /*a
  */
 void ADUC_Unregister(ADUC_Token token)
 {
+    Log_Info("ADUC_Unregister: unregistering platform layer");
     ADUC::LinuxPlatformLayer* pImpl{ static_cast<ADUC::LinuxPlatformLayer*>(token) };
     delete pImpl; // NOLINT(cppcoreguidelines-owning-memory)
 }

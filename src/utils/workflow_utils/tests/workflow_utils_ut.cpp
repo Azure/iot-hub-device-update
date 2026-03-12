@@ -7,6 +7,7 @@
  */
 #include "aduc/parser_utils.h"
 #include "aduc/result.h"
+#include "aduc/aduc_inode.h"
 #include "aduc/string_handle_wrapper.hpp"
 #include "aduc/workflow_utils.h"
 
@@ -772,4 +773,105 @@ TEST_CASE("workflow_parse_peek_unprotected_workflow_properties")
         REQUIRE(workflow_id != nullptr);
         CHECK_THAT(workflow_id, Equals("nodeployment"));
     }
+}
+
+TEST_CASE("workflow operation flags and null-handle property guards")
+{
+    SECTION("Null handle guards return defaults")
+    {
+        CHECK_FALSE(workflow_set_selected_components(nullptr, "[]"));
+        CHECK(workflow_get_selected_components(nullptr) == nullptr);
+        CHECK(workflow_get_update_type(nullptr) == nullptr);
+        CHECK_FALSE(workflow_get_operation_in_progress(nullptr));
+        CHECK_FALSE(workflow_get_operation_cancel_requested(nullptr));
+
+        workflow_set_operation_in_progress(nullptr, true);
+        workflow_set_operation_cancel_requested(nullptr, true);
+        workflow_clear_inprogress_and_cancelrequested(nullptr);
+    }
+
+    SECTION("Operation flags toggle and clear on valid workflow")
+    {
+        ADUC_WorkflowHandle handle = nullptr;
+        ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+        REQUIRE(result.ResultCode != 0);
+        REQUIRE(handle != nullptr);
+
+        CHECK_FALSE(workflow_get_operation_in_progress(handle));
+        CHECK_FALSE(workflow_get_operation_cancel_requested(handle));
+
+        workflow_set_operation_in_progress(handle, true);
+        workflow_set_operation_cancel_requested(handle, true);
+
+        CHECK(workflow_get_operation_in_progress(handle));
+        CHECK(workflow_get_operation_cancel_requested(handle));
+
+        workflow_clear_inprogress_and_cancelrequested(handle);
+
+        CHECK_FALSE(workflow_get_operation_in_progress(handle));
+        CHECK_FALSE(workflow_get_operation_cancel_requested(handle));
+
+        workflow_free(handle);
+    }
+}
+
+TEST_CASE("workflow manifest and inode helper APIs")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    REQUIRE(result.ResultCode != 0);
+    REQUIRE(handle != nullptr);
+
+    SECTION("retry timestamp set and peek")
+    {
+        CHECK(workflow_set_retryTimestamp(handle, "2030-01-01T00:00:00Z"));
+        CHECK_THAT(workflow_peek_retryTimestamp(handle), Equals("2030-01-01T00:00:00Z"));
+    }
+
+    SECTION("sandbox and child root sandbox resolution")
+    {
+        REQUIRE(workflow_set_workfolder(handle, "/tmp/workflow-parent"));
+
+        ADUC_WorkflowHandle child = nullptr;
+        ADUC_Result childResult = workflow_init(action_child_update_0, false /* validateManifest */, &child);
+        REQUIRE(childResult.ResultCode != 0);
+        REQUIRE(child != nullptr);
+        REQUIRE(workflow_insert_child(handle, 0, child));
+
+        char* childRoot = workflow_get_root_sandbox_dir(child);
+        REQUIRE(childRoot != nullptr);
+        CHECK_THAT(childRoot, Equals("/tmp/workflow-parent"));
+        workflow_free_string(childRoot);
+    }
+
+    SECTION("inode getters and setters")
+    {
+        REQUIRE(workflow_get_update_files_count(handle) == 2);
+        CHECK(workflow_get_update_file_inode(handle, 0) == ADUC_INODE_SENTINEL_VALUE);
+        CHECK(workflow_set_update_file_inode(handle, 0, 12345));
+        CHECK(workflow_get_update_file_inode(handle, 0) == 12345);
+        CHECK_FALSE(workflow_set_update_file_inode(handle, 99, 77));
+        CHECK(workflow_get_update_file_inode(handle, 99) == ADUC_INODE_SENTINEL_VALUE);
+    }
+
+    SECTION("manifest string and compatibility helpers")
+    {
+        const char* manifestVersionPeek = workflow_peek_update_manifest_string(handle, "manifestVersion");
+        REQUIRE(manifestVersionPeek != nullptr);
+        CHECK_THAT(manifestVersionPeek, Equals("5"));
+
+        char* manifestVersionCopy = workflow_get_update_manifest_string_property(handle, "manifestVersion");
+        REQUIRE(manifestVersionCopy != nullptr);
+        CHECK_THAT(manifestVersionCopy, Equals("5"));
+        workflow_free_string(manifestVersionCopy);
+
+        char* compat0 = workflow_get_update_manifest_compatibility(handle, 0);
+        REQUIRE(compat0 != nullptr);
+        CHECK(strstr(compat0, "deviceManufacturer") != nullptr);
+        workflow_free_string(compat0);
+
+        CHECK(workflow_get_update_manifest_compatibility(handle, 99) == nullptr);
+    }
+
+    workflow_free(handle);
 }

@@ -66,6 +66,10 @@ target_link_libraries (
 
 add_subdirectory (scripts)
 
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
+
 # Install adu-shell to /usr/bin folder.
 # Only owner and group can run adu-shell.
 install (

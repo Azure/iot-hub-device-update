@@ -98,6 +98,7 @@ static void ApplyDeviceInfoPropertyConstraints(char* value)
         if ((curr - value) == max_cch)
         {
             // Force truncation at max_cch characters.
+            Log_Warn("ApplyDeviceInfoPropertyConstraints: truncating value to %u characters", max_cch);
             *curr = '\0';
             break;
         }
@@ -120,6 +121,7 @@ static void RefreshDeviceInfoInterfaceData()
         if (value == NULL)
         {
             // NULL indicates failure or value not changed, so skip.
+            Log_Debug("Value for property %s is NULL, skipping.", data->PropertyName);
             continue;
         }
 
@@ -151,6 +153,7 @@ bool DeviceInfoInterface_Create(void** componentContext, int argc, char** argv)
 
     *componentContext = NULL;
 
+    Log_Info("DeviceInfoInterface created.");
     return true;
 }
 
@@ -175,6 +178,7 @@ void DeviceInfoInterface_Destroy(void** componentContext)
 {
     UNREFERENCED_PARAMETER(componentContext);
 
+    Log_Info("DeviceInfoInterface destroying and freeing cached data.");
     // context isn't used, as we reference the global deviceInfoInterface_Data.
     DeviceInfoInterfaceData_Free();
 }
@@ -198,11 +202,23 @@ void DeviceInfoInterface_ReportChangedPropertiesAsync()
     STRING_HANDLE jsonToSend = NULL;
     char* serialized_string = NULL;
     JSON_Value* root_value = json_value_init_object();
+    if (root_value == NULL)
+    {
+        Log_Error("Failed to initialize JSON value in DeviceInfoInterface_ReportChangedPropertiesAsync.");
+    }
+
     JSON_Object* root_object = json_value_get_object(root_value);
+    if (root_object == NULL)
+    {
+        Log_Error("Failed to get root object from JSON value in DeviceInfoInterface_ReportChangedPropertiesAsync.");
+    }
 
     const char pnpReportedPropertyFormat[] = "{\"%s\":%s}";
 
-    json_object_set_string(root_object, "__t", "c");
+    if (json_object_set_string(root_object, "__t", "c") != JSONSuccess)
+    {
+        Log_Warn("Failed to set DeviceInfo property '__t'.");
+    }
 
     for (unsigned index = 0; index < ARRAY_SIZE(deviceInfoInterface_Data); ++index)
     {
@@ -213,7 +229,10 @@ void DeviceInfoInterface_ReportChangedPropertiesAsync()
 
         if (data->Type == DIIDT_String)
         {
-            json_object_set_string(root_object, propertyName, propertyValue);
+            if (json_object_set_string(root_object, propertyName, propertyValue) != JSONSuccess)
+            {
+                Log_Error("Failed to set DeviceInfo string property '%s'.", propertyName);
+            }
         }
         else
         {
@@ -228,6 +247,10 @@ void DeviceInfoInterface_ReportChangedPropertiesAsync()
     }
 
     serialized_string = json_serialize_to_string(root_value);
+    if (serialized_string == NULL)
+    {
+        Log_Error("Failed to serialize DeviceInfo reported property JSON to string.");
+    }
 
     jsonToSend = STRING_construct_sprintf(pnpReportedPropertyFormat, g_deviceInfoPnPComponentName, serialized_string);
 

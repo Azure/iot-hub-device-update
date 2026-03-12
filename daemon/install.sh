@@ -29,13 +29,6 @@ adu_user=adu
 # access to ADU resources like download sandbox folder.
 adu_group=adu
 
-# Note: DO user and group are created by deliveryoptimization-agent Debian package,
-# which is one of the dependencies declared in deviceupdate-agent control file.
-# We are assuming that both DO user and group currently exist at this point.
-
-# The user that the DO Agent daemon runs as.
-do_user='do'
-
 # The sample du-config.json
 sample_du_config=$(
     cat << END_OF_JSON
@@ -91,11 +84,6 @@ add_adu_user_and_group() {
     echo "Add the 'adu' user to the 'syslog' group." # To allow ADU to write to /var/log folder
     if getent group "syslog" > /dev/null; then
         usermod -aG "syslog" "$adu_user"
-    fi
-
-    echo "Add the 'do' user to the 'adu' group." # To allow DO to write to ADU download sandbox.
-    if getent passwd "$do_user" > /dev/null; then
-        usermod -aG "$adu_group" "$do_user"
     fi
 }
 

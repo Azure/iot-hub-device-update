@@ -205,6 +205,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     if (startupMsgValue == NULL)
     {
+        Log_Error("ReportStartupMsg: json_value_init_object failed.");
         goto done;
     }
 
@@ -212,6 +213,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     if (startupMsgObj == NULL)
     {
+        Log_Error("ReportStartupMsg: json_value_get_object returned NULL.");
         goto done;
     }
 
@@ -219,6 +221,7 @@ bool ReportStartupMsg(ADUC_WorkflowData* workflowData)
 
     if (config == NULL)
     {
+        Log_Error("ReportStartupMsg: ADUC_ConfigInfo_GetInstance returned NULL.");
         goto done;
     }
 
@@ -265,6 +268,7 @@ bool AzureDeviceUpdateCoreInterface_Create(void** context, int argc, char** argv
     ADUC_WorkflowData* workflowData = calloc(1, sizeof(ADUC_WorkflowData));
     if (workflowData == NULL)
     {
+        Log_Error("AzureDeviceUpdateCoreInterface_Create: calloc failed for ADUC_WorkflowData (size: %zu).", sizeof(ADUC_WorkflowData));
         goto done;
     }
     workflowData->vsm = &g_vsm;
@@ -296,7 +300,13 @@ done:
 
 void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
 {
+    if (componentContext == NULL)
+    {
+        Log_Error("AzureDeviceUpdateCoreInterface_Connected called with NULL context.");
+    }
+
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
+    Log_Info("AzureDeviceUpdateCoreInterface connected to IoT Hub.");
 
     if (workflowData->WorkflowHandle == NULL)
     {
@@ -312,6 +322,11 @@ void AzureDeviceUpdateCoreInterface_Connected(void* componentContext)
 
 void AzureDeviceUpdateCoreInterface_DoWork(void* componentContext)
 {
+    if (componentContext == NULL)
+    {
+        Log_Error("AzureDeviceUpdateCoreInterface_DoWork called with NULL context.");
+    }
+
     ADUC_WorkflowData* workflowData = (ADUC_WorkflowData*)componentContext;
     ADUC_Workflow_DoWork(workflowData);
 }
@@ -376,6 +391,14 @@ void OrchestratorUpdateCallback(
         json_object_set_null(signatureObj, "updateManifestSignature");
         json_object_set_null(signatureObj, "fileUrls");
         ackString = json_serialize_to_string(propertyValue);
+        if (ackString == NULL)
+        {
+            Log_Warn("OrchestratorUpdateCallback: json_serialize_to_string for ACK returned NULL");
+        }
+    }
+    else
+    {
+        Log_Warn("OrchestratorUpdateCallback: json_value_get_object returned NULL for signatureObj");
     }
 
     Log_Debug("Update Action info string (%s), property version (%d)", ackString, propertyVersion);
@@ -414,7 +437,7 @@ void OrchestratorUpdateCallback(
         workFolder = workflow_get_root_sandbox_dir(workflowData->WorkflowHandle);
         if (workFolder == NULL)
         {
-            Log_Error("workflow_get_root_sandbox_dir failed");
+            Log_Error("workflow_get_root_sandbox_dir failed for workflowId '%s'", workflowId);
             goto done;
         }
 
@@ -653,6 +676,7 @@ JSON_Value* GetReportingJsonValue(
     rootResultERCs = construct_extended_result_codes_str(handle, rootResult);
     if (rootResultERCs == NULL)
     {
+        Log_Error("GetReportingJsonValue: construct_extended_result_codes_str returned NULL");
         goto done;
     }
 

@@ -17,7 +17,7 @@ set -e
 # ADU Agent daemon needs to run as 'adu' to be able to perform high-privilege tasks via adu-shell.
 adu_user=adu
 
-# The adu_group is the group that gives partner users like DO user
+# The adu_group is the group that gives partner users
 # access to ADU resources like download sandbox folder.
 adu_group=adu
 

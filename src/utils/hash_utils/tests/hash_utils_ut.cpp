@@ -344,3 +344,102 @@ TEST_CASE("ADUC_HashUtils_GetIndexStrongestValidHash")
         CHECK(bestShaVersion == SHAversion::SHA256);
     }
 }
+
+TEST_CASE("ADUC_HashUtils_IsValidHashAlgorithm")
+{
+    CHECK_FALSE(ADUC_HashUtils_IsValidHashAlgorithm(SHAversion::SHA1));
+    CHECK_FALSE(ADUC_HashUtils_IsValidHashAlgorithm(SHAversion::SHA224));
+    CHECK(ADUC_HashUtils_IsValidHashAlgorithm(SHAversion::SHA256));
+    CHECK(ADUC_HashUtils_IsValidHashAlgorithm(SHAversion::SHA384));
+    CHECK(ADUC_HashUtils_IsValidHashAlgorithm(SHAversion::SHA512));
+}
+
+TEST_CASE("ADUC_HashUtils_GetHashType and GetHashValue")
+{
+    ADUC_Hash hashes[] = {
+        {
+            const_cast<char*>("value0"),
+            const_cast<char*>("sha256"),
+        },
+        {
+            const_cast<char*>("value1"),
+            const_cast<char*>("sha512"),
+        },
+    };
+
+    REQUIRE(ADUC_HashUtils_GetHashType(hashes, 2, 0) != nullptr);
+    CHECK(std::string(ADUC_HashUtils_GetHashType(hashes, 2, 0)) == "sha256");
+    CHECK(std::string(ADUC_HashUtils_GetHashValue(hashes, 2, 1)) == "value1");
+    CHECK(ADUC_HashUtils_GetHashType(hashes, 2, 2) == nullptr);
+    CHECK(ADUC_HashUtils_GetHashValue(hashes, 2, 2) == nullptr);
+}
+
+TEST_CASE("ADUC_HashUtils_VerifyWithStrongestHash")
+{
+    SmallFile testFile;
+
+    SECTION("Returns true when strongest valid hash matches")
+    {
+        ADUC_Hash hashes[] = {
+            {
+                const_cast<char*>(testFile.GetDataHashBase64(SHAversion::SHA1)),
+                const_cast<char*>("sha1"),
+            },
+            {
+                const_cast<char*>(testFile.GetDataHashBase64(SHAversion::SHA256)),
+                const_cast<char*>("sha256"),
+            },
+        };
+
+        CHECK(ADUC_HashUtils_VerifyWithStrongestHash(testFile.Filename(), hashes, 2));
+    }
+
+    SECTION("Returns false when only invalid algorithms are present")
+    {
+        ADUC_Hash hashes[] = {
+            {
+                const_cast<char*>(testFile.GetDataHashBase64(SHAversion::SHA1)),
+                const_cast<char*>("sha1"),
+            },
+        };
+
+        CHECK_FALSE(ADUC_HashUtils_VerifyWithStrongestHash(testFile.Filename(), hashes, 1));
+    }
+
+    SECTION("Returns false when strongest hash does not match")
+    {
+        ADUC_Hash hashes[] = {
+            {
+                const_cast<char*>("invalidhash"),
+                const_cast<char*>("sha256"),
+            },
+        };
+
+        CHECK_FALSE(ADUC_HashUtils_VerifyWithStrongestHash(testFile.Filename(), hashes, 1));
+    }
+}
+
+TEST_CASE("ADUC_Hash_Init and ADUC_Hash_UnInit")
+{
+    ADUC_Hash hash{};
+
+    SECTION("Initializes and uninitializes valid hash")
+    {
+        REQUIRE(ADUC_Hash_Init(&hash, "hashvalue", "sha256"));
+        REQUIRE(hash.value != nullptr);
+        REQUIRE(hash.type != nullptr);
+        CHECK(std::string(hash.value) == "hashvalue");
+        CHECK(std::string(hash.type) == "sha256");
+
+        ADUC_Hash_UnInit(&hash);
+        CHECK(hash.value == nullptr);
+        CHECK(hash.type == nullptr);
+    }
+
+    SECTION("Returns false for invalid inputs")
+    {
+        CHECK_FALSE(ADUC_Hash_Init(nullptr, "hashvalue", "sha256"));
+        CHECK_FALSE(ADUC_Hash_Init(&hash, nullptr, "sha256"));
+        CHECK_FALSE(ADUC_Hash_Init(&hash, "hashvalue", nullptr));
+    }
+}
