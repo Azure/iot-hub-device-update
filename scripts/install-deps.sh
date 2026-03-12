@@ -190,6 +190,10 @@ do_install_aduc_packages() {
         $SUDO apt-get install --yes gcc-12 g++-12 || return
         catch2_cc=/usr/bin/gcc-12
         catch2_cxx=/usr/bin/g++-12
+    elif [[ $OS == "Debian" && $VER == "13" ]]; then
+        $SUDO apt-get install --yes gcc-14 g++-14 || return
+        catch2_cc=/usr/bin/gcc-14
+        catch2_cxx=/usr/bin/g++-14
     else
         $SUDO apt-get install --yes gcc-8 g++-8 || return
         catch2_cc=/usr/bin/gcc-8
@@ -583,7 +587,7 @@ do_install_cmake_from_source() {
     pushd "$cmake_dir_path" > /dev/null || return
 
     echo "Running 'bootstrap' ..."
-    $SUDO ./bootstrap --verbose --no-qt-gui --prefix=${cmake_prefix} > "${cmake_dir_path}/bootstrap.log" 2>&1
+    $SUDO ./bootstrap --verbose --no-qt-gui --prefix=${cmake_prefix} | tee "${cmake_dir_path}/bootstrap.log" 2>&1
     ret_value=$?
     if [ $ret_value -ne 0 ]; then
         error "bootstrap --prefix=${cmake_prefix} failed with exit code ${ret_value}"
@@ -713,7 +717,7 @@ determine_machine_architecture() {
     else
         if [[ $arch == aarch64* || $arch == armv8* ]]; then
             is_arm64=true
-        elif [[ $arch == armv7* || $arch == 'arm' ]]; then
+        elif [[ $arch == armv7* || $arch == 'arm' || $arch == 'armhf' ]]; then
             is_arm32=true
         elif [[ $arch == 'x86_64' || $arch == 'amd64' ]]; then
             is_amd64=true
@@ -921,6 +925,7 @@ if [[ $install_packages_only == "true" ]]; then
     install_azure_iot_sdk=false
     install_catch2=false
 fi
+install_cmake=false
 
 export CC=/usr/bin/gcc
 export CXX=/usr/bin/g++
