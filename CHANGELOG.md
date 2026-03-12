@@ -1,3 +1,43 @@
+## Release 1.2.0 (2024-12-16)
+
+### Security-Related Bug Fixes
+
+* Fix incorrect format specifier in extension_utils.c
+* Fix segmentation fault in OnShutdownSignal
+* Fix double-free issue in FileInfoUtils
+* Fix buffer overrun and other UB when format-specifier-like string exists in script handler script
+* Fix quoting issue leading to 0 args for format string with one format specifier in rootkey_workflow
+* Fix 15 instances of "cmp narrow with wide in loop condition issues" across 11 files
+* Fix Non-const fmt str in script_handler.cpp
+* Fix possible buffer overrun by using strncmp in command_helper.c and operation_id_utils.c
+* Cast ssize_t to size_t after >0 check
+
+### Other Bug Fixes
+
+* Ensure downloaded script handler script has correct ownership/permissions and improve adu-shell errors
+* Fix restart race by adding signal handler in adu-shell
+* Handle no-deployment workflowId case
+* Fix message processing context init, usage, cleanup in d2c_messaging
+* Fix memleak in url_utils and other rootkey util and rootkeypackage download fixes
+
+### Usage Enhancements
+
+* Fix incorrectly mapped errno in how-to-troubleshoot-guide.md
+* Add public GitHub Actions — builds Debian 11 & 12, Ubuntu 20.04 and 22.04 × x86_64, arm64
+* Fix setup_container.sh health check permissions for docker
+* Fix daemon CMakeLists.txt and install.sh
+* Fix aziot unix user/group and aziot services restart in debian cpack postrm
+* Add support for building Debian 12 in install-deps.sh
+* Update documents and scripts for multi component update examples
+* Fix shellcheck error in demo script
+
+### Code Enhancements
+
+* Report InProgress only once when processing update deployment
+* Add more rootkey logging and handle SignatureToJsonValue failure
+* Upgrade Catch2 version from v2 to v3.8.0
+* Allow use of curl to download rootkey package
+
 ## Release 0.8.0 (2022-02-03)
 ### Major changes
 * Proxy update plug in/out component support
