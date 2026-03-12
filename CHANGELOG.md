@@ -1,3 +1,55 @@
+## Release 1.3.0-rc1 (2025-03-xx)
+
+### Major Features and Enhancements
+
+* Add X.509 client certificate authentication support
+* Add CrossProc Query API (Service Status API) SDK with idle pause timer and examples
+* Add Microsoft Delta Download Handler support with component-based packaging
+* Add Delta CacheSourceUpdate API with improved cache robustness and enhanced logging
+* Use curl handler as the default content handler
+* Add support for Ubuntu 24.04 LTS with GCC 13 compatibility
+* Add support for Debian 13 (Trixie)
+* Pass workflowData to script handler arguments for custom data propagation
+* Show ExtendedResultCode in IoT Hub for "Last Attempted Update" details
+* Report detailed error results for failed workflows
+* Overall agent logging improvements
+* Add rootkey validator tool
+* Add reboot synchronization to allow agent cleanup before restart
+* Support custom work folder for dependency installation and build
+* Add devcontainer with Debian 11 for development
+
+### Security-Related Bug Fixes
+
+* Fix memory leaks across 12+ modules detected via Valgrind (workflow_utils, script_handler, jws_utils, steps_handler, root_key_util, WorkflowHandle, linux_adu_core_impl, zlog, and others)
+* Make communication client handle address thread-safe
+* Make zlog ref_count thread-safe using atomic operations
+* Fix use of atomic_bool for thread flag and add absolute timeout for response FIFO
+* Fix ARM32 segfault in extension registration (incorrect format specifier %lld for long)
+* Fix wrong pointer issue (#737)
+* Fix all known SDK stability issues on RPI4
+* Remove ADUC_Logging_Init/Uninit calls from API service thread to prevent process-wide logging corruption
+
+### Other Bug Fixes
+
+* Return cached version of content handler if already existing
+* Fix log level being defaulted to INFO on extensions
+* Fix log message to show text for cancel
+* Fix missing logging Uninit
+* Fix util function logging error when file does not exist
+* Fix bug in ADUC_SystemUtils_CopyFileToDir
+* Fix wrong documentation where -1 would read outside array
+* Resolve issue in example scripts where CancelUpdate function is not invoked
+* Fix line commented by mistake and remove unneeded imports
+* Fix warnings and add test for ADUC_HashUtils_GetIndexStrongestValidHash
+* Fix apisvc unit tests to use test data folder instead of /tmp
+
+### Testing and Code Quality
+
+* Extensive unit test coverage additions across adu-shell, extensions, communication_abstraction, communication_manager, agent, platform_layers, diagnostics_component, adu_types, adu_workflow, logging, and rootkey_workflow
+* Add Python script and shell script for code coverage report generation
+* Run unit tests with Valgrind on Ubuntu 20.04+ build hosts
+* Remove Debian 10 build support (reached end of life June 2024)
+
 ## Release 1.2.0 (2024-12-16)
 
 ### Security-Related Bug Fixes
