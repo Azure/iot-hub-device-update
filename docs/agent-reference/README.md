@@ -4,7 +4,7 @@
 
 Device Update for IoT Hub is an Azure service that enables secure, scalable over-the-air (OTA) updates for IoT devices. This repository contains the **reference implementation** of the Device Update agent — a comprehensive, production-ready agent that demonstrates best practices for integrating Device Update capabilities into IoT devices and applications.
 
-> 📖 **For service documentation and tutorials**, visit [Device Update for IoT Hub on Microsoft Learn](https://docs.microsoft.com/azure/iot-hub-device-update/)
+> 📖 **For service documentation and tutorials**, visit [Device Update for IoT Hub on Microsoft Learn](https://learn.microsoft.com/azure/iot-hub-device-update/)
 
 ## What's New in 1.3.0
 
@@ -158,7 +158,7 @@ cd iot-hub-device-update
 
 ## Getting Help
 
-- **📖 Documentation**: [Microsoft Learn - Device Update](https://docs.microsoft.com/azure/iot-hub-device-update/)
+- **📖 Documentation**: [Microsoft Learn - Device Update](https://learn.microsoft.com/azure/iot-hub-device-update/)
 - **🐛 Issues**: [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues)
 - **💬 Discussions**: [GitHub Discussions](https://github.com/Azure/iot-hub-device-update/discussions)
 - **📧 Support**: [Azure Support](https://azure.microsoft.com/support/)

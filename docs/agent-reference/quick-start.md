@@ -55,7 +55,7 @@ Minimal configuration:
 
 ```json
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.2",
   "aduShellTrustedUsers": ["adu"],
   "manufacturer": "contoso",
   "model": "my-device",

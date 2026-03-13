@@ -770,7 +770,7 @@ sudo -u adu ls -la /etc/adu/certs/
 - [How to Build Agent Code](how-to-build-agent-code.md)
 - [How to Run Agent](how-to-run-agent.md)
 - [Device Update Agent Extensibility Points](device-update-agent-extensibility-points.md)
-- [Troubleshooting Guide](how-to-troubleshoot-guide.md)
+- [Troubleshooting Guide](../how-to-troubleshoot-guide.md)
 
 ## Demo Scripts
 

@@ -48,7 +48,7 @@ Delivery Optimization logs (when using DO content downloader):
 ## ResultCode and ExtendedResultCode
 
 The `ADUCoreInterface` reports `ResultCode` and `ExtendedResultCode` for diagnosing failures.
-See [Device Update Plug and Play](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play) for interface details.
+See [Device Update Plug and Play](https://learn.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play) for interface details.
 
 ### ResultCode
 
