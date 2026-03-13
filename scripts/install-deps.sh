@@ -93,8 +93,8 @@ default_do_ref=develop
 install_do=false
 do_ref=$default_do_ref
 
-# Delta Handler Deps
-default_delta_ref=main
+# Default delta ref uses GCC 12+ compatible branch
+default_delta_ref=feature/vnext-delta
 install_delta=false
 delta_ref=$default_delta_ref
 
@@ -679,14 +679,17 @@ do_install_delta() {
         delta_url=https://github.com/Azure/iot-hub-device-update-delta.git
     fi
 
-    # Override delta_ref for Debian 12 to use the GCC 12 compatible branch
+    # Override delta_ref for distros with strict GCC that rejects the 'main' branch code.
+    # The 'main' branch uses 'enum class algorithm : uint32_t' which fails on GCC 12+.
+    # The feature/vnext-delta and adu/debian/12/amd64 branches use 'enum adu_algorithm' instead.
     local OS VER
     OS=$(lsb_release --short --id 2> /dev/null || echo "Unknown")
     VER=$(lsb_release --short --release 2> /dev/null || echo "0")
     local effective_delta_ref=$delta_ref
-    if [[ $OS == "Debian" && $VER == "12" ]]; then
-        effective_delta_ref="adu/debian/12/amd64"
-        echo "Debian 12 detected: using delta branch '$effective_delta_ref' for GCC 12 compatibility"
+    if [[ "$delta_ref" == "main" ]]; then
+        # The 'main' branch is not compatible with GCC 12+ (Debian 12+, Ubuntu 24.04+)
+        effective_delta_ref="feature/vnext-delta"
+        echo "Overriding delta_ref from 'main' to '$effective_delta_ref' for GCC compatibility"
     fi
 
     echo -e "Building iot-hub-device-update-delta library ...\n\tBranch: $effective_delta_ref\n\tFolder: $delta_dir"
