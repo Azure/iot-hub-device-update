@@ -233,6 +233,7 @@ TEST_CASE("ADUC_SystemUtils_GetTemporaryPathName")
         const std::string tempPath{ ADUC_SystemUtils_GetTemporaryPathName() };
         CHECK(!tempPath.empty());
     }
+}
 
 TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault")
 {
@@ -280,6 +281,7 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirDefault negative", "[!m
         const int ret{ ADUC_SystemUtils_MkDirDefault(dir.c_str()) };
         CHECK_FALSE(ret == 0);
     }
+}
 
 TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirRecursiveDefault")
 {
@@ -309,6 +311,7 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_MkDirRecursiveDefault")
         const int ret{ ADUC_SystemUtils_MkDirRecursiveDefault(dir.c_str()) };
         CHECK_FALSE(ret == 0);
     }
+}
 
 TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_RmDirRecursive")
 {
@@ -336,6 +339,7 @@ TEST_CASE_METHOD(TestCaseFixture, "ADUC_SystemUtils_RmDirRecursive")
         CHECK_FALSE(stat(TestPath(), &st) == 0);
         CHECK_FALSE(S_ISDIR(st.st_mode));
     }
+}
 
 TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
 {
@@ -451,6 +455,7 @@ TEST_CASE_METHOD(TestCaseFixture, "SystemUtils_ForEachDir")
                 CreateCallRecord("subdir2"),
             });
     }
+}
 
 TEST_CASE("ADUC_SystemUtils_FormatFilePathHelper")
 {
@@ -479,6 +484,7 @@ TEST_CASE("ADUC_SystemUtils_FormatFilePathHelper")
 
         CHECK_THAT(STRING_c_str(newFilePath.get()), Equals("/path/to/folder/file.ext"));
     }
+}
 
 /**
  * @brief Regression test for feof() bug in ADUC_SystemUtils_CopyFileToDir

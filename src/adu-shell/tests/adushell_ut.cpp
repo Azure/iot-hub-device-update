@@ -187,10 +187,8 @@ TEST_CASE("Common reboot task dispatches reboot command")
     auto taskResult = Adu::Shell::Tasks::Common::Reboot(launchArgs);
 
     CHECK(taskResult.ExitStatus() == 0);
-    CHECK(g_launchCapture.command == "/sbin/reboot");
-    REQUIRE(g_launchCapture.args.size() == 2);
-    CHECK(g_launchCapture.args[0] == "--reboot");
-    CHECK(g_launchCapture.args[1] == "--no-wall");
+    CHECK(g_launchCapture.command == "/usr/lib/adu/adu-reboot-wrapper.sh");
+    REQUIRE(g_launchCapture.args.size() == 0);
 }
 
 TEST_CASE("Common task handles unsupported action path")

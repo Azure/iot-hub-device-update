@@ -16,13 +16,6 @@
 #include <cstring>
 #include <string>
 
-// Helper class to ensure cleanup after each test
-class DiagnosticsDeviceNameTestHelper
-{
-public:
-    ~DiagnosticsDeviceNameTestHelper()
-    {
-
 //
 // --wrap mock infrastructure
 //

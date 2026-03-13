@@ -653,8 +653,15 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.apiRequestFifoPath == nullptr);
 
+        ADUC_ConfigInfo_UnInit(&config);
+    }
+
     SECTION("GetAduShellTrustedUsers returns and frees trusted-user vector")
     {
+        REQUIRE(mallocAndStrcpy_s(&g_configContentString, validConfigContentStr) == 0);
+        ADUC::StringUtils::cstr_wrapper configStr{ g_configContentString };
+
+        ADUC_ConfigInfo config = {};
         REQUIRE(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
 
         VECTOR_HANDLE users = ADUC_ConfigInfo_GetAduShellTrustedUsers(&config);
@@ -686,6 +693,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
         CHECK(config.idlePauseMilliseconds == 0);
 
         ADUC_ConfigInfo_UnInit(&config);
+    }
 
     SECTION("X509 connection reads cert, key and ca files")
     {

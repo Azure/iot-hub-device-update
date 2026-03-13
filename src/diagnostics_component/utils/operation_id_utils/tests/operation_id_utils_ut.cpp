@@ -9,12 +9,6 @@
 #include "operation_id_utils.h"
 
 #include <catch2/catch_all.hpp>
-#include <cstring>
-#include <string>
-
-TEST_CASE("OperationIdUtils_OperationIsComplete - Parameter Validation")
-{
-
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -118,20 +112,6 @@ TEST_CASE("OperationIdUtils_OperationIsComplete - Parameter Validation")
     }
 }
 
-TEST_CASE("OperationIdUtils_OperationIsComplete - No stored operation")
-{
-    // These tests verify behavior when no operation file exists
-    // (which is the normal case on a clean system or in test environment)
-
-    SECTION("Returns false when no operation ID file exists - valid JSON")
-    {
-        // Even with valid JSON containing operationId, should return false
-        // when there's no stored operation to compare against
-
-        CHECK_FALSE(OperationIdUtils_OperationIsComplete(R"({"operationId": ["item1", "item2"]})"));
-    }
-}
-
 // ===========================================================================
 // OperationIdUtils_OperationIsComplete - No stored operation
 // ===========================================================================
@@ -176,13 +156,6 @@ TEST_CASE("OperationIdUtils_OperationIsComplete - No stored operation")
     }
 }
 
-TEST_CASE("OperationIdUtils_StoreCompletedOperationId - Parameter Validation")
-{
-
-        CHECK_FALSE(OperationIdUtils_OperationIsComplete(R"({"operationId": ""})"));
-    }
-}
-
 // ===========================================================================
 // OperationIdUtils_StoreCompletedOperationId - Parameter Validation
 // ===========================================================================
@@ -207,14 +180,6 @@ TEST_CASE("OperationIdUtils_StoreCompletedOperationId - Parameter Validation")
         // We just verify it doesn't crash
         (void)result;
     }
-}
-
-TEST_CASE("OperationIdUtils_OperationIsComplete - Additional Edge Cases")
-{
-    SECTION("Returns false with very long operationId")
-    {
-        // Create a JSON with operationId longer than MAX_OPERATION_ID_CHARS (256)
-
 }
 
 // ===========================================================================
@@ -421,24 +386,3 @@ TEST_CASE("OperationIdUtils_OperationIsComplete - Additional Edge Cases")
     }
 }
 
-// NOTE: Tests that require writing to the file system are skipped because:
-// 1. The DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH is compiled into the library
-// 2. The production path (/var/lib/adu/diagnosticsoperationids) requires elevated permissions
-// 3. Unit tests should be runnable without special permissions
-//
-// Integration tests that verify the full store/retrieve cycle should be run
-// separately with appropriate permissions or in a container environment.
-
-        CHECK_FALSE(OperationIdUtils_OperationIsComplete(R"({"operationId": 123.456})"));
-    }
-
-    SECTION("Returns false with operationId as empty object")
-    {
-        CHECK_FALSE(OperationIdUtils_OperationIsComplete(R"({"operationId": {}})"));
-    }
-
-    SECTION("Returns false with operationId as empty array")
-    {
-        CHECK_FALSE(OperationIdUtils_OperationIsComplete(R"({"operationId": []})"));
-    }
-}

@@ -1280,6 +1280,28 @@ TEST_CASE("ADUC_Workflow_MethodCall_Idle")
 }
 
 //
+// Unit Tests for ADUC_Workflow_WorkCompletionCallback
+//
+
+// Tracking mock callback with counter for report state
+static bool MockReportStateCallback_WithCounter(
+    ADUC_WorkflowDataToken workflowData,
+    ADUCITF_State updateState,
+    const ADUC_Result* result,
+    const char* installedUpdateId)
+{
+    UNREFERENCED_PARAMETER(workflowData);
+    UNREFERENCED_PARAMETER(result);
+    s_reportStateCallbackCount++;
+    s_lastReportedUpdateState = updateState;
+    if (installedUpdateId != nullptr)
+    {
+        s_lastInstalledUpdateId = installedUpdateId;
+    }
+    return true;
+}
+
+// Tracking mock callbacks with counters
 static ADUC_Result MockSandboxCreateCallback_WithCounter(void* token, const char* workflowId, char* workFolder)
 {
     UNREFERENCED_PARAMETER(token);
@@ -3106,6 +3128,7 @@ TEST_CASE("WorkflowData utilities")
 
         ADUC_WorkflowData_SetReceivedC2D(&workflowData);
         CHECK(ADUC_WorkflowData_GetReceivedC2D(&workflowData) == true);
+    }
 
     SECTION("SetLastCompletedWorkflowId")
     {
