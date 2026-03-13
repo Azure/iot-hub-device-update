@@ -23,7 +23,9 @@ if [ -z "$GITROOT" ]; then
 fi
 
 # Use the same work folder as install-deps.sh and build.sh
-work_folder="$(dirname "${GITROOT}")/.adu-tmp"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
+repo_root="$(cd "$script_dir/.." > /dev/null 2>&1 && pwd)"
+work_folder="$(dirname "$repo_root")/.workspace"
 
 # use readline -e to resolve symlink
 shellcheck_bin=$(readlink -e "${work_folder}/deviceupdate-shellcheck")

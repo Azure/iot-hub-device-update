@@ -689,7 +689,7 @@ do_install_delta() {
     VER=$(lsb_release --short --release)
     if [[ $OS == "Debian" && $VER == "12" ]]; then
         gcc_ver="12"
-    elif [[ ($OS == "Debian" && $VER == "11") || ($OS == "Ubuntu" && $VER == "20.04") || ($OS == "Ubuntu" && $VER == "22.04") ]]; then
+    elif [[ ($OS == "Debian" && $VER == "11") || ($OS == "Ubuntu" && $VER == "20.04") || ($OS == "Ubuntu" && $VER == "22.04") || ($OS == "Ubuntu" && $VER == "24.04") ]]; then
         gcc_ver="10"
     else
         # Default to system GCC (no specific version suffix)
@@ -705,11 +705,15 @@ do_install_delta() {
         $SUDO apt-get install --yes curl zip unzip tar gcc g++ autoconf autopoint ninja-build pkg-config build-essential libtool cmake zlib1g-dev || return
     fi
 
-    # Setup gcc/g++ alternatives (only if specific version was installed)
+    # Temporarily switch to gcc/g++ $gcc_ver for the delta build, because the
+    # upstream build.sh hardcodes /usr/bin/gcc and /usr/bin/g++.
     if [[ -n $gcc_ver ]]; then
-        echo "Setting up gcc/g++ alternatives..."
-        $SUDO update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-${gcc_ver}" 20 || true
-        $SUDO update-alternatives --install /usr/bin/g++ g++ "/usr/bin/g++-${gcc_ver}" 20 || true
+        echo "Switching gcc/g++ to version ${gcc_ver} for delta build..."
+        $SUDO update-alternatives --set gcc "/usr/bin/gcc-${gcc_ver}" || return
+        $SUDO update-alternatives --set g++ "/usr/bin/g++-${gcc_ver}" || return
+        # Restore default (auto) selection when this function returns.
+        # shellcheck disable=SC2064
+        trap "$SUDO update-alternatives --auto gcc; $SUDO update-alternatives --auto g++" RETURN
     fi
 
     # Setup VCPKG for delta library dependencies
