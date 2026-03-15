@@ -1,5 +1,10 @@
 # How to Use X.509 Client Certificate Authentication
 
+> **See also:**
+> [Configuration Guide](configuration-guide.md) ·
+> [Architecture Overview](architecture-overview.md) ·
+> [Troubleshooting Guide](../how-to-troubleshoot-guide.md)
+
 This document describes how to configure, test, and troubleshoot X.509 client certificate authentication for the Azure Device Update (ADU) agent, based on comprehensive testing and validation.
 
 ## Overview
@@ -767,6 +772,8 @@ sudo -u adu ls -la /etc/adu/certs/
 
 ## Related Documentation
 
+- [Configuration Guide](configuration-guide.md) — du-config.json schema and X.509 connection fields
+- [Architecture Overview](architecture-overview.md) — How authentication fits in the agent architecture
 - [How to Build Agent Code](how-to-build-agent-code.md)
 - [How to Run Agent](how-to-run-agent.md)
 - [Device Update Agent Extensibility Points](device-update-agent-extensibility-points.md)

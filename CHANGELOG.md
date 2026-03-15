@@ -2,8 +2,8 @@
 
 ### Major Features and Enhancements
 
-* Add X.509 client certificate authentication support
-* Add CrossProc Query API (Service Status API) SDK with idle pause timer and examples
+* Add [X.509 client certificate authentication](docs/agent-reference/how-to-x509-authentication.md) support
+* Add [CrossProc Query API (Service Status API)](docs/agent-reference/GetAduServiceStatus.md) SDK with idle pause timer and examples
 * Add Microsoft Delta Download Handler support with component-based packaging
 * Add Delta CacheSourceUpdate API with improved cache robustness and enhanced logging
 * Use curl handler as the default content handler
@@ -14,7 +14,7 @@
 * Report detailed error results for failed workflows
 * Overall agent logging improvements
 * Add rootkey validator tool
-* Add reboot synchronization to allow agent cleanup before restart
+* Add [graceful reboot synchronization](docs/agent-reference/architecture-overview.md#graceful-reboot-flow) — lock-file protocol ensures agent completes cloud reporting and cache operations before system reboots
 * Support custom work folder for dependency installation and build
 * Add devcontainer with Debian 11 for development
 

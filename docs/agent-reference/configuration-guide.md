@@ -66,8 +66,9 @@ include `x509=true`.
 For PKCS#11 / HSM-backed keys, set `opensslEngine` to `"pkcs11"` and provide a
 PKCS#11 URI as the private key path.
 
-> **Note:** For the full X.509 provisioning walkthrough, see
-> [how-to-x509-authentication.md](how-to-x509-authentication.md).
+> **Note:** For the full X.509 provisioning walkthrough — including certificate
+> generation, installation, PKCS#11 setup, and troubleshooting — see
+> [X.509 Authentication Guide](how-to-x509-authentication.md).
 
 ## Agent Configuration Fields
 

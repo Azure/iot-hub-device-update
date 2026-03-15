@@ -38,20 +38,51 @@ src/
 
 ## Communication Flow
 
-```
-┌──────────────────────┐         MQTT / MQTT-WS          ┌──────────────────────┐
-│   ADU Agent          │◄────────────────────────────────►│   Azure IoT Hub      │
-│                      │   desired props (deployment)     │                      │
-│  ┌────────────────┐  │   reported props (status)        │  Device Update       │
-│  │ PnP Components │  │   direct methods (diagnostics)   │  service backend     │
-│  └────────────────┘  │                                  └──────────────────────┘
-│          │           │
-│          ▼           │         HTTPS (libcurl / DO)     ┌──────────────────────┐
-│  ┌────────────────┐  │◄────────────────────────────────►│  Azure Blob Storage  │
-│  │ Content        │  │   Download update payloads       │  (update content)    │
-│  │ Downloader     │  │                                  └──────────────────────┘
-│  └────────────────┘  │
-└──────────────────────┘
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#ffffff',
+  'primaryTextColor': '#1a1a1a',
+  'primaryBorderColor': '#333333',
+  'lineColor': '#333333',
+  'secondaryColor': '#f5f5f5',
+  'tertiaryColor': '#e8e8e8',
+  'mainBkg': '#ffffff',
+  'nodeBorder': '#333333',
+  'clusterBkg': '#f5f5f5',
+  'clusterBorder': '#333333',
+  'titleColor': '#1a1a1a',
+  'edgeLabelBackground': '#ffffff',
+  'fontFamily': 'monospace',
+  'fontSize': '14px'
+}}}%%
+flowchart LR
+    subgraph Main[" "]
+
+        subgraph Cloud["Azure Cloud"]
+            Hub["Azure IoT Hub
+            Device Update
+            service backend"]
+            Blob["Azure Blob Storage
+            update content"]
+        end
+
+        subgraph Device["Device"]
+            Agent["ADU Agent
+            PnP Components"]
+            Downloader["Content Downloader
+            libcurl / DO"]
+            Agent --- Downloader
+        end
+
+
+        Hub <-->|"MQTT / MQTT-WS
+        desired props · reported props
+        direct methods"| Agent
+        Blob <-->|"HTTPS
+        download update payloads"| Downloader
+    end
+
+    style Main fill:#ffffff,stroke:#333333,stroke-width:2px,color:#1a1a1a
 ```
 
 1. **Receive deployment** — The IoT Hub service sets a desired property on the
@@ -96,28 +127,35 @@ Every update manifest received from the service is wrapped in a **JWS (JSON Web
 Signature, RFC 7515)**. The agent validates the signature before any content is
 downloaded or installed.
 
-```
-Root Key Package (from service)
-  │
-  ├─ Self-verified JWS
-  │
-  ▼
-Trusted Root Keys
-  │
-  ├─ Verify intermediate Signed JSON Web Keys (SJWK)
-  │
-  ▼
-Signing Key
-  │
-  ├─ Verify Update Manifest JWS
-  │
-  ▼
-Update Manifest (trusted)
-  │
-  ├─ Contains SHA-256 hashes of each payload file
-  │
-  ▼
-Downloaded content integrity check
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#ffffff',
+  'primaryTextColor': '#1a1a1a',
+  'primaryBorderColor': '#333333',
+  'lineColor': '#333333',
+  'secondaryColor': '#f5f5f5',
+  'tertiaryColor': '#e8e8e8',
+  'mainBkg': '#ffffff',
+  'nodeBorder': '#333333',
+  'clusterBkg': '#f5f5f5',
+  'clusterBorder': '#333333',
+  'titleColor': '#1a1a1a',
+  'edgeLabelBackground': '#ffffff',
+  'fontFamily': 'monospace',
+  'fontSize': '14px'
+}}}%%
+flowchart LR
+    subgraph Main[" "]
+        A["Root Key Package
+        from service"] -->|"Self-verified JWS"| B["Trusted Root Keys"]
+        B -->|"Verify intermediate SJWK"| C["Signing Key"]
+        C -->|"Verify Update Manifest JWS"| D["Update Manifest
+        trusted"]
+        D -->|"SHA-256 hash per payload"| E["Downloaded Content
+        Integrity Check ✓"]
+    end
+
+    style Main fill:#ffffff,stroke:#333333,stroke-width:2px,color:#1a1a1a
 ```
 
 **Key components:**
@@ -148,30 +186,48 @@ machine. For goal-state processing details, see
 [goal-state-support.md](goal-state-support.md).
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Idle
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#ffffff',
+  'primaryTextColor': '#1a1a1a',
+  'primaryBorderColor': '#333333',
+  'lineColor': '#333333',
+  'secondaryColor': '#f5f5f5',
+  'tertiaryColor': '#e8e8e8',
+  'mainBkg': '#ffffff',
+  'nodeBorder': '#333333',
+  'clusterBkg': '#f5f5f5',
+  'clusterBorder': '#333333',
+  'titleColor': '#1a1a1a',
+  'edgeLabelBackground': '#ffffff',
+  'fontFamily': 'monospace',
+  'fontSize': '14px'
+}}}%%
+flowchart LR
+    subgraph Main[" "]
+        Idle(["Idle"])
 
-    Idle --> DeploymentInProgress : Desired property received
-    DeploymentInProgress --> DownloadStarted : Begin download
+        Idle -->|"Desired property received"| DeploymentInProgress(["DeploymentInProgress"])
+        DeploymentInProgress -->|"Begin download"| DownloadStarted(["DownloadStarted"])
 
-    DownloadStarted --> DownloadSucceeded : Content downloaded & hashes verified
-    DownloadStarted --> Failed : Download error
+        DownloadStarted -->|"Content downloaded & hashes verified"| DownloadSucceeded(["DownloadSucceeded"])
+        DownloadStarted -->|"Download error"| Failed(["Failed"])
 
-    DownloadSucceeded --> BackupStarted : Backup current state
-    BackupStarted --> BackupSucceeded : Backup complete
+        DownloadSucceeded -->|"Backup current state"| BackupStarted(["BackupStarted"])
+        BackupStarted -->|"Backup complete"| BackupSucceeded(["BackupSucceeded"])
 
-    BackupSucceeded --> InstallStarted : Begin install (Step Handler + adu-shell)
-    InstallStarted --> InstallSucceeded : Install complete
-    InstallStarted --> Failed : Install error
+        BackupSucceeded -->|"Begin install via Step Handler + adu-shell"| InstallStarted(["InstallStarted"])
+        InstallStarted -->|"Install complete"| InstallSucceeded(["InstallSucceeded"])
+        InstallStarted -->|"Install error"| Failed
 
-    InstallSucceeded --> ApplyStarted : Activate update (may reboot)
-    ApplyStarted --> Idle : Success — report installed UpdateId
-    ApplyStarted --> Failed : Apply error
+        InstallSucceeded -->|"Activate update, may reboot"| ApplyStarted(["ApplyStarted"])
+        ApplyStarted -->|"Success — report installed UpdateId"| Idle
+        ApplyStarted -->|"Apply error"| Failed
 
-    Failed --> RestoreStarted : Roll back from backup
-    RestoreStarted --> Idle : Report failure result code
+        Failed -->|"Roll back from backup"| RestoreStarted(["RestoreStarted"])
+        RestoreStarted -->|"Report failure result code"| Idle
+    end
 
-    Idle --> [*]
+    style Main fill:#ffffff,stroke:#333333,stroke-width:2px,color:#1a1a1a
 ```
 
 **Lifecycle summary:**
@@ -183,7 +239,9 @@ stateDiagram-v2
 4. **Backup** — Current device state is saved so it can be restored on failure.
 5. **Install** — The matched Step Handler invokes adu-shell to apply packages or
    run scripts.
-6. **Apply** — The update is activated (may trigger a device reboot).
+6. **Apply** — The update is activated. If a reboot is required, the agent uses
+   a [lock-file synchronization protocol](#graceful-reboot-flow) to report
+   state to the cloud and cache files before the system reboots.
 7. **Report** — The agent reports success (with the new UpdateId) or failure
    (with extended result codes) to IoT Hub.
 8. **Idle** — The agent returns to the idle state, ready for the next deployment.
@@ -198,6 +256,93 @@ stateDiagram-v2
 | **Delta Download Handler** | Downloads only the binary difference between the currently installed version and the target, significantly reducing bandwidth. Falls back to a full download if delta reconstruction fails. | [building-with-delta-handler.md](building-with-delta-handler.md) |
 | **Service Status API (CrossProc)** | A shared-library API (`GetAduServiceStatus()`) that allows other processes on the device to query the agent's current state (Idle, Downloading, Installing, etc.) without IoT Hub round-trips. | [GetAduServiceStatus.md](GetAduServiceStatus.md) |
 | **curl as default Content Downloader** | `curl_downloader` replaces Delivery Optimization as the default content downloader, reducing external dependencies while supporting proxies and standard HTTPS. | [how-to-build-agent-code.md](how-to-build-agent-code.md) |
+| **Graceful Reboot Synchronization** | A lock-file protocol between the agent and a reboot wrapper script ensures the agent completes cloud reporting and cache operations before the system reboots. | See [Graceful Reboot Flow](#graceful-reboot-flow) below |
+
+---
+
+## Graceful Reboot Flow
+
+When an update's Apply step requires a device reboot, the agent must complete
+several housekeeping tasks **before** the system shuts down — cloud state
+reporting, download cache preservation, and resource cleanup. In v1.3.0, a
+lock-file synchronization protocol between the agent process and an external
+reboot-wrapper script ensures a clean shutdown without crashes or segfaults.
+
+### Sequence
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#ffffff',
+  'primaryTextColor': '#1a1a1a',
+  'primaryBorderColor': '#333333',
+  'lineColor': '#333333',
+  'secondaryColor': '#f5f5f5',
+  'tertiaryColor': '#e8e8e8',
+  'mainBkg': '#ffffff',
+  'nodeBorder': '#333333',
+  'clusterBkg': '#f5f5f5',
+  'clusterBorder': '#333333',
+  'titleColor': '#1a1a1a',
+  'edgeLabelBackground': '#ffffff',
+  'fontFamily': 'monospace',
+  'fontSize': '14px'
+}}}%%
+flowchart LR
+    subgraph Main[" "]
+        A["Apply Step Completes Successfully"] --> B
+
+        B["1. Create Lock File
+        Agent writes PID to
+        /var/run/adu-agent-reboot.lock"] --> C
+
+        C["2. Cache Source Updates
+        Delta Download Handler caches source files
+        while sandbox still exists"] --> D
+
+        D["3. Report State to Cloud
+        Report Apply_RebootPending (code 709)
+        to IoT Hub via reported properties"] --> E
+
+        E["4. Remove Lock File
+        Delete /var/run/adu-agent-reboot.lock
+        signaling wrapper that cleanup is complete"] --> F
+
+        F["5. Initiate Reboot
+        adu-shell → adu-reboot-wrapper.sh
+        Lock removed → wrapper calls /sbin/reboot"] --> G
+
+        G["6. Agent Waits for SIGTERM
+        Sleep up to 120s during system shutdown
+        On SIGTERM: clean exit via ShutdownAgent()"] --> H
+
+        H(("System Reboots"))
+    end
+
+    style Main fill:#ffffff,stroke:#333333,stroke-width:2px,color:#1a1a1a
+```
+
+> **Note:** The agent does _not_ report Idle state before rebooting — the cloud
+> would misinterpret it as a failure since the UpdateId has not been confirmed
+> yet. After reboot, the agent starts up, verifies the update, and then reports
+> Idle with the new UpdateId.
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `src/adu-shell/scripts/adu-reboot-wrapper.sh` | Wrapper that polls for lock removal, then calls `/sbin/reboot` |
+| `src/adu-shell/src/common_tasks.cpp` | adu-shell's Reboot action — launches the wrapper |
+| `src/adu_workflow/src/agent_workflow.c` | Lock creation, cloud report, lock removal, reboot initiation |
+| `src/agent/src/main.c` | SIGTERM/SIGINT handler, graceful main-loop exit |
+| `src/shutdown_service/` | `ShouldKeepRunning()` / `RequestShutdown()` flag |
+
+### Wrapper Timeout & Safety
+
+The reboot wrapper has a configurable timeout (default 60 seconds, set via
+`ADU_REBOOT_TIMEOUT` environment variable). If the lock is not removed within
+the timeout, the wrapper forces a reboot. Additionally, the wrapper checks
+whether the agent PID (written in the lock file) is still alive — if the
+agent crashes, the stale lock is removed immediately and the reboot proceeds.
 
 ---
 

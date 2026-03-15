@@ -828,6 +828,34 @@ EOF
     # Unset the flag after vcpkg setup
     unset VCPKG_FEATURE_FLAGS
 
+    # Generate bsdiff.pc for pkg-config discovery.
+    # The bsdiff vcpkg port only ships a CMake Find module (Findbsdiff.cmake),
+    # but the delta library's CMakeLists.txt uses pkg_check_modules(BSDIFF REQUIRED bsdiff).
+    # Use ${pcfiledir} for a relocatable prefix (same pattern as zstd's .pc).
+    local bsdiff_pc_dir="$vcpkg_root/installed/$vcpkg_triplet/lib/pkgconfig"
+    echo "Generating bsdiff.pc for pkg-config discovery..."
+    mkdir -p "$bsdiff_pc_dir"
+    cat > "$bsdiff_pc_dir/bsdiff.pc" << 'BSDIFF_PC_EOF'
+prefix=${pcfiledir}/../..
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: bsdiff
+Description: Binary diff/patch library
+Version: 1.0.0
+Libs: -L${libdir} -lbsdiff -ldivsufsort -ldivsufsort64 -lbz2
+Cflags: -I${includedir}
+BSDIFF_PC_EOF
+
+    # Export PKG_CONFIG_PATH so the delta library CMake build can find vcpkg-installed
+    # packages (bsdiff, zstd, etc.) via pkg_check_modules().
+    export PKG_CONFIG_PATH="$bsdiff_pc_dir:$vcpkg_root/installed/$vcpkg_triplet/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+
+    # The delta CMakeLists uses ${BSDIFF_LIBRARIES} / ${ZSTD_LIBRARIES} (bare -l
+    # flags) without link_directories for the vcpkg lib path.  LIBRARY_PATH tells
+    # the linker where to search.
+    export LIBRARY_PATH="$vcpkg_root/installed/$vcpkg_triplet/lib:${LIBRARY_PATH:-}"
+
     # Build using the delta library's build script
     echo "Building delta library (triplet: $vcpkg_triplet, build type: $build_type)..."
     pushd "$delta_dir/src/native" > /dev/null || return
@@ -851,6 +879,8 @@ EOF
     # Unset vcpkg environment variables
     unset VCPKG_OVERLAY_TRIPLETS
     unset VCPKG_FEATURE_FLAGS
+    unset PKG_CONFIG_PATH
+    unset LIBRARY_PATH
 
     popd > /dev/null || return
 
