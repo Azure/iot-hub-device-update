@@ -6,5 +6,6 @@ Description: Select content downloader for Device Update agent
  Choose which content downloader implementation the Device Update agent should
  register during package installation.
  .
- - curl: Registers the curl downloader.
+ - curl (default): Registers the curl downloader.
+ .
  - do: Registers the Delivery Optimization downloader.
