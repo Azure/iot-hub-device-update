@@ -1,0 +1,10 @@
+Template: deviceupdate-agent/content-downloader
+Type: select
+Choices: curl, do
+Default: curl
+Description: Select content downloader for Device Update agent
+ Choose which content downloader implementation the Device Update agent should
+ register during package installation.
+ .
+ - curl: Registers the curl downloader.
+ - do: Registers the Delivery Optimization downloader.

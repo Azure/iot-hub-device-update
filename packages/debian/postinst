@@ -10,9 +10,28 @@
 # Any error should exit the script (sort of)
 # See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
 
-echo "******************** Running $0 $1 ***********************"
 
 set -e
+
+requested_content_downloader="curl"
+if [ -f /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+
+    debconf_content_downloader_key=deviceupdate-agent/content-downloader
+    if db_get "$debconf_content_downloader_key"; then
+        case "$RET" in
+            do|curl)
+                requested_content_downloader="$RET"
+            ;;
+        esac
+    fi
+
+    db_stop || true
+fi
+
+echo "******************** Running $0 $1 ***********************"
+
+postinst_action="$1"
 
 adu_conf_dir=/etc/adu
 adu_conf_file=du-config.json
@@ -217,6 +236,8 @@ setup_dirs_and_files() {
 }
 
 register_reference_extensions() {
+    local requested_downloader="$1"
+
     echo "Register all reference step handlers..."
 
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/apt:1" --register-extension $adu_extensions_sources_dir/$adu_apt_handler_file
@@ -231,15 +252,22 @@ register_reference_extensions() {
     $adu_bin_path -l 2 --extension-type componentEnumerator --register-extension $adu_extensions_sources_dir/$adu_example_component_enumerator_file
 
     echo "Register content downloader extension..."
-    if [ -f "$adu_extensions_sources_dir/$adu_curl_content_downloader_file" ]; then
-        echo "Registering curl content downloader..."
-        $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_content_downloader_file
-    elif [ -f "$adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file" ]; then
-        echo "Registering DO content downloader..."
-        $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+    if [ "$requested_downloader" = "do" ]; then
+        if [ -f "$adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file" ]; then
+            echo "Registering DO content downloader..."
+            $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+        else
+            echo "ERROR: DO content downloader was selected, but '$adu_delivery_optimization_downloader_file' is unavailable." >&2
+            exit 1
+        fi
     else
-        echo "ERROR: No content downloader found!"
-        exit 1
+        if [ -f "$adu_extensions_sources_dir/$adu_curl_content_downloader_file" ]; then
+            echo "Registering curl content downloader..."
+            $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_content_downloader_file
+        else
+            echo "ERROR: curl content downloader was selected, but '$adu_curl_content_downloader_file' is unavailable." >&2
+            exit 1
+        fi
     fi
 
     echo "Register delta download handler..."
@@ -293,12 +321,14 @@ complete_migration_steps()
     fi
 }
 
-case "$1" in
+case "$postinst_action" in
     configure)
         setup_dirs_and_files
         register_adu_user_and_process_with_eis
 
-        register_reference_extensions
+        echo "Selected content downloader: $requested_content_downloader"
+
+        register_reference_extensions "$requested_content_downloader"
 
         register_and_enable_daemon
 
@@ -333,7 +363,7 @@ case "$1" in
     ;;
 
     *)
-        echo "postinst called with unknown argument \`$1'" >&2
+        echo "postinst called with unknown argument \`$postinst_action\`" >&2
         exit 1
     ;;
 esac
