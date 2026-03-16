@@ -109,6 +109,26 @@ cmake_dir_symlink="$repo_root/.workspace/deviceupdate-cmake"
 catch2_cc=""
 catch2_cxx=""
 
+# Check if a dependency is already installed at the expected version.
+# Usage: is_dep_installed <name> <version>
+# Returns 0 (true) if the stamp file exists and matches the version.
+is_dep_installed() {
+    local name="$1" version="$2"
+    local stamp="$deps_stamp_dir/$name"
+    if [[ -f $stamp ]] && [[ "$(cat "$stamp" 2> /dev/null)" == "$version" ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# Record that a dependency was successfully installed.
+# Usage: mark_dep_installed <name> <version>
+mark_dep_installed() {
+    local name="$1" version="$2"
+    mkdir -p "$deps_stamp_dir"
+    echo "$version" > "$deps_stamp_dir/$name"
+}
+
 # Dependencies packages
 aduc_packages=('git' 'make' 'build-essential' 'cmake' 'ninja-build' 'libcurl4-openssl-dev' 'libssl-dev' 'uuid-dev' 'lsb-release' 'curl' 'wget' 'pkg-config' 'libxml2-dev' 'file')
 static_analysis_packages=('clang' 'clang-tidy' 'cppcheck')
@@ -309,6 +329,12 @@ do_install_aduc_packages() {
 
 do_install_azure_iot_sdk() {
     echo "Installing Azure IoT C SDK ..."
+
+    if is_dep_installed "azure-iot-sdk-c" "$azure_sdk_ref"; then
+        echo "Azure IoT C SDK ($azure_sdk_ref) already installed. Skipping..."
+        return 0
+    fi
+
     local azure_sdk_dir=$work_folder/azure-iot-sdk-c
     if [[ -d $azure_sdk_dir ]]; then
         $SUDO rm -rf "$azure_sdk_dir" || return
@@ -357,6 +383,8 @@ do_install_azure_iot_sdk() {
     popd > /dev/null || return
     popd > /dev/null || return
 
+    mark_dep_installed "azure-iot-sdk-c" "$azure_sdk_ref"
+
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf "$azure_sdk_dir" || return
     fi
@@ -364,6 +392,12 @@ do_install_azure_iot_sdk() {
 
 do_install_catch2() {
     echo "Installing Catch2 ..."
+
+    if is_dep_installed "catch2" "$catch2_ref"; then
+        echo "Catch2 ($catch2_ref) already installed. Skipping..."
+        return 0
+    fi
+
     local catch2_dir=$work_folder/catch2
     if [[ -d $catch2_dir ]]; then
         $SUDO rm -rf "$catch2_dir" || return
@@ -389,6 +423,8 @@ do_install_catch2() {
     $SUDO "$cmake_bin" --build . --target install || return
     popd > /dev/null || return
     popd > /dev/null || return
+
+    mark_dep_installed "catch2" "$catch2_ref"
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf "$catch2_dir" || return
@@ -609,6 +645,12 @@ do_install_do() {
 
 do_install_azure_storage_sdk() {
     echo "Installing azure-storage-sdk"
+
+    if is_dep_installed "azure-storage-sdk" "$azure_storage_sdk_tag_ref"; then
+        echo "Azure Storage SDK ($azure_storage_sdk_tag_ref) already installed. Skipping..."
+        return 0
+    fi
+
     local azure_storage_sdk_dir=$work_folder/azure_storage_sdk_dir
 
     if [[ -d $azure_storage_sdk_dir ]]; then
@@ -663,10 +705,27 @@ do_install_azure_storage_sdk() {
     $SUDO cmake --build . --target install || return
 
     popd > /dev/null || return
+
+    mark_dep_installed "azure-storage-sdk" "$azure_storage_sdk_tag_ref"
 }
 
 do_install_delta() {
     echo "Installing iot-hub-device-update-delta library ..."
+
+    # Compute effective_delta_ref early so we can check the stamp.
+    local OS VER
+    OS=$(lsb_release --short --id 2> /dev/null || echo "Unknown")
+    VER=$(lsb_release --short --release 2> /dev/null || echo "0")
+    local effective_delta_ref=$delta_ref
+    if [[ $delta_ref == "main" ]]; then
+        effective_delta_ref="feature/vnext-delta"
+    fi
+
+    if is_dep_installed "delta" "$effective_delta_ref"; then
+        echo "Delta library ($effective_delta_ref) already installed. Skipping..."
+        return 0
+    fi
+
     local delta_dir=$work_folder/iot-hub-device-update-delta
     if [[ -d $delta_dir ]]; then
         $SUDO rm -rf "$delta_dir" || return
@@ -682,13 +741,7 @@ do_install_delta() {
     # Override delta_ref for distros with strict GCC that rejects the 'main' branch code.
     # The 'main' branch uses 'enum class algorithm : uint32_t' which fails on GCC 12+.
     # The feature/vnext-delta and adu/debian/12/amd64 branches use 'enum adu_algorithm' instead.
-    local OS VER
-    OS=$(lsb_release --short --id 2> /dev/null || echo "Unknown")
-    VER=$(lsb_release --short --release 2> /dev/null || echo "0")
-    local effective_delta_ref=$delta_ref
-    if [[ "$delta_ref" == "main" ]]; then
-        # The 'main' branch is not compatible with GCC 12+ (Debian 12+, Ubuntu 24.04+)
-        effective_delta_ref="feature/vnext-delta"
+    if [[ $delta_ref == "main" ]]; then
         echo "Overriding delta_ref from 'main' to '$effective_delta_ref' for GCC compatibility"
     fi
 
@@ -696,6 +749,23 @@ do_install_delta() {
     mkdir -p "$delta_dir" || return
     pushd "$delta_dir" > /dev/null || return
     git clone --recursive --single-branch --branch "$effective_delta_ref" --depth 1 "$delta_url" . || return
+
+    # Patch dumpextfs CMakeLists.txt to link com_err (required by libext2fs static lib)
+    local dumpextfs_cmake="$delta_dir/src/native/tools/dumpextfs/CMakeLists.txt"
+    if [[ -f $dumpextfs_cmake ]] && ! grep -q "com_err" "$dumpextfs_cmake"; then
+        echo "Patching dumpextfs CMakeLists.txt to add com_err linkage..."
+        sed -i 's/pkg_check_modules(E2FSPROGS REQUIRED ext2fs)/pkg_check_modules(E2FSPROGS REQUIRED ext2fs)\npkg_check_modules(COM_ERR REQUIRED com_err)/' "$dumpextfs_cmake"
+        sed -i 's/target_include_directories(dumpextfs PRIVATE ${E2FSPROGS_INCLUDE_DIRS})/target_include_directories(dumpextfs PRIVATE ${E2FSPROGS_INCLUDE_DIRS} ${COM_ERR_INCLUDE_DIRS})/' "$dumpextfs_cmake"
+        sed -i 's/target_link_libraries(dumpextfs PRIVATE ${E2FSPROGS_LIBRARIES})/target_link_libraries(dumpextfs PRIVATE ${E2FSPROGS_LIBRARIES} ${COM_ERR_LIBRARIES})/' "$dumpextfs_cmake"
+    fi
+
+    # Patch recompress CMakeLists.txt to link libconfig (required by libconfig++ static lib)
+    local recompress_cmake="$delta_dir/src/native/tools/recompress/CMakeLists.txt"
+    if [[ -f $recompress_cmake ]] && ! grep -q 'LIBCONFIG_C' "$recompress_cmake"; then
+        echo "Patching recompress CMakeLists.txt to add libconfig C linkage..."
+        sed -i 's/pkg_check_modules(LIBCONFIG REQUIRED libconfig++)/pkg_check_modules(LIBCONFIG REQUIRED libconfig++)\npkg_check_modules(LIBCONFIG_C REQUIRED libconfig)/' "$recompress_cmake"
+        sed -i 's/target_link_libraries(recompress PRIVATE ${LIBCONFIG_LIBRARIES} config++)/target_link_libraries(recompress PRIVATE ${LIBCONFIG_LIBRARIES} ${LIBCONFIG_C_LIBRARIES} config++ config)/' "$recompress_cmake"
+    fi
 
     # Install system dependencies required by delta library
     echo "Installing delta library system dependencies..."
@@ -765,14 +835,18 @@ do_install_delta() {
         build_type="Debug"
     fi
 
+    # Pin to a known-good vcpkg release to avoid breakage from HEAD changes.
+    local vcpkg_commit="e0edebd1dc2d03cf7d02349df91de74ef4d0c00e" # 2026.02.27
+
     # Clone and bootstrap vcpkg if needed
     if [ ! -d "$vcpkg_root" ]; then
-        echo "Cloning vcpkg..."
+        echo "Cloning vcpkg (pinned to $vcpkg_commit)..."
         git clone https://github.com/microsoft/vcpkg "$vcpkg_root" || return
     fi
 
     pushd "$vcpkg_root" > /dev/null || return
-    git pull || true
+    git fetch origin || true
+    git checkout "$vcpkg_commit" || return
     ./bootstrap-vcpkg.sh || return
     popd > /dev/null || return
 
@@ -932,6 +1006,8 @@ BSDIFF_PC_EOF
     fi
 
     popd > /dev/null || return
+
+    mark_dep_installed "delta" "$effective_delta_ref"
 
     if [[ $keep_source_code != "true" ]]; then
         $SUDO rm -rf "$delta_dir" || return
@@ -1325,6 +1401,11 @@ $SUDO chmod -R u+rwx "$work_folder" 2> /dev/null || true
 # Set cmake_prefix and cmake_dir_symlink based on work_folder location
 cmake_prefix="$work_folder"
 cmake_dir_symlink="${work_folder}/deviceupdate-cmake"
+
+# Directory for tracking installed dependency versions.
+# Each installed dependency writes a stamp file here so subsequent
+# runs can skip re-building when the version hasn't changed.
+deps_stamp_dir="$work_folder/.deps-installed"
 
 if [[ -d $du_test_data_dir_path ]]; then
     $SUDO rm -r $du_test_data_dir_path

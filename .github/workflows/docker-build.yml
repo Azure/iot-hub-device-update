@@ -27,6 +27,13 @@ jobs:
         run: |
           OS_NAME=$(echo "${{ matrix.os }}" | tr ':' '-')
           echo "os_name=$OS_NAME" >> $GITHUB_OUTPUT
+      - name: Set up vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-
       - name: Install prereqs
         run: |
           apt-get update
