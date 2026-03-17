@@ -755,7 +755,9 @@ do_install_delta() {
     if [[ -f $dumpextfs_cmake ]] && ! grep -q "com_err" "$dumpextfs_cmake"; then
         echo "Patching dumpextfs CMakeLists.txt to add com_err linkage..."
         sed -i 's/pkg_check_modules(E2FSPROGS REQUIRED ext2fs)/pkg_check_modules(E2FSPROGS REQUIRED ext2fs)\npkg_check_modules(COM_ERR REQUIRED com_err)/' "$dumpextfs_cmake"
+        # shellcheck disable=SC2016 # CMake variables, not shell
         sed -i 's/target_include_directories(dumpextfs PRIVATE ${E2FSPROGS_INCLUDE_DIRS})/target_include_directories(dumpextfs PRIVATE ${E2FSPROGS_INCLUDE_DIRS} ${COM_ERR_INCLUDE_DIRS})/' "$dumpextfs_cmake"
+        # shellcheck disable=SC2016 # CMake variables, not shell
         sed -i 's/target_link_libraries(dumpextfs PRIVATE ${E2FSPROGS_LIBRARIES})/target_link_libraries(dumpextfs PRIVATE ${E2FSPROGS_LIBRARIES} ${COM_ERR_LIBRARIES})/' "$dumpextfs_cmake"
     fi
 
@@ -764,6 +766,7 @@ do_install_delta() {
     if [[ -f $recompress_cmake ]] && ! grep -q 'LIBCONFIG_C' "$recompress_cmake"; then
         echo "Patching recompress CMakeLists.txt to add libconfig C linkage..."
         sed -i 's/pkg_check_modules(LIBCONFIG REQUIRED libconfig++)/pkg_check_modules(LIBCONFIG REQUIRED libconfig++)\npkg_check_modules(LIBCONFIG_C REQUIRED libconfig)/' "$recompress_cmake"
+        # shellcheck disable=SC2016 # CMake variables, not shell
         sed -i 's/target_link_libraries(recompress PRIVATE ${LIBCONFIG_LIBRARIES} config++)/target_link_libraries(recompress PRIVATE ${LIBCONFIG_LIBRARIES} ${LIBCONFIG_C_LIBRARIES} config++ config)/' "$recompress_cmake"
     fi
 
