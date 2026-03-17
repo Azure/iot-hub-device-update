@@ -827,14 +827,14 @@ determine_machine_architecture() {
         arch="$(uname -m)"
     fi
 
-     local ret_val=$?
+    local ret_val=$?
     if [[ $ret_val != 0 ]]; then
         error "Failed to get cpu architecture."
         return 1
     else
         if [[ $arch == aarch64* || $arch == armv8* ]]; then
             is_arm64=true
-        elif [[ $arch == armv7* || $arch == 'arm' ]]; then
+        elif [[ $arch == armv7* || $arch == 'arm' || $arch == 'armhf' ]]; then
             is_arm32=true
         elif [[ $arch == 'x86_64' || $arch == 'amd64' ]]; then
             is_amd64=true
