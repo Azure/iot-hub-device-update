@@ -350,13 +350,22 @@ case "$postinst_action" in
 
         # Do not restart the current deviceupdate-agent because we want the update workflow
         # to complete, and reports the agent's state to ADU Management service.
-        echo "============================================================"
-        echo
+        echo "============================================================" >&2
+        echo >&2
         echo "     ADU Agent service must be restarted." >&2
-        echo
+        echo >&2
         echo "     Please run 'sudo systemctl restart deviceupdate-agent'" >&2
-        echo
-        echo "============================================================"
+
+        if [ "$requested_content_downloader" = "curl" ] && [ -f "$adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file" ]; then
+            echo "     Curl content downloader is currently set as the" >&2
+            echo "     default content downloader." >&2
+            echo "     To use Delivery Optimization content downloader," >&2
+            echo "     ensure you have deliveryoptimization-agent installed" >&2
+            echo "     and run 'sudo dpkg-reconfigure deviceupdate-agent'" >&2
+            echo "     to select DO content downloader." >&2
+        fi
+        echo >&2
+        echo "============================================================" >&2
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
