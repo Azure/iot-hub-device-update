@@ -22,9 +22,6 @@ if [ -z "$GITROOT" ]; then
     GITROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
-# Use the same work folder as install-deps.sh and build.sh
-work_folder="$(dirname "${GITROOT}")/.adu-tmp"
-
 # use readline -e to resolve symlink
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

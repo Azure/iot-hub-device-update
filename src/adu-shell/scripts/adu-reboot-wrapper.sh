@@ -14,7 +14,7 @@ elapsed=0
 
 echo "ADU Reboot Wrapper: Waiting for agent to prepare (timeout: ${TIMEOUT}s)..."
 
-while [ -f "$LOCK_FILE" ] && [ $elapsed -lt $TIMEOUT ]; do
+while [ -f "$LOCK_FILE" ] && [ $elapsed -lt "$TIMEOUT" ]; do
     # Verify PID is still alive if lock contains PID
     if [ -r "$LOCK_FILE" ]; then
         pid=$(cat "$LOCK_FILE" 2>/dev/null)
@@ -34,7 +34,7 @@ done
 # Cleanup any remaining lock
 rm -f "$LOCK_FILE" 2>/dev/null
 
-if [ $elapsed -ge $TIMEOUT ]; then
+if [ $elapsed -ge "$TIMEOUT" ]; then
     echo "ADU Reboot Wrapper: Timeout reached after ${elapsed}s, forcing reboot"
 else
     echo "ADU Reboot Wrapper: Agent ready after ${elapsed}s, proceeding with reboot"
