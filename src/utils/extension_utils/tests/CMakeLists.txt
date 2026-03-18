@@ -5,13 +5,14 @@ compileasc99 ()
 disablertti ()
 
 find_package (Catch2 REQUIRED)
+find_package (Parson REQUIRED)
 
 add_executable (${PROJECT_NAME})
 target_sources (${PROJECT_NAME} PRIVATE extension_utils_ut.cpp)
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::extension_utils aduc::parser_utils aduc::c_utils
-                                               Catch2::Catch2WithMain)
+                                               Catch2::Catch2WithMain Parson::parson)
 
 include (CTest)
 include (Catch)

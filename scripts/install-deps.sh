@@ -818,7 +818,15 @@ do_install_shellcheck() {
 
 determine_machine_architecture() {
     local arch=''
-    arch="$(uname -m)"
+
+    # Prefer dpkg to detect userspace architecture, since uname -m reports
+    # kernel architecture which may differ (e.g. armhf userspace on aarch64 kernel).
+    if command -v dpkg > /dev/null 2>&1; then
+        arch="$(dpkg --print-architecture)"
+    else
+        arch="$(uname -m)"
+    fi
+
     local ret_val=$?
     if [[ $ret_val != 0 ]]; then
         error "Failed to get cpu architecture."
@@ -826,7 +834,7 @@ determine_machine_architecture() {
     else
         if [[ $arch == aarch64* || $arch == armv8* ]]; then
             is_arm64=true
-        elif [[ $arch == armv7* || $arch == 'arm' ]]; then
+        elif [[ $arch == armv7* || $arch == 'arm' || $arch == 'armhf' ]]; then
             is_arm32=true
         elif [[ $arch == 'x86_64' || $arch == 'amd64' ]]; then
             is_amd64=true
