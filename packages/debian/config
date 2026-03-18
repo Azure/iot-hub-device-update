@@ -1,0 +1,17 @@
+#!/bin/sh
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+if [ "$DEBIAN_FRONTEND" = "noninteractive" ]; then
+    exit 0
+fi
+
+
+db_version 2.0
+
+db_input low deviceupdate-agent/content-downloader || true
+db_go || true
+
+exit 0

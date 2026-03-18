@@ -51,6 +51,7 @@ cmake_dir_path="${work_folder}/deviceupdate-cmake"
 cmake_bin="cmake"
 rootkeypkg_curl=true
 enable_coverage=false
+support_delivery_optimization=false
 
 #
 # Export the compiler settings in case VM is wonky
@@ -88,6 +89,10 @@ Usage: build.sh [options...]
                                         Only valid for logging libraries that support file logging.
 
     --install-prefix <prefix>             Install prefix to pass to CMake.
+
+    --support-delivery-optimization     Whether to build with Delivery Optimization support. By default, it is disabled.
+                                            Note: Delivery Optimization is only supported on certain older platforms and OS versions.
+                                            It is won't be enabled on Ubuntu 24.04 and Debian 13 (trixie) and newer OS even if this option is specified.
 
     --install                             Install the following ADU components.
                                             From source: deviceupdate-agent.service & adu-swupdate.sh.
@@ -306,6 +311,9 @@ while [[ $1 != "" ]]; do
     --build-service-e2e-agent)
         srvc_e2e_agent_build=true
         ;;
+    --support-delivery-optimization)
+        support_delivery_optimization=true
+        ;;
     --log-lib)
         shift
         if [[ -z $1 || $1 == -* ]]; then
@@ -454,6 +462,20 @@ if [[ $srvc_e2e_agent_build == "true" ]]; then
     build_packages=true
 fi
 
+# Disable DO on Ubuntu 24.04 and newer
+if [[ $OS == "ubuntu" && $VER == "24.04" ]]; then
+    echo "WARN: Disabling Delivery Optimization for Ubuntu 24.04"
+    support_delivery_optimization=false
+    rootkeypkg_curl=true
+fi
+
+# Disable DO on Debian 13 (trixie) - not yet supported
+if [[ $OS == "debian" && $VER == "13" ]]; then
+    echo "WARN: Disabling Delivery Optimization for Debian 13 (not yet supported)"
+    support_delivery_optimization=false
+    rootkeypkg_curl=true
+fi
+
 # Output banner
 echo ''
 header "Building ADU Agent"
@@ -483,6 +505,7 @@ else
 fi
 bullet "Include Test Root Keys: $use_test_root_keys"
 bullet "Use Curl, not DO, for RootKey Package Download? $rootkeypkg_curl"
+bullet "Support Delivery Optimization: $support_delivery_optimization"
 echo ''
 
 CMAKE_OPTIONS=(
@@ -499,6 +522,7 @@ CMAKE_OPTIONS=(
     "-DADUC_TRACE_TARGET_DEPS=$trace_target_deps"
     "-DADUC_USE_TEST_ROOT_KEYS=$use_test_root_keys"
     "-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=$rootkeypkg_curl"
+    "-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION:BOOL=$support_delivery_optimization"
     "-DADUC_TMP_DIR_PATH:STRING=$work_folder"
     "-DCMAKE_BUILD_TYPE:STRING=$build_type"
     "-DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON"
@@ -506,20 +530,6 @@ CMAKE_OPTIONS=(
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
 )
-
-# Disable DO on Ubuntu 24.04 and newer
-if [[ $OS == "ubuntu" && $VER == "24.04" ]]; then
-    echo "Disabling Delivery Optimization for Ubuntu 24.04"
-    CMAKE_OPTIONS+=("-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF")
-    CMAKE_OPTIONS+=("-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=ON")
-fi
-
-# Disable DO on Debian 13 (trixie) - not yet supported
-if [[ $OS == "debian" && $VER == "13" ]]; then
-    echo "Disabling Delivery Optimization for Debian 13 (not yet supported)"
-    CMAKE_OPTIONS+=("-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF")
-    CMAKE_OPTIONS+=("-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=ON")
-fi
 
 if [[ $major_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_MAJOR=$major_version")
@@ -531,6 +541,10 @@ if [[ $patch_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_PATCH=$patch_version")
 fi
 
+echo "CMAKE Options:"
+for opt in "${CMAKE_OPTIONS[@]}"; do
+    echo "  $opt"
+done
 for i in "${static_analysis_tools[@]}"; do
     case $i in
     clang-tidy)
