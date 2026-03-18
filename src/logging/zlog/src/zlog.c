@@ -205,7 +205,9 @@ void zlog_finish(void)
     zlog_close_file_log();
 
     free(zlog_file_log_dir);
+    zlog_file_log_dir = NULL;
     free(zlog_file_log_prefix);
+    zlog_file_log_prefix = NULL;
 }
 
 #define MAX_FUNCTION_NAME 64
