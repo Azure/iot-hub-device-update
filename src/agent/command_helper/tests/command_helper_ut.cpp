@@ -10,6 +10,7 @@
 #include <cstring>
 #include <ctime> // nanosleep
 #include <string>
+#include <unistd.h> // unlink
 
 extern "C"
 {
@@ -89,7 +90,10 @@ public:
 
     ~CommandHelperTestFixture()
     {
-        // Clean up any registered commands
+        // Remove any leftover FIFO to prevent state leaking between tests.
+        // Without this, a FIFO created by the listener thread test can cause
+        // SendCommand tests to block indefinitely on open(O_WRONLY).
+        unlink(ADUC_COMMANDS_FIFO_NAME);
     }
 };
 
