@@ -832,7 +832,7 @@ determine_machine_architecture() {
         error "Failed to get cpu architecture."
         return 1
     else
-        if [[ $arch == aarch64* || $arch == armv8* ]]; then
+        if [[ $arch == aarch64* || $arch == armv8* || $arch == arm64* ]]; then
             is_arm64=true
         elif [[ $arch == armv7* || $arch == 'arm' || $arch == 'armhf' ]]; then
             is_arm32=true
