@@ -57,6 +57,9 @@ EOS
     esac
 done
 
+# Resolve out_dir to an absolute path so it remains valid after pushd.
+out_dir="$(cd "$out_dir" && pwd)"
+
 # 1) Run unit tests to produce .gcda files.
 if ! command -v ctest > /dev/null 2>&1; then
     error "ctest not found in PATH"
