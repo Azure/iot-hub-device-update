@@ -26,3 +26,7 @@ target_link_libraries (
             aduc::source_update_cache
             aduc::workflow_utils
             AzureIotHubDeviceUpdateDelta::delta)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

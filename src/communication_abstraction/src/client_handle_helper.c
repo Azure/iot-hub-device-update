@@ -133,7 +133,12 @@ IOTHUB_CLIENT_RESULT ClientHandle_SetConnectionStatusCallback(
     }
     else
     {
-        Log_Error("ClientHandle_SetConnectionStatusCallback before called ClientHandle_CreateFromConnectionString");
+        Log_Error("ClientHandle_SetConnectionStatusCallback called before ClientHandle_CreateFromConnectionString");
+    }
+
+    if (result != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("ClientHandle_SetConnectionStatusCallback failed with result %d", result);
     }
 
     return result;
@@ -174,8 +179,14 @@ IOTHUB_CLIENT_RESULT ClientHandle_SendEventAsync(
     }
     else
     {
-        Log_Error("ClientHandle_SendEventAsync before called ClientHandle_CreateFromConnectionString");
+        Log_Error("ClientHandle_SendEventAsync called before ClientHandle_CreateFromConnectionString");
     }
+
+    if (result != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("ClientHandle_SendEventAsync failed with result %d", result);
+    }
+
     return result;
 }
 
@@ -294,7 +305,12 @@ IOTHUB_CLIENT_RESULT ClientHandle_SetClientTwinCallback(
     }
     else
     {
-        Log_Error("ClientHandle_SetClientTwinCallback before called ClientHandle_CreateFromConnectionString");
+        Log_Error("ClientHandle_SetClientTwinCallback called before ClientHandle_CreateFromConnectionString");
+    }
+
+    if (result != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("ClientHandle_SetClientTwinCallback failed with result %d", result);
     }
 
     return result;
@@ -339,7 +355,12 @@ IOTHUB_CLIENT_RESULT ClientHandle_SendReportedState(
     }
     else
     {
-        Log_Error("ClientHandle_SendReportedState before called ClientHandle_CreateFromConnectionString");
+        Log_Error("ClientHandle_SendReportedState called before ClientHandle_CreateFromConnectionString");
+    }
+
+    if (result != IOTHUB_CLIENT_OK)
+    {
+        Log_Error("ClientHandle_SendReportedState failed with result %d", result);
     }
 
     return result;

@@ -6,6 +6,9 @@
  * Licensed under the MIT License.
  */
 
+#ifndef ADUC_PLUGIN_EXCEPTION_HPP
+#define ADUC_PLUGIN_EXCEPTION_HPP
+
 #include <stdexcept>
 #include <string>
 
@@ -37,3 +40,5 @@ public:
 };
 
 } // namespace aduc
+
+#endif // ADUC_PLUGIN_EXCEPTION_HPP

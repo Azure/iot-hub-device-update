@@ -516,7 +516,7 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
 
     size_t readBytes = fread(readBuff, sizeof(readBuff[0]), readMaxBuffSize, sourceFile);
 
-    while (readBytes != 0)
+    while (readBytes > 0)
     {
         const size_t writtenBytes = fwrite(readBuff, sizeof(readBuff[0]), readBytes, destFile);
 
@@ -524,11 +524,6 @@ int ADUC_SystemUtils_CopyFileToDir(const char* filePath, const char* dirPath, co
         if (writtenBytes != readBytes || result != 0)
         {
             goto done;
-        }
-
-        if (feof(sourceFile) != 0)
-        {
-            break;
         }
 
         readBytes = fread(readBuff, sizeof(readBuff[0]), readMaxBuffSize, sourceFile);

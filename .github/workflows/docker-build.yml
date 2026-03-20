@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04"]
+        os: ["debian:13", "debian:12", "debian:11", "ubuntu:22.04", "ubuntu:20.04", "ubuntu:24.04"]
         arch: [amd64, arm64]
         exclude:
           # Ubuntu 20.04 arm64 uses aarch64-linux-gnu cross-compiler (GCC 9)
@@ -27,6 +27,13 @@ jobs:
         run: |
           OS_NAME=$(echo "${{ matrix.os }}" | tr ':' '-')
           echo "os_name=$OS_NAME" >> $GITHUB_OUTPUT
+      - name: Set up vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/vcpkg/archives
+          key: vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-
       - name: Install prereqs
         run: |
           apt-get update

@@ -99,3 +99,6 @@ add_subdirectory (rootkey_workflow)
 add_subdirectory (sdk)
 add_subdirectory (utils)
 add_subdirectory (viewstatemgr)
+
+# Tools
+add_subdirectory (${CMAKE_SOURCE_DIR}/tools/rootkey_validator ${CMAKE_BINARY_DIR}/tools/rootkey_validator)

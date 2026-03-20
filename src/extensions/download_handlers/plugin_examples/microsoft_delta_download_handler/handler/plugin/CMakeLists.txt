@@ -18,3 +18,7 @@ target_link_libraries (${target_name} PRIVATE aduc::adu_types aduc::contract_uti
 install (TARGETS ${target_name}
          LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER}
          COMPONENT deltahandler)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

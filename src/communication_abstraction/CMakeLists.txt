@@ -31,3 +31,7 @@ if (WIN32)
     # azure-iot-sdk-c is compiled using -Duse_edge_modules=ON
     target_link_libraries (${target_name} PRIVATE prov_auth_client hsm_security_client)
 endif ()
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

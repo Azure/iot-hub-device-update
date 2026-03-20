@@ -16,6 +16,13 @@ target_link_libraries (
             aduc::rootkey_workflow
             aduc::root_key_utils)
 
+if (ADUC_BUILD_UNIT_TESTS)
+    target_compile_definitions (
+        ${target_name}
+        PRIVATE ADUC_ROOTKEY_STORE_PATH="${ROOTKEY_WORKFLOW_TEST_STORE_PATH}"
+                ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ROOTKEY_WORKFLOW_TEST_STORE_PACKAGE_PATH}")
+endif ()
+
 include (CTest)
 include (Catch)
 if (NOT CMAKE_CROSSCOMPILING)

@@ -163,6 +163,11 @@ static void Cleanup_Previous_Sandboxes(ADUC_WorkflowData* workflowData)
 
     Log_Debug("begin clean previous sandboxes");
 
+    if (IsNullOrEmpty(current_workflowId))
+    {
+        Log_Warn("Cleanup_Previous_Sandboxes: current_workflowId is NULL or empty");
+    }
+
     if (IsNullOrEmpty(workFolder))
     {
         Log_Error("Failed getting workFolder.");
@@ -173,6 +178,7 @@ static void Cleanup_Previous_Sandboxes(ADUC_WorkflowData* workflowData)
     char* lastSlash = strrchr(workFolder, '/');
     if (lastSlash == NULL)
     {
+        Log_Error("Cleanup_Previous_Sandboxes: workFolder '%s' has no '/' separator", workFolder);
         err = -1;
         goto done;
     }
@@ -340,6 +346,7 @@ const ADUC_WorkflowHandlerMapEntry* GetWorkflowHandlerMapEntryForAction(ADUCITF_
     }
     if (index == map_count)
     {
+        Log_Error("GetWorkflowHandlerMapEntryForAction: no entry found for workflowStep %d", (int)workflowStep);
         entry = NULL;
     }
 
@@ -859,6 +866,7 @@ void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData)
     ADUC_MethodCall_Data* methodCallData = calloc(1, sizeof(ADUC_MethodCall_Data));
     if (methodCallData == NULL)
     {
+        Log_Error("ADUC_Workflow_TransitionWorkflow: Failed to allocate ADUC_MethodCall_Data");
         goto done;
     }
 
@@ -1184,6 +1192,7 @@ static void ADUC_Workflow_SetUpdateStateHelper(
         if (!workflowData->ReportStateAndResultAsyncCallback(
                 (ADUC_WorkflowDataToken)workflowData, updateState, result, NULL /* installedUpdateId */))
         {
+            Log_Error("ReportStateAndResultAsyncCallback failed when transitioning to Idle");
             updateState = ADUCITF_State_Failed;
             workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
         }
@@ -1197,6 +1206,9 @@ static void ADUC_Workflow_SetUpdateStateHelper(
         if (!workflowData->ReportStateAndResultAsyncCallback(
                 (ADUC_WorkflowDataToken)workflowData, updateState, result, NULL /* installedUpdateId */))
         {
+            Log_Error(
+                "ReportStateAndResultAsyncCallback failed when transitioning to state %s",
+                ADUCITF_StateToString(updateState));
             updateState = ADUCITF_State_Failed;
             workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
         }
@@ -1493,6 +1505,11 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
     char* workFolder = workflow_get_workfolder(workflowHandle);
 
     Log_Info("Workflow step: Download");
+
+    if (workFolder == NULL)
+    {
+        Log_Warn("ADUC_Workflow_MethodCall_Download: workflow_get_workfolder returned NULL");
+    }
 
     if (lastReportedState != ADUCITF_State_DeploymentInProgress)
     {
@@ -1819,7 +1836,7 @@ ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallDat
     ADUCITF_State lastReportedState = ADUC_WorkflowData_GetLastReportedState(workflowData);
     if (lastReportedState != ADUCITF_State_Failed)
     {
-        Log_Error("Apply Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
+        Log_Error("Restore Workflow step called in unexpected state: %s!", ADUCITF_StateToString(lastReportedState));
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_NOTPERMITTED;
         goto done;

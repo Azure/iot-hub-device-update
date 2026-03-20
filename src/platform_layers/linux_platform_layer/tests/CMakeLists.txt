@@ -7,7 +7,13 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources download_ut.cpp mock_do_download.cpp)
+set (
+    sources
+    download_ut.cpp
+    linux_adu_core_exports_ut.cpp
+    linux_adu_core_impl_ut.cpp
+    linux_device_info_exports_ut.cpp
+    mock_do_download.cpp)
 
 add_executable (${PROJECT_NAME} ${sources})
 

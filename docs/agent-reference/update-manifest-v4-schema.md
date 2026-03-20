@@ -2,7 +2,7 @@
 
 ## Schema
 
-Please see the [Update Manifest](https://docs.microsoft.com/en-us/azure/iot-hub-device-update/update-manifest) documentation before reviewing the following changes as part of the Public Preview release.
+Please see the [Update Manifest](https://learn.microsoft.com/en-us/azure/iot-hub-device-update/update-manifest) documentation before reviewing the following changes as part of the Public Preview release.
 
 ## Multi-Step Ordered Execution (MSOE) Support
 

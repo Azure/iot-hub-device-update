@@ -57,3 +57,7 @@ endif ()
 
 target_compile_definitions (${target_name} PRIVATE ADUC_AGENT_FILEPATH="${ADUC_AGENT_FILEPATH}"
                                                    ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

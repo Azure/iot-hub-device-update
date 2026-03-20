@@ -111,7 +111,7 @@ Create 'adu' group and 'adu' user by follow these steps:
    ```
 
 6. If using IoT Identity Service, add 'adu' user to the following groups.
- Learn more about [how to provision Device Update Agent with IoT Identity Service](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity)
+ Learn more about [how to provision Device Update Agent with IoT Identity Service](https://learn.microsoft.com/azure/iot-hub-device-update/device-update-agent-provisioning#how-to-provision-the-device-update-agent-as-a-module-identity)
 
    ```shell
     sudo usermod -aG "aziotid" "adu"

@@ -54,7 +54,7 @@ declare -a static_analysis_tools=()
 log_lib="zlog"
 install_prefix=/usr/local
 install_adu=false
-work_folder="$(dirname "${GITROOT}")/.adu-tmp"
+work_folder="$root_dir/.workspace"
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
 cmake_bin="cmake"
 rootkeypkg_curl=false
@@ -232,7 +232,7 @@ determine_distro() {
 determine_distro
 
 # Ensure work folder exists
-if [[ ! -d "$work_folder" ]]; then
+if [[ ! -d $work_folder ]]; then
     echo "Creating work folder: $work_folder"
     mkdir -p "$work_folder" || $ret 1
 fi
@@ -526,6 +526,20 @@ CMAKE_OPTIONS=(
     "-DADUC_BUILD_DELTA_HANDLER:BOOL=$build_delta_handler"
 )
 
+# Disable DO on Ubuntu 24.04 and newer
+if [[ $OS == "ubuntu" && $VER == "24.04" ]]; then
+    echo "Disabling Delivery Optimization for Ubuntu 24.04"
+    CMAKE_OPTIONS+=("-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF")
+    CMAKE_OPTIONS+=("-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=ON")
+fi
+
+# Disable DO on Debian 13 (trixie) - not yet supported
+if [[ $OS == "debian" && $VER == "13" ]]; then
+    echo "Disabling Delivery Optimization for Debian 13 (not yet supported)"
+    CMAKE_OPTIONS+=("-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF")
+    CMAKE_OPTIONS+=("-DADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL=ON")
+fi
+
 if [[ $major_version != "" ]]; then
     CMAKE_OPTIONS+=("-DADUC_VERSION_MAJOR=$major_version")
 fi
@@ -668,6 +682,15 @@ if [[ $ret_val == 0 && $enable_coverage == "true" ]]; then
 
     "$coverage_script" --out-dir "$output_directory"
     ret_val=$?
+
+    if [[ $ret_val == 0 ]]; then
+        bullet "Generating Markdown coverage report..."
+        python3 "$script_dir/generate_coverage_report.py" "$output_directory/coverage/Cobertura.xml" "$output_directory/coverage/coverage-report.md"
+        ret_val=$?
+        if [[ $ret_val != 0 ]]; then
+            error "Coverage report generation failed with exit code: $ret_val"
+        fi
+    fi
 fi
 
 if [[ $ret_val == 0 && $install_adu == "true" ]]; then

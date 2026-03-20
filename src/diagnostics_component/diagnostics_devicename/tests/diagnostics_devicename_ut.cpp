@@ -8,20 +8,94 @@
 
 #include "diagnostics_devicename.h"
 
+#include <azure_c_shared_utility/strings.h>
 #include <catch2/catch_all.hpp>
+#include <cstdarg>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 
-// Helper class to ensure cleanup after each test
+//
+// --wrap mock infrastructure
+//
+// The linker --wrap flag redirects calls to STRING_new, STRING_sprintf, and
+// mallocAndStrcpy_s through the __wrap_ variants below. When the corresponding
+// g_fail_* flag is set the wrapper returns a failure code; otherwise it
+// delegates to the real implementation via the __real_ symbol.
+//
+
+extern "C"
+{
+    // Real function declarations (provided by the linker via --wrap)
+    STRING_HANDLE __real_STRING_new(void);
+    int __real_mallocAndStrcpy_s(char** destination, const char* source);
+
+    // Mock control flags — reset before each mock-dependent test
+    static bool g_fail_STRING_new = false;
+    static bool g_fail_STRING_sprintf = false;
+    static bool g_fail_mallocAndStrcpy_s = false;
+
+    STRING_HANDLE __wrap_STRING_new(void)
+    {
+        if (g_fail_STRING_new)
+        {
+            return NULL;
+        }
+        return __real_STRING_new();
+    }
+
+    int __wrap_STRING_sprintf(STRING_HANDLE handle, const char* format, ...)
+    {
+        if (g_fail_STRING_sprintf)
+        {
+            return 1; // non-zero signals failure
+        }
+
+        // Forward to a real implementation: format into a local buffer, then
+        // set the STRING_HANDLE content via STRING_copy (non-variadic).
+        va_list args;
+        va_start(args, format);
+        char buf[1024];
+        vsnprintf(buf, sizeof(buf), format, args);
+        va_end(args);
+
+        return STRING_copy(handle, buf);
+    }
+
+    int __wrap_mallocAndStrcpy_s(char** destination, const char* source)
+    {
+        if (g_fail_mallocAndStrcpy_s)
+        {
+            return 1; // non-zero signals failure
+        }
+        return __real_mallocAndStrcpy_s(destination, source);
+    }
+}
+
+// RAII helper to reset mock flags and clean up device name state
 class DiagnosticsDeviceNameTestHelper
 {
 public:
+    DiagnosticsDeviceNameTestHelper()
+    {
+        g_fail_STRING_new = false;
+        g_fail_STRING_sprintf = false;
+        g_fail_mallocAndStrcpy_s = false;
+    }
+
     ~DiagnosticsDeviceNameTestHelper()
     {
+        g_fail_STRING_new = false;
+        g_fail_STRING_sprintf = false;
+        g_fail_mallocAndStrcpy_s = false;
         DiagnosticsComponent_DestroyDeviceName();
     }
 };
+
+// ===========================================================================
+// Existing functional tests
+// ===========================================================================
 
 TEST_CASE("DiagnosticsComponent_SetDeviceName")
 {
@@ -468,5 +542,75 @@ TEST_CASE("DiagnosticsComponent - Stress Testing")
         REQUIRE(name != nullptr);
         CHECK(strcmp(name, "test2") == 0);
         free(name);
+    }
+}
+
+// ===========================================================================
+// Mock-based tests for failure paths
+// ===========================================================================
+
+TEST_CASE("DiagnosticsComponent_SetDeviceName - STRING_new failure")
+{
+    DiagnosticsDeviceNameTestHelper helper;
+
+    SECTION("SetDeviceName returns false when STRING_new fails")
+    {
+        g_fail_STRING_new = true;
+
+        CHECK_FALSE(DiagnosticsComponent_SetDeviceName("device-id", nullptr));
+    }
+
+    SECTION("SetDeviceName returns false when STRING_new fails with moduleId")
+    {
+        g_fail_STRING_new = true;
+
+        CHECK_FALSE(DiagnosticsComponent_SetDeviceName("device-id", "module-id"));
+    }
+}
+
+TEST_CASE("DiagnosticsComponent_SetDeviceName - STRING_sprintf failure")
+{
+    DiagnosticsDeviceNameTestHelper helper;
+
+    SECTION("SetDeviceName returns false when STRING_sprintf fails without moduleId")
+    {
+        // STRING_new must succeed so we reach the STRING_sprintf call
+        g_fail_STRING_sprintf = true;
+
+        CHECK_FALSE(DiagnosticsComponent_SetDeviceName("device-id", nullptr));
+    }
+
+    SECTION("SetDeviceName returns false when STRING_sprintf fails with moduleId")
+    {
+        g_fail_STRING_sprintf = true;
+
+        CHECK_FALSE(DiagnosticsComponent_SetDeviceName("device-id", "module-id"));
+    }
+}
+
+TEST_CASE("DiagnosticsComponent_GetDeviceName - mallocAndStrcpy_s failure")
+{
+    DiagnosticsDeviceNameTestHelper helper;
+
+    SECTION("GetDeviceName returns false when mallocAndStrcpy_s fails")
+    {
+        // First set a valid device name
+        CHECK(DiagnosticsComponent_SetDeviceName("device-id", nullptr));
+
+        // Now make mallocAndStrcpy_s fail
+        g_fail_mallocAndStrcpy_s = true;
+
+        char* deviceName = nullptr;
+        CHECK_FALSE(DiagnosticsComponent_GetDeviceName(&deviceName));
+    }
+
+    SECTION("GetDeviceName returns false when mallocAndStrcpy_s fails with moduleId set")
+    {
+        CHECK(DiagnosticsComponent_SetDeviceName("device-id", "module-id"));
+
+        g_fail_mallocAndStrcpy_s = true;
+
+        char* deviceName = nullptr;
+        CHECK_FALSE(DiagnosticsComponent_GetDeviceName(&deviceName));
     }
 }

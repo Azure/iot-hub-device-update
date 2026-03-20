@@ -14,6 +14,16 @@
 #include <string>
 #include <vector>
 
+// Default timeout values for curl downloads (in seconds).
+// TODO: Make these configurable via du-config.json and/or compile-time variables.
+#ifndef ADUC_CURL_CONNECT_TIMEOUT_SECS
+#define ADUC_CURL_CONNECT_TIMEOUT_SECS 30
+#endif
+
+#ifndef ADUC_CURL_MAX_TIME_SECS
+#define ADUC_CURL_MAX_TIME_SECS 3600
+#endif
+
 EXTERN_C_BEGIN
 
 ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
@@ -38,8 +48,14 @@ ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
         args.emplace_back("-o");
         args.emplace_back(targetFilePath);
 
-        args.emplace_back("-m"); // -m, --max-time <seconds>
-        args.emplace_back("3600"); // 1 hour
+        // --connect-timeout <seconds>. Maximum time for connection phase (DNS + TCP handshake).
+        // Prevents long waits on unreachable hosts or invalid URLs.
+        args.emplace_back("--connect-timeout");
+        args.emplace_back(std::to_string(ADUC_CURL_CONNECT_TIMEOUT_SECS));
+
+        // -m, --max-time <seconds>. Maximum total time for the entire operation.
+        args.emplace_back("-m");
+        args.emplace_back(std::to_string(ADUC_CURL_MAX_TIME_SECS));
 
         // Finally, tack the url onto the end
         args.emplace_back(url);
@@ -59,17 +75,38 @@ ADUC_Result DownloadRootKeyPkg_Curl(const char* url, const char* targetFilePath)
         if (exitCode == 0)
         {
             result.ResultCode = ADUC_Result_Download_Success;
-            Log_Info("Download output:: \n%s", output.c_str());
+            Log_Info("Download succeeded for '%s'", url);
         }
         else
         {
             result.ResultCode = ADUC_Result_Failure;
             result.ExtendedResultCode = ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(exitCode);
-            Log_Error("Curl process error, exitCode: %d\nDownload output: \n%s\n", exitCode, output.c_str());
+
+            // curl exit codes: 6=couldn't resolve host, 7=failed to connect,
+            // 28=operation timed out, 35=SSL connect error
+            if (exitCode == 28)
+            {
+                Log_Error(
+                    "Curl download timed out for '%s' (connect-timeout: %ds, max-time: %ds). Output: %s",
+                    url, ADUC_CURL_CONNECT_TIMEOUT_SECS, ADUC_CURL_MAX_TIME_SECS, output.c_str());
+            }
+            else if (exitCode == 6)
+            {
+                Log_Error("Curl could not resolve host for '%s'. Output: %s", url, output.c_str());
+            }
+            else if (exitCode == 7)
+            {
+                Log_Error("Curl failed to connect to host for '%s'. Output: %s", url, output.c_str());
+            }
+            else
+            {
+                Log_Error("Curl download failed for '%s', exitCode: %d. Output: %s", url, exitCode, output.c_str());
+            }
         }
     }
     catch (...)
     {
+        Log_Error("Exception during curl download of rootkey package, ERC: 0x%08x", ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION);
         result.ExtendedResultCode = ADUC_ERC_UTILITIES_ROOTKEYUTIL_ROOTKEYPACKAGE_DOWNLOAD_EXCEPTION;
     }
 
