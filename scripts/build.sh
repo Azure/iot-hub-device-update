@@ -126,8 +126,8 @@ Usage: build.sh [options...]
 
     --patch-version                       Patch version of ADU
 
-    --rootkeypkg-curl                     Download the RootKey Package with curl instead of delivery optimization agent.
-
+    --rootkeypkg-curl                     (Deprecated) Download the RootKey Package with curl instead of delivery optimization agent.
+                                            curl is now used by default for root key package download on all platforms.
     --coverage                            Enable coverage mode in build.sh:
                                             instrumented build, force unit tests, then run test+report workflow.
 
