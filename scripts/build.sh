@@ -57,7 +57,7 @@ install_adu=false
 work_folder="$root_dir/.workspace"
 cmake_dir_path="${work_folder}/deviceupdate-cmake"
 cmake_bin="cmake"
-rootkeypkg_curl=false
+rootkeypkg_curl=true
 enable_coverage=false
 support_delivery_optimization=false
 
