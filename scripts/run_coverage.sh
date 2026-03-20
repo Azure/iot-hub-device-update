@@ -16,7 +16,6 @@ out_dir="$root_dir/out"
 exclude_patterns=(
     ".*/tests?/.*"
     ".*/Testing/.*"
-    ".*/CMakeFiles/.*"
     # These extension paths contain code examples, so they do not need coverage reporting.
     ".*/src/extensions/component_enumerators/.*"
     ".*/src/extensions/content_downloaders/deliveryoptimization_downloader/.*"
@@ -57,9 +56,6 @@ EOS
     esac
 done
 
-# Resolve out_dir to an absolute path so it remains valid after pushd.
-out_dir="$(cd "$out_dir" && pwd)"
-
 # 1) Run unit tests to produce .gcda files.
 if ! command -v ctest > /dev/null 2>&1; then
     error "ctest not found in PATH"
@@ -84,8 +80,6 @@ gcovr_args=(
     --root "$root_dir"
     --object-directory "$out_dir"
     --filter ".*/src/.*"
-    --gcov-ignore-errors=no_working_dir_found
-    --gcov-ignore-errors=source_not_found
 )
 
 for pattern in "${exclude_patterns[@]}"; do
