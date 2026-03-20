@@ -45,7 +45,8 @@ set (CPACK_DEBIAN_PACKAGE_SECTION "admin")
 # See https://www.debian.org/doc/debian-policy/ch-relationships.html#s-binarydeps
 set (CPACK_DEBIAN_PACKAGE_DEPENDS "curl")
 if (ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION)
-    set (CPACK_DEBIAN_PACKAGE_SUGGESTS "deliveryoptimization-agent (>= 1.0.0), libdeliveryoptimization (>= 1.0.0), deliveryoptimization-plugin-apt")
+    set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "deliveryoptimization-agent (>= 1.0.0), libdeliveryoptimization (>= 1.0.0)")
+    set (CPACK_DEBIAN_PACKAGE_SUGGESTS "deliveryoptimization-plugin-apt")
 endif ()
 
 # Use dpkg-shlibdeps to generate better package dependency list.
