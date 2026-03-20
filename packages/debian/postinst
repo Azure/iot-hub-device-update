@@ -10,9 +10,28 @@
 # Any error should exit the script (sort of)
 # See https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#The-Set-Builtin
 
-echo "******************** Running $0 $1 ***********************"
 
 set -e
+
+requested_content_downloader="curl"
+if [ -f /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+
+    debconf_content_downloader_key=deviceupdate-agent/content-downloader
+    if db_get "$debconf_content_downloader_key"; then
+        case "$RET" in
+            do|curl)
+                requested_content_downloader="$RET"
+            ;;
+        esac
+    fi
+
+    db_stop || true
+fi
+
+echo "******************** Running $0 $1 ***********************"
+
+postinst_action="$1"
 
 adu_conf_dir=/etc/adu
 adu_conf_file=du-config.json
@@ -36,7 +55,6 @@ adu_swupdate_handler_2_file=libmicrosoft_swupdate_2.so
 
 adu_example_component_enumerator_file=libcontoso_component_enumerator.so
 
-adu_curl_downloader_file=libcurl_content_downloader.so
 adu_delivery_optimization_downloader_file=libdeliveryoptimization_content_downloader.so
 adu_curl_content_downloader_file=libcurl_content_downloader.so
 
@@ -49,7 +67,7 @@ eis_idservice_dir=/etc/aziot/identityd/config.d
 # ADU Agent daemon needs to run as 'adu' user to be able to perform high-privilege tasks via adu-shell.
 adu_user=adu
 
-# The adu_group is the group that gives admins and partner users 
+# The adu_group is the group that gives admins and partner users
 # access to ADU resources like sandbox folder.
 adu_group=adu
 
@@ -220,6 +238,8 @@ setup_dirs_and_files() {
 }
 
 register_reference_extensions() {
+    local requested_downloader="$1"
+
     echo "Register all reference step handlers..."
 
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/apt:1" --register-extension $adu_extensions_sources_dir/$adu_apt_handler_file
@@ -234,15 +254,22 @@ register_reference_extensions() {
     $adu_bin_path -l 2 --extension-type componentEnumerator --register-extension $adu_extensions_sources_dir/$adu_example_component_enumerator_file
 
     echo "Register content downloader extension..."
-    if [ -f "$adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file" ]; then
-        echo "Registering DO content downloader..."
-        $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
-    elif [ -f "$adu_extensions_sources_dir/$adu_curl_content_downloader_file" ]; then
-        echo "Registering curl content downloader..."
-        $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_content_downloader_file
+    if [ "$requested_downloader" = "do" ]; then
+        if [ -f "$adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file" ]; then
+            echo "Registering DO content downloader..."
+            $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file
+        else
+            echo "ERROR: DO content downloader was selected, but '$adu_delivery_optimization_downloader_file' is unavailable." >&2
+            exit 1
+        fi
     else
-        echo "ERROR: No content downloader found!"
-        exit 1
+        if [ -f "$adu_extensions_sources_dir/$adu_curl_content_downloader_file" ]; then
+            echo "Registering curl content downloader..."
+            $adu_bin_path -l 2 --extension-type contentDownloader --register-extension $adu_extensions_sources_dir/$adu_curl_content_downloader_file
+        else
+            echo "ERROR: curl content downloader was selected, but '$adu_curl_content_downloader_file' is unavailable." >&2
+            exit 1
+        fi
     fi
 
     echo "Register delta download handler..."
@@ -296,33 +323,58 @@ complete_migration_steps()
     fi
 }
 
-case "$1" in
+case "$postinst_action" in
     configure)
         setup_dirs_and_files
         register_adu_user_and_process_with_eis
 
-        register_reference_extensions
+        echo "Selected content downloader: $requested_content_downloader"
+
+        register_reference_extensions "$requested_content_downloader"
 
         register_and_enable_daemon
+
+        # Note: DO user and group are created by deliveryoptimization-agent Debian package,
+        # We are assuming that both DO user and group currently exist at this point.
+        # Add 'do' user to 'adu' group to allow DO to write to ADU download sandbox.
+        echo "Add the 'do' user to the 'adu' group and 'adu' to the 'do' group"
+        if getent passwd 'do' > /dev/null; then
+            usermod -aG 'adu' 'do'
+            # Note: We must add the 'adu' user to the 'do' group so that we can set the connection_string for DO
+            usermod -aG 'do' 'adu'
+
+            # Restart deliveryoptimization-agent service to ensure that the new 'do' user's groups take effect.
+            echo "Restart $ms_doclient_lite_service"
+            systemctl restart "$ms_doclient_lite_service"
+        fi
 
         complete_migration_steps
 
         # Do not restart the current deviceupdate-agent because we want the update workflow
         # to complete, and reports the agent's state to ADU Management service.
-        echo "============================================================"
-        echo
+        echo "============================================================" >&2
+        echo >&2
         echo "     ADU Agent service must be restarted." >&2
-        echo
+        echo >&2
         echo "     Please run 'sudo systemctl restart deviceupdate-agent'" >&2
-        echo
-        echo "============================================================"
+
+        if [ "$requested_content_downloader" = "curl" ] && [ -f "$adu_extensions_sources_dir/$adu_delivery_optimization_downloader_file" ]; then
+            echo "     Curl content downloader is currently set as the" >&2
+            echo "     default content downloader." >&2
+            echo "     To use Delivery Optimization content downloader," >&2
+            echo "     ensure you have deliveryoptimization-agent installed" >&2
+            echo "     and run 'sudo dpkg-reconfigure deviceupdate-agent'" >&2
+            echo "     to select DO content downloader." >&2
+        fi
+        echo >&2
+        echo "============================================================" >&2
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
     ;;
 
     *)
-        echo "postinst called with unknown argument \`$1'" >&2
+        echo "postinst called with unknown argument \`$postinst_action\`" >&2
         exit 1
     ;;
 esac
