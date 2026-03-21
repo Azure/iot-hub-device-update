@@ -1264,7 +1264,7 @@ Results will be in `out/Testing/Temporary/MemoryChecker.*.log`
 
 ## Run Device Update Agent
 
-Run Device Update Agent by following these [instructions](./how-to-run-agent.md)
+Run Device Update Agent by following the [Agent Integration Guide](./agent-integration-guide.md)
 
 ### Verify MQTT Port
 

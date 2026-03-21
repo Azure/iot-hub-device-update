@@ -775,7 +775,7 @@ sudo -u adu ls -la /etc/adu/certs/
 - [Configuration Guide](configuration-guide.md) — du-config.json schema and X.509 connection fields
 - [Architecture Overview](architecture-overview.md) — How authentication fits in the agent architecture
 - [How to Build Agent Code](how-to-build-agent-code.md)
-- [How to Run Agent](how-to-run-agent.md)
+- [Agent Integration Guide](agent-integration-guide.md)
 - [Device Update Agent Extensibility Points](device-update-agent-extensibility-points.md)
 - [Troubleshooting Guide](../how-to-troubleshoot-guide.md)
 

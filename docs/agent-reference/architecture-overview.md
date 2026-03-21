@@ -21,6 +21,9 @@ The agent is composed of three main layers:
 
 ### Key Source Directories
 
+> For a detailed description of every module, see the
+> [Source Module Catalog](../../src/README.md).
+
 ```
 src/
 ├── agent/                  # Entry point (main.c), PnP helper, device info
@@ -161,8 +164,14 @@ flowchart LR
 **Key components:**
 
 - **Root Key Package** (`src/rootkey_workflow/`, `src/utils/rootkeypackage_utils/`) —
-  A signed bundle of trusted root public keys, fetched from the service and
-  verified via its own JWS. Also carries a disabled-key list for revocation.
+  A signed bundle of trusted root public keys, fetched from the service
+  **before each deployment is processed** and verified via its own JWS.
+  Also carries disabled-key lists for key revocation. The package is
+  downloaded from the `rootKeyPackageUrl` in the deployment twin property,
+  validated against keys compiled into the agent binary, and stored locally
+  at `/var/lib/adu/rootkeystore/rootkeys.json`.
+  See [Root Key Security](how-to-root-key-security.md) for the full
+  package schema, validation workflow, and troubleshooting.
 - **JWS utilities** (`src/utils/jws_utils/`) — `VerifyJWSWithSJWK()`,
   `VerifyJWSWithKey()`, and `IsSigningKeyDisallowed()` implement the full
   trust-chain verification.
@@ -175,7 +184,8 @@ The main agent process runs with limited privileges. All privileged operations
 (package installs, script execution, file-system modifications) are delegated to
 **adu-shell**, which runs as a separate child process. This ensures that a
 compromised extension cannot directly escalate privileges within the agent
-process.
+process. See the [adu-shell README](../../src/adu-shell/README.md) for the
+full setuid privilege model and process boundary diagram.
 
 ---
 
@@ -348,6 +358,8 @@ agent crashes, the stale lock is removed immediately and the reboot proceeds.
 
 ## Further Reading
 
+- [Source Module Catalog](../../src/README.md) — per-directory developer reference for the `src/` tree
+- [adu-shell README](../../src/adu-shell/README.md) — setuid privilege model and process boundary diagram
 - [how-to-build-agent-code.md](how-to-build-agent-code.md) — Building the agent from source
 - [device-update-agent-extensibility-points.md](device-update-agent-extensibility-points.md) — Extension contracts and registration
 - [goal-state-support.md](goal-state-support.md) — Goal-state and multi-step processing

@@ -115,6 +115,30 @@ The CMake build system automatically:
 2. Add entry to `scripts/error_code_generator_defs/extension_configs.json`
 3. Reconfigure CMake to regenerate headers
 
+## Root Key Workflow Error Codes
+
+Root key workflow errors use component prefix `0xa0000000`. These occur during
+root key package download, validation, or storage — before the update manifest
+is processed.
+
+| ERC (Hex) | ERC (Decimal) | Name | Description |
+|-----------|---------------|------|-------------|
+| `0xa0000001` | 2684354561 | `ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_PARSE` | Failed to parse root key package JSON |
+| `0xa0000002` | 2684354562 | `ADUC_ERC_ROOTKEY_PKG_FAIL_JSON_SERIALIZE` | Failed to serialize root key package JSON |
+| `0xa0000003` | 2684354563 | `ADUC_ERC_ROOTKEY_STORE_PATH_CREATE` | Failed to create root key store directory |
+| `0xa0000004` | 2684354564 | `ADUC_ERC_ROOTKEY_SIGNINGKEY_DISABLE_EVAL_INVALID_HASHALG` | Invalid hash algorithm in disabled signing key |
+| `0xa0000005` | 2684354565 | `ADUC_ERC_ROOTKEY_SIGNING_KEY_IS_DISABLED` | Signing key has been revoked |
+| `0xa0000006` | 2684354566 | `ADUC_ERC_ROOTKEY_PROD_PKG_ON_TEST_AGENT` | Production package rejected on test agent |
+| `0xa0000007` | 2684354567 | `ADUC_ERC_ROOTKEY_TEST_PKG_ON_PROD_AGENT` | Test package rejected on production agent |
+| `0xa0000008` | 2684354568 | `ADUC_ERC_ROOTKEY_PACKAGE_CHANGED` | Root key package updated (informational, success) |
+| `0xa0000fff` | 2684358655 | `ADUC_ERC_ROOTKEY_PKG_UNCHANGED` | Package unchanged, no update needed (informational, success) |
+
+> ERCs `0xa0000008` and `0xa0000fff` are **not errors** — they accompany a success
+> result code and indicate what happened during processing.
+
+See [Root Key Security](how-to-root-key-security.md) for the full validation
+workflow and troubleshooting guidance.
+
 ## Decoding Error Codes
 
 ### Option 1: Search by Hex Value

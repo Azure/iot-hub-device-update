@@ -35,7 +35,7 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 |----------|-------------|
 | [Building the Agent](how-to-build-agent-code.md) | Dependencies, platform support, build options, and CMake configuration |
 | [Building with Delta Handler](building-with-delta-handler.md) | Enable the optional Microsoft Delta Download Handler |
-| [Running the Agent](how-to-run-agent.md) | Daemon setup, user/group configuration, command-line options |
+| [Agent Integration Guide](agent-integration-guide.md) | systemd setup, platform integration, CLI reference |
 | [Installing from Packages](how-to-install-deb-pkg-on-rpi.md) | Install pre-built Debian packages on Raspberry Pi |
 
 ### 🔐 Authentication & Security
@@ -43,6 +43,7 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 | Document | Description |
 |----------|-------------|
 | [X.509 Authentication](how-to-x509-authentication.md) | Certificate setup, PKCS#11, HSM integration, and testing |
+| [Root Key Security](how-to-root-key-security.md) | Root key package validation, trust chain, key revocation, and troubleshooting |
 | [Goal State & Workflow](goal-state-support.md) | Deployment protocol, state machine, and cryptographic validation |
 
 ### 🔌 Extensibility
@@ -80,7 +81,7 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 - **📱 App Developer**: [Service Status API](GetAduServiceStatus.md) → [Simulating Updates](how-to-simulate-update-result.md)
 - **🔧 Device Integrator**: [Building the Agent](how-to-build-agent-code.md) → [X.509 Authentication](how-to-x509-authentication.md)
 - **🏗️ Extension Developer**: [Extensibility Points](device-update-agent-extensibility-points.md) → [Implementing Custom Handlers](how-to-implement-custom-update-handler.md)
-- **🛠️ DevOps Engineer**: [Running the Agent](how-to-run-agent.md) → [Diagnostics Log Collection](../diagnostics-log-collection.md) → [Troubleshooting](../how-to-troubleshoot-guide.md)
+- **🛠️ DevOps Engineer**: [Agent Integration Guide](agent-integration-guide.md) → [Diagnostics Log Collection](../diagnostics-log-collection.md) → [Troubleshooting](../how-to-troubleshoot-guide.md)
 
 ### By Scenario
 

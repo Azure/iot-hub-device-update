@@ -8,12 +8,16 @@ The Microsoft Delta Download Handler enables differential updates using the [iot
 
 ## Prerequisites
 
-- All standard ADU Agent build prerequisites
+- All standard ADU Agent build prerequisites (see [How to Build Agent Code](how-to-build-agent-code.md))
 - iot-hub-device-update-delta library installed (see below)
 
 ## Installing Delta Library
 
-The delta library is installed as a build dependency using the `install-deps.sh` script:
+There are two ways to install the delta library:
+
+### Option A: Full Installation via `install-deps.sh` (requires sudo)
+
+This installs the delta library system-wide along with all other ADU agent dependencies:
 
 ```bash
 # Install only the delta library
@@ -22,14 +26,48 @@ The delta library is installed as a build dependency using the `install-deps.sh`
 # Or install with all dependencies
 ./scripts/install-deps.sh -a --install-delta
 
-# Specify a different branch/tag (default is 'main')
-./scripts/install-deps.sh --install-delta --delta-ref v1.0.0
+# Specify a different branch/tag (default is 'feature/vnext-delta')
+./scripts/install-deps.sh --install-delta --delta-ref feature/vnext-delta
 ```
 
 The script will:
 - Clone the iot-hub-device-update-delta repository from GitHub
-- Build the library
-- Install it to system paths (e.g., `/usr/local/lib`, `/usr/local/include`)
+- Install system dependencies via `apt-get` (requires sudo)
+- Build the library using vcpkg for C++ dependencies
+- Install `libadudiffapi.so` and `adudiffapi.h` to system paths (`/usr/local/lib`, `/usr/local/include`)
+
+### Option B: Standalone Build via `install-delta-deps.sh` (no sudo)
+
+For development or CI environments where you don't have root access:
+
+```bash
+# Build delta library into the work folder
+./scripts/install-delta-deps.sh --work-folder .workspace
+
+# Keep source trees for debugging
+./scripts/install-delta-deps.sh --work-folder .workspace --keep-source
+
+# Clean build
+./scripts/install-delta-deps.sh --work-folder .workspace --clean
+```
+
+This script:
+- Clones the delta repo and bootstraps vcpkg (pinned to a stable release)
+- Builds only the `adudiffapi` targets (not the full delta test suite)
+- Reports the location of the built library without installing system-wide
+- **Does not require sudo** — all artifacts stay in the work folder
+
+To install after building:
+```bash
+sudo cp .workspace/iot-hub-device-update-delta/src/out/native/x64-linux/Release/bin/libadudiffapi.so* /usr/local/lib/
+sudo cp .workspace/iot-hub-device-update-delta/src/native/diffs/api/adudiffapi.h /usr/local/include/
+sudo ldconfig
+```
+
+> **Note on Delta Branch**: The default branch is `feature/vnext-delta` (not `main`).
+> The `feature/vnext-delta` branch uses `pkg_check_modules()` for dependency discovery,
+> which is compatible with Yocto and cross-compilation environments. The `main` branch
+> uses `find_package()` which only works with vcpkg's cmake toolchain integration.
 
 ## Build Instructions
 
@@ -62,7 +100,7 @@ cmake --build out/build/release
 
 ## How It Works
 
-1. **Install Delta Library**: The `install-deps.sh` script builds and installs the delta library to system paths
+1. **Install Delta Library**: The `install-deps.sh` script (or `install-delta-deps.sh`) builds and installs the delta library
 
 2. **Find Module**: The `FindAzureIotHubDeviceUpdateDelta.cmake` module locates the library in:
    - System paths (`/usr/local/lib`, `/usr/local/include`)
@@ -128,7 +166,7 @@ The uninstallation:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ADUC_BUILD_DELTA_HANDLER` | `OFF` | Enable building the delta download handler |
-| `DELTA_LIB_TAG` | `main` | Git branch/tag for iot-hub-device-update-delta |
+| `DELTA_LIB_TAG` | `feature/vnext-delta` | Git branch/tag for iot-hub-device-update-delta |
 | `DELTA_LIB_INSTALL_DIR` | `.deps/iot-hub-device-update-delta` | Installation directory for delta library |
 
 ## Customization
@@ -138,7 +176,7 @@ The uninstallation:
 ```bash
 cmake -B build -S . \
   -DADUC_BUILD_DELTA_HANDLER=ON \
-  -DDELTA_LIB_TAG=v1.0.0
+  -DDELTA_LIB_TAG=feature/vnext-delta
 ```
 
 ### Using Pre-installed Delta Library
@@ -160,6 +198,26 @@ cmake -B build -S . \
 # Clean and rebuild
 rm -rf build/.deps .deps
 cmake -B build -S . -DADUC_BUILD_DELTA_HANDLER=ON
+```
+
+### bsdiff pkg-config Error
+
+If you see `Package 'bsdiff', required by 'virtual:world', not found`:
+
+The `feature/vnext-delta` branch uses `pkg_check_modules(BSDIFF REQUIRED bsdiff)` but the
+bsdiff vcpkg port only ships `Findbsdiff.cmake` (no `.pc` file). The `install-deps.sh` and
+`install-delta-deps.sh` scripts automatically generate `bsdiff.pc` to work around this.
+If building manually, create `bsdiff.pc` in `<vcpkg-root>/installed/<triplet>/lib/pkgconfig/`.
+
+### Linker Cannot Find vcpkg Libraries
+
+If you see errors like `cannot find -lzstd` or `cannot find -lbsdiff`:
+
+The delta CMakeLists uses bare `-l` flags from pkg-config without specifying the vcpkg
+library directory. Export `LIBRARY_PATH` to include the vcpkg lib dir:
+
+```bash
+export LIBRARY_PATH=<vcpkg-root>/installed/<triplet>/lib:$LIBRARY_PATH
 ```
 
 ### Handler Not Registered
@@ -203,5 +261,5 @@ ctest -R delta
 ## References
 
 - [iot-hub-device-update-delta GitHub Repository](https://github.com/Azure/iot-hub-device-update-delta)
-- [ADU Agent Documentation](../README.md)
-- [Extension Development Guide](../docs/agent-reference/how-to-implement-custom-update-handler.md)
+- [How to Build Agent Code](how-to-build-agent-code.md)
+- [ADU Agent Documentation](README.md)

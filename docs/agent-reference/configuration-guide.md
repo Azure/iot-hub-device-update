@@ -22,6 +22,10 @@ All configurations must include `schemaVersion`. The current version is **`"1.2"
 }
 ```
 
+> For a version-by-version comparison of every property, migration notes, and
+> deprecated-field tracking, see the
+> [Schema Reference](du-config-schema-reference.md).
+
 ## Connection Types
 
 Each agent entry contains a `connectionSource` object that defines how the agent
@@ -99,14 +103,18 @@ Example with `additionalDeviceProperties`:
 }
 ```
 
-## Shell Configuration
+## adu-shell Configuration
 
-`aduShellTrustedUsers` lists the OS users permitted to invoke ADU shell commands.
+`aduShellTrustedUsers` lists the OS users permitted to invoke adu-shell commands.
 This field is **required**.
 
 ```json
 "aduShellTrustedUsers": ["adu", "do"]
 ```
+
+> For the privilege model, launch options, task handlers, and extending
+> adu-shell with custom commands, see the
+> [adu-shell README](../../src/adu-shell/README.md).
 
 ## Protocol Options
 
@@ -169,21 +177,13 @@ Set to `0` (the default) to disable the pause.
 }
 ```
 
-### Field Reference (all top-level keys)
+### Field Reference
 
-| Field | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `schemaVersion` | ✅ | — | Must be `"1.2"` |
-| `manufacturer` | ✅ | — | Device manufacturer |
-| `model` | ✅ | — | Device model |
-| `aduShellTrustedUsers` | ✅ | — | Trusted OS users for shell commands |
-| `agents` | ✅ | — | Array of agent configurations |
-| `iotHubProtocol` | ❌ | `"mqtt"` | `"mqtt"` or `"mqtt/ws"` |
-| `idlePauseMilliseconds` | ❌ | `0` | Quiet-period duration in ms |
-| `downloadTimeoutInMinutes` | ❌ | `0` | Download timeout (0 = no timeout) |
-| `compatPropertyNames` | ❌ | — | Backward-compat property names |
-| `edgegatewayCertPath` | ❌ | — | Edge gateway certificate path |
-| `aduShellFolder` | ❌ | build default | ADU shell binary directory |
-| `dataFolder` | ❌ | `/var/lib/adu` | Agent data directory |
-| `downloadsFolder` | ❌ | `<dataFolder>/downloads` | Download storage |
-| `extensionsFolder` | ❌ | `<dataFolder>/extensions` | Extensions storage |
+For the complete property table — including per-version availability, defaults,
+and deprecated fields — see the
+[Schema Reference](du-config-schema-reference.md).
+
+> **Root key storage:** The agent stores validated root key packages at
+> `<dataFolder>/rootkeystore/rootkeys.json` (default: `/var/lib/adu/rootkeystore/rootkeys.json`).
+> This directory is created automatically. See [Root Key Security](how-to-root-key-security.md)
+> for details on the root key validation workflow.

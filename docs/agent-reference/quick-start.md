@@ -116,4 +116,4 @@ connection in the Azure portal under your IoT Hub → Device Update.
 - [how-to-x509-authentication.md](how-to-x509-authentication.md) — Certificate-based authentication
 - [building-with-delta-handler.md](building-with-delta-handler.md) — Delta download support
 - [how-to-build-agent-code.md](how-to-build-agent-code.md) — Advanced build options
-- [how-to-run-agent.md](how-to-run-agent.md) — Daemon setup and runtime details
+- [Agent Integration Guide](agent-integration-guide.md) — systemd, init.d, container deployment, and CLI reference

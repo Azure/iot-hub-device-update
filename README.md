@@ -52,7 +52,7 @@ sudo apt install ./out/deviceupdate-agent_*.deb
 * **[Device Update for IoT Hub Documentation](https://aka.ms/iot-hub-device-update-docs)** - Official service documentation
 * **[Getting Started with the Agent](./docs/agent-reference)** - Agent overview and reference
 * **[Building the Agent](./docs/agent-reference/how-to-build-agent-code.md)** - Detailed build instructions
-* **[Running the Agent](./docs/agent-reference/how-to-run-agent.md)** - Deployment and configuration
+* **[Agent Integration Guide](./docs/agent-reference/agent-integration-guide.md)** - Deployment, systemd setup, and platform integration
 * **[Troubleshooting Guide](./docs/how-to-troubleshoot-guide.md)** - Common issues and solutions
 
 ## Contributing

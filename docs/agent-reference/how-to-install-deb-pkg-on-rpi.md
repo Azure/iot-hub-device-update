@@ -78,6 +78,6 @@ See [Building the Agent](how-to-build-agent-code.md) for complete instructions.
 
 ## Next Steps
 
-- [How to Run the Agent](how-to-run-agent.md)
+- [Agent Integration Guide](agent-integration-guide.md)
 - [Configuration Guide](configuration-guide.md)
 - [Troubleshooting](../how-to-troubleshoot-guide.md)
