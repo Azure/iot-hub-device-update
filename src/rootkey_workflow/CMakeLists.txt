@@ -12,11 +12,6 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES})
 target_link_aziotsharedutil (${target_name} PRIVATE)
 find_package (Parson)
 
-if (ADUC_BUILD_UNIT_TESTS)
-    set (ROOTKEY_WORKFLOW_TEST_STORE_PATH "${CMAKE_BINARY_DIR}/rootkey_workflow_test_store")
-    set (ROOTKEY_WORKFLOW_TEST_STORE_PACKAGE_PATH "${ROOTKEY_WORKFLOW_TEST_STORE_PATH}/rootkeys.json")
-endif ()
-
 #
 # Turn -fPIC on, in order to use this library in another shared library.
 #
@@ -24,8 +19,8 @@ set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_compile_definitions (
     ${target_name}
-    PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="$<IF:$<BOOL:${ADUC_BUILD_UNIT_TESTS}>,${ROOTKEY_WORKFLOW_TEST_STORE_PACKAGE_PATH},${ADUC_ROOTKEY_STORE_PACKAGE_PATH}>"
-            ADUC_ROOTKEY_STORE_PATH="$<IF:$<BOOL:${ADUC_BUILD_UNIT_TESTS}>,${ROOTKEY_WORKFLOW_TEST_STORE_PATH},${ADUC_ROOTKEY_STORE_PATH}>"
+    PRIVATE ADUC_ROOTKEY_STORE_PACKAGE_PATH="${ADUC_ROOTKEY_STORE_PACKAGE_PATH}"
+            ADUC_ROOTKEY_STORE_PATH="${ADUC_ROOTKEY_STORE_PATH}"
             ADUC_ROOTKEY_PKG_URL_OVERRIDE="${ADUC_ROOTKEY_PKG_URL_OVERRIDE}")
 
 if (ROOTKEY_PKG_DOWNLOAD_USE_CURL)

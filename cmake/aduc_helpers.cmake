@@ -67,18 +67,9 @@ macro (
             if (IS_DIRECTORY ${base_dir}/${child})
                 file (MAKE_DIRECTORY ${TARGET_DIR})
             else ()
-                file (
-                    COPY_FILE
-                    "${base_dir}/${child}"
-                    ${TARGET_DIR}
-                    RESULT
-                    result)
-                if (NOT
-                    result
-                    EQUAL
-                    "0")
-                    message (FATAL_ERROR "COPY_FILE failed: ${result}")
-                endif ()
+                get_filename_component (TARGET_PARENT "${TARGET_DIR}" DIRECTORY)
+                file (MAKE_DIRECTORY "${TARGET_PARENT}")
+                configure_file ("${base_dir}/${child}" "${TARGET_DIR}" COPYONLY)
             endif ()
         endif ()
     endforeach ()
