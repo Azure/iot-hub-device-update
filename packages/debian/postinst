@@ -272,8 +272,12 @@ register_reference_extensions() {
         fi
     fi
 
-    echo "Register delta download handler..."
-    $adu_bin_path -l 2 --extension-type downloadHandler --extension-id "microsoft/delta:1" --register-extension $adu_extensions_sources_dir/$adu_delta_download_handler_file
+    if [ -f "$adu_extensions_sources_dir/$adu_delta_download_handler_file" ]; then
+        echo "Register delta download handler..."
+        $adu_bin_path -l 2 --extension-type downloadHandler --extension-id "microsoft/delta:1" --register-extension $adu_extensions_sources_dir/$adu_delta_download_handler_file
+    else
+        echo "Delta download handler is not installed. Skipping delta registration."
+    fi
 }
 
 register_adu_user_and_process_with_eis() {
