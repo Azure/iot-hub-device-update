@@ -580,8 +580,7 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
     // selected component, we will skip the 'apply' phase, and then skip the
     // remaining install-item(s).
     // Also, don't continue if WorkflowHandle is NULL in the ADUInterface_Connected->HandleStartupWorkflowData flow.
-    if (results.result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled
-        || workflowData->WorkflowHandle == nullptr)
+    if (results.result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled)
     {
         goto done;
     }
@@ -682,8 +681,8 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
         results.result.ExtendedResultCode = ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILURE_PARSE_RESULT_FILE;
         workflow_set_result_details(
             workflowData->WorkflowHandle,
-            "The install script doesn't create a result file '%s'.",
-            scriptResultFile.c_str());
+            "The script result file '%s' for action '%s' is missing or is not a valid JSON file.",
+            scriptResultFile.c_str(), action.c_str());
         goto done;
     }
 
@@ -737,7 +736,6 @@ done:
 
     if (IsAducResultCodeFailure(results.result.ResultCode))
     {
-        workflow_set_result(workflowData->WorkflowHandle, results.result);
         workflow_set_state(workflowData->WorkflowHandle, ADUCITF_State_Failed);
     }
 
