@@ -189,9 +189,7 @@ ADUC_Result SWUpdateHandler_PerformAction(
     // If any install-item reported that the update is already installed on the
     // selected component, we will skip the 'apply' phase, and then skip the
     // remaining install-item(s).
-    // Also, don't continue if WorkflowHandle is NULL in the ADUInterface_Connected->HandleStartupWorkflowData flow.
-    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled
-        || workflowData->WorkflowHandle == nullptr)
+    if (result.ResultCode == ADUC_Result_Install_Skipped_UpdateAlreadyInstalled)
     {
         goto done;
     }
