@@ -919,9 +919,11 @@ ADUC_Result ExtensionManager::Download(
                 goto done;
             }
         }
-
-        result = { /* .ResultCode = */ ADUC_Result_Success, /* .ExtendedResultCode = */ 0 };
-        goto done;
+        else
+        {
+            result = { /* .ResultCode = */ ADUC_Result_Success, /* .ExtendedResultCode = */ 0 };
+            goto done;
+        }
     }
 
     result.ResultCode = ADUC_Result_Failure;
