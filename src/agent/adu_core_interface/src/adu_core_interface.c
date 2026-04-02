@@ -690,17 +690,20 @@ JSON_Value* GetReportingJsonValue(
     //
     //     "lastInstallResult" : {
     //         "resultCode" : ####,
+    //         "extendedResultCode" : ####,
     //         "extendedResultCodes" : "########,########",
     //         "resultDetails" : "...",
     //         "stepResults" : {
     //             "step_0" : {
     //                 "resultCode" : ####,
+    //                 "extendedResultCode" : ####,
     //                 "extendedResultCodes" : "########",
     //                 "resultDetails" : "..."
     //             },
     //             ...
     //             "step_N" : {
     //                 "resultCode" : ####,
+    //                 "extendedResultCode" : ####,
     //                 "extendedResultCodes" : "########",
     //                 "resultDetails" : "..."
     //             }
