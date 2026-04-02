@@ -844,6 +844,8 @@ ADUC_Result ExtensionManager::Download(
     ADUC_Result result = { /* .ResultCode = */ ADUC_Result_Failure, /* .ExtendedResultCode = */ 0 };
     ADUC::StringUtils::STRING_HANDLE_wrapper targetUpdateFilePath{ nullptr };
 
+    workflow_set_result_details(workflowHandle, "");
+
     if (!workflow_get_entity_workfolder_filepath(workflowHandle, entity, targetUpdateFilePath.address_of()))
     {
         Log_Error("Cannot construct child manifest file path.");
@@ -983,7 +985,11 @@ ADUC_Result ExtensionManager::Download(
     result.ExtendedResultCode = 0;
 
 done:
-
+    if (IsAducResultCodeFailure(result.ResultCode) && strlen(workflow_peek_result_details(workflowHandle)) == 0)
+    {
+        workflow_set_result_details(workflowHandle, "Download of '%s' failed with extended result code 0x%x",
+                                    targetUpdateFilePath.c_str(), result.ExtendedResultCode);
+    }
     return result;
 }
 
