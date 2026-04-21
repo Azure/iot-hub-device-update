@@ -118,6 +118,12 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
  */
 void ADUC_Logging_Uninit()
 {
+    if (ref_count <= 0)
+    {
+        // Already fully uninitialized or never initialized.
+        return;
+    }
+
     if (--ref_count > 0)
     {
         return;

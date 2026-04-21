@@ -1149,7 +1149,10 @@ done:
         workflow_set_state(handle, ADUCITF_State_Failed);
     }
 
-    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
+    if (selectedComponentsArray != NULL)
+    {
+        json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
+    }
     json_free_serialized_string(serializedComponentString);
     workflow_free_string(workFolder);
 
@@ -1485,7 +1488,10 @@ static ADUC_Result StepsHandler_IsInstalled(const tagADUC_WorkflowData* workflow
 
 done:
 
-    json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
+    if (selectedComponentsArray != NULL)
+    {
+        json_value_free(json_array_get_wrapping_value(selectedComponentsArray));
+    }
     json_free_serialized_string(serializedComponentString);
     workflow_free_string(workFolder);
 

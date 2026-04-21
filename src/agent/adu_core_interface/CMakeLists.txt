@@ -19,6 +19,10 @@ target_sources (${target_name} PRIVATE src/adu_core_interface.c src/device_prope
 
 target_link_aziotsharedutil (${target_name} PRIVATE)
 
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
+
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types aduc::c_utils aduc::communication_abstraction IotHubClient::iothub_client

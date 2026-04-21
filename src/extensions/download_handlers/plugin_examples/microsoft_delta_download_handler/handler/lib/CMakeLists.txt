@@ -22,3 +22,7 @@ target_link_libraries (
             aduc::logging
             aduc::source_update_cache
             aduc::workflow_utils)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

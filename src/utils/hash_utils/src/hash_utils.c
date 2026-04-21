@@ -234,6 +234,11 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
 
     success = GetResultAndCompareHashes(&context, NULL, algorithm, true, hash);
 
+    if (!success)
+    {
+        Log_Debug("Hash compare failed on file '%s'", path);
+    }
+
 done:
 
     if (file != NULL)
@@ -348,8 +353,9 @@ bool ADUC_HashUtils_IsValidFileHash(
     }
 
     success = GetResultAndCompareHashes(&context, hashBase64, algorithm, suppressErrorLog, NULL /* outputHash */);
-    if (!success)
+    if (!success && !suppressErrorLog)
     {
+        Log_Debug("Hash compare failed on file '%s'", path);
         goto done;
     }
 

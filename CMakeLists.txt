@@ -352,7 +352,7 @@ set (
     "AducIotAgent${CMAKE_EXECUTABLE_SUFFIX}"
     CACHE STRING "The filename of the ADU Agent binary.")
 
-cmake_path (SET ADUC_AGENT_FILEPATH NORMALIZE "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}")
+get_filename_component (ADUC_AGENT_FILEPATH "${ADUC_AGENT_FOLDER}/${ADUC_AGENT_FILENAME}" ABSOLUTE)
 
 set (
     DIAGNOSTICS_CONFIG_FILE
@@ -379,7 +379,7 @@ set (
     "adu-shell${CMAKE_EXECUTABLE_SUFFIX}"
     CACHE STRING "Filename of adu-shell.")
 
-cmake_path (SET ADUSHELL_FILE_PATH NORMALIZE "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}")
+get_filename_component (ADUSHELL_FILE_PATH "${ADUSHELL_FOLDER}/${ADUSHELL_FILENAME}" ABSOLUTE)
 
 set (
     ADUSHELL_FILE_PATH
@@ -471,14 +471,14 @@ set (
 # Paths for the Folders
 
 # Error Code Generator Script
-cmake_path (SET ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT NORMALIZE
-            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/error_code_defs_generator.py")
+get_filename_component (ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT
+    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/error_code_defs_generator.py" ABSOLUTE)
 
-cmake_path (SET ADUC_PATH_TO_ERROR_CODE_JSON_FILE NORMALIZE
-            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}")
+get_filename_component (ADUC_PATH_TO_ERROR_CODE_JSON_FILE
+    "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_ERROR_CODE_JSON_FILENAME}" ABSOLUTE)
 
-cmake_path (SET ADUC_GENERATED_ERROR_CODE_FILE_PATH NORMALIZE
-            "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}")
+get_filename_component (ADUC_GENERATED_ERROR_CODE_FILE_PATH
+    "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}" ABSOLUTE)
 
 #######
 # BEGIN Delta Downloader Handler Source Update Cache Configurations
@@ -525,15 +525,15 @@ option (ADUC_ENABLE_FILE_LOG "Enable file logging" ON)
 ### End CMake Options
 
 # Construct the absolute path to the adu configuration file.
-cmake_path (SET ADUC_CONF_FILE_PATH NORMALIZE "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}")
+get_filename_component (ADUC_CONF_FILE_PATH "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}" ABSOLUTE)
 set (
     ADUC_CONF_FILE_PATH
     "${ADUC_CONF_FILE_PATH}"
     CACHE STRING "Path to the ADU configuration file.")
 
 # Construct the absolute path to the adu diagnostics configuration file
-cmake_path (SET DIAGNOSTICS_CONFIG_FILE_PATH NORMALIZE
-            "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}")
+get_filename_component (DIAGNOSTICS_CONFIG_FILE_PATH
+    "${ADUC_CONF_FOLDER}/${DIAGNOSTICS_CONFIG_FILE}" ABSOLUTE)
 
 set (
     DIAGNOSTICS_CONFIG_FILE_PATH

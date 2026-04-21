@@ -33,3 +33,7 @@ target_link_libraries (${target_name} PRIVATE libaducpal aduc::system_utils)
 # ADUC_USE_ZLOGGING - For zlog macros in logging.h
 #
 target_compile_definitions (${target_name} PRIVATE _DEFAULT_SOURCE ADUC_USE_ZLOGGING=1)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

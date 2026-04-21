@@ -64,6 +64,10 @@ ADUC_Result ADUC_MethodCall_Register(ADUC_UpdateActionCallbacks* updateActionCal
     ADUC_Result result = ADUC_RegisterPlatformLayer(updateActionCallbacks, argc, argv);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
+        Log_Error(
+            "ADUC_RegisterPlatformLayer failed, result: %d, erc: 0x%08x",
+            result.ResultCode,
+            result.ExtendedResultCode);
         return result;
     }
 
@@ -103,7 +107,12 @@ int ADUC_MethodCall_RebootSystem()
 {
     Log_Info("Calling ADUC_RebootSystem");
 
-    return ADUC_RebootSystem();
+    int result = ADUC_RebootSystem();
+    if (result != 0)
+    {
+        Log_Error("ADUC_RebootSystem failed with errno %d", result);
+    }
+    return result;
 }
 
 /**
@@ -117,5 +126,10 @@ int ADUC_MethodCall_RestartAgent()
 {
     Log_Info("Calling ADUC_RestartAgent");
 
-    return ADUC_RestartAgent();
+    int result = ADUC_RestartAgent();
+    if (result != 0)
+    {
+        Log_Error("ADUC_RestartAgent failed with errno %d", result);
+    }
+    return result;
 }

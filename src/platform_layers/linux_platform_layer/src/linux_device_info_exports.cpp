@@ -478,6 +478,7 @@ EXTERN_C_BEGIN
  */
 char* DI_GetDeviceInformationValue(DI_DeviceInfoProperty property)
 {
+    Log_Debug("DI_GetDeviceInformationValue called for property %d", (int)property);
     char* value = nullptr;
 
     try
@@ -498,7 +499,13 @@ char* DI_GetDeviceInformationValue(DI_DeviceInfoProperty property)
     }
     catch (...)
     {
+        Log_Error("DI_GetDeviceInformationValue: unknown exception for property %d", (int)property);
         value = nullptr;
+    }
+
+    if (value == nullptr)
+    {
+        Log_Debug("DI_GetDeviceInformationValue: property %d returned NULL (not dirty or error)", (int)property);
     }
 
     return value;

@@ -16,3 +16,7 @@ target_link_libraries (
             aduc::string_utils
             diagnostics_component::diagnostics_workflow
             diagnostic_utils::operation_id_utils)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

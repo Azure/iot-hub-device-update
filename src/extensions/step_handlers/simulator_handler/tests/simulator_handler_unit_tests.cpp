@@ -14,7 +14,17 @@ using Catch::Matchers::Equals;
 
 #include <fstream>
 #include <memory>
+#include <cstdlib>
 #include <string.h>
+
+EXTERN_C_BEGIN
+
+ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo);
+const char* _GetTemporaryPathName();
+char* _StringFormat(const char* fmt, ...);
+
+EXTERN_C_END
 
 // NOLINTNEXTLINE(cppcoreguidelines-special-member-functions)
 class SimulatorHandlerDataFile
@@ -546,4 +556,81 @@ TEST_CASE("Restore Succeeded 1100")
     CHECK_THAT(workflow_peek_result_details(handle), Equals("Mock restore succeeded - 1100"));
 
     workflow_free(handle);
+}
+
+TEST_CASE("Simulator exports and helpers")
+{
+    ADUC_ExtensionContractInfo info{};
+    ADUC_Result contractResult = GetContractInfo(&info);
+    CHECK(contractResult.ResultCode == ADUC_GeneralResult_Success);
+    CHECK(info.majorVer == ADUC_V1_CONTRACT_MAJOR_VER);
+    CHECK(info.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
+
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
+    REQUIRE(simHandler != nullptr);
+
+    CHECK(_StringFormat(nullptr) == nullptr);
+
+    std::string longArg(600, 'a');
+    char* tooLong = _StringFormat("%s", longArg.c_str());
+    CHECK(tooLong == nullptr);
+
+    char* formatted = _StringFormat("%s/%s", "alpha", "beta");
+    REQUIRE(formatted != nullptr);
+    CHECK_THAT(formatted, Equals("alpha/beta"));
+    free(formatted);
+}
+
+TEST_CASE("Simulator temporary path resolution and data file helpers")
+{
+    setenv("TMPDIR", "/tmp/sim_tmpdir", 1);
+    setenv("TMP", "/tmp/sim_tmp", 1);
+    setenv("TEMP", "/tmp/sim_temp", 1);
+    setenv("TEMPDIR", "/tmp/sim_tempdir", 1);
+
+    CHECK_THAT(_GetTemporaryPathName(), Equals("/tmp/sim_tmpdir"));
+
+    unsetenv("TMPDIR");
+    CHECK_THAT(_GetTemporaryPathName(), Equals("/tmp/sim_tmp"));
+
+    unsetenv("TMP");
+    CHECK_THAT(_GetTemporaryPathName(), Equals("/tmp/sim_temp"));
+
+    unsetenv("TEMP");
+    CHECK_THAT(_GetTemporaryPathName(), Equals("/tmp/sim_tempdir"));
+
+    unsetenv("TEMPDIR");
+    CHECK_THAT(_GetTemporaryPathName(), Equals("/tmp"));
+
+    char* dataFilePath = GetSimulatorDataFilePath();
+    REQUIRE(dataFilePath != nullptr);
+    remove(dataFilePath);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result workflowInitResult = workflow_init(action_process_deployment, false, &handle);
+    REQUIRE(IsAducResultCodeSuccess(workflowInitResult.ResultCode));
+    REQUIRE(handle != nullptr);
+
+    ADUC_WorkflowData workflowData {};
+    workflowData.WorkflowHandle = handle;
+
+    std::unique_ptr<ContentHandler> simHandler{ CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG) };
+    REQUIRE(simHandler != nullptr);
+
+    ADUC_Result noFileResult = simHandler->Download(&workflowData);
+    CHECK(noFileResult.ResultCode == ADUC_Result_Download_Success);
+
+    {
+        std::ofstream file{ dataFilePath, std::ios::trunc | std::ios::binary };
+        file << "{\"download\":{\"*\":{\"resultCode\":500,\"extendedResultCode\":0}}}";
+        REQUIRE(!file.bad());
+    }
+
+    ADUC_Result withFileResult = simHandler->Download(&workflowData);
+    CHECK(withFileResult.ResultCode == ADUC_Result_Download_Success);
+
+    workflow_free(handle);
+
+    remove(dataFilePath);
+    free(dataFilePath);
 }

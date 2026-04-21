@@ -7,7 +7,9 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (sources operation_id_utils_ut.cpp)
+# Compile the source directly into the test binary so the overridden
+# DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH takes effect in the library code.
+set (sources operation_id_utils_ut.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../src/operation_id_utils.c)
 
 find_package (Catch2 REQUIRED)
 find_package (Parson REQUIRED)
@@ -20,13 +22,18 @@ target_compile_definitions (
     PRIVATE DIAGNOSTICS_COMPLETED_OPERATION_FILE_PATH="/tmp/test_diagnostics_operation_id"
 )
 
+target_include_directories (${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../inc)
+
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE diagnostic_utils::operation_id_utils
+    PRIVATE aduc::c_utils
+            aduc::logging
             aduc::system_utils
             aduc::parson_json_utils
+            diagnostics_component::diagnostics_interface
+            libaducpal
             Parson::parson
             Catch2::Catch2WithMain)
 

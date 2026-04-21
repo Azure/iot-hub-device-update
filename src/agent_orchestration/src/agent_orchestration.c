@@ -7,6 +7,7 @@
  */
 
 #include "aduc/agent_orchestration.h"
+#include "aduc/logging.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
@@ -27,9 +28,11 @@ ADUCITF_WorkflowStep AgentOrchestration_GetWorkflowStep(const ADUCITF_UpdateActi
     case ADUCITF_UpdateAction_Cancel:
         // Should not get here as Cancel should have just signaled the cancel request
         // to the current ongoing operation, or just went to idle.
+        Log_Warn("GetWorkflowStep called with Cancel action; expected Cancel to be handled before reaching here");
         return ADUCITF_WorkflowStep_Undefined;
 
     default:
+        Log_Warn("GetWorkflowStep: unrecognized desiredUpdateAction %d, returning Undefined step", (int)desiredUpdateAction);
         return ADUCITF_WorkflowStep_Undefined;
     }
 }
@@ -68,7 +71,13 @@ bool AgentOrchestration_IsRetryApplicable(const char* currentToken, const char* 
         if (currentToken == NULL && newToken != NULL)
         {
             // canonical retry
+            Log_Debug("IsRetryApplicable: currentToken is NULL, newToken is non-NULL — canonical retry");
             return true;
+        }
+
+        if (currentToken != NULL && newToken == NULL)
+        {
+            Log_Warn("IsRetryApplicable: newToken is NULL while currentToken is '%s' — skipping retry", currentToken);
         }
 
         return false;

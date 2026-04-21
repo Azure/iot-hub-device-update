@@ -29,3 +29,7 @@ target_link_libraries (
 target_compile_definitions (
     ${target_name}
     PRIVATE ADUC_DOWNLOAD_HANDLER_REG_FILENAME="${ADUC_DOWNLOAD_HANDLER_REG_FILENAME}")
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

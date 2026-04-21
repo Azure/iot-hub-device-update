@@ -370,6 +370,38 @@ TEST_CASE("PnP_CopyPayloadToString", "[pnp_helper]")
     }
 }
 
+TEST_CASE("PnP_CreateTelemetryMessageHandle", "[pnp_helper]")
+{
+    SECTION("Creates telemetry message without component")
+    {
+        IOTHUB_MESSAGE_HANDLE messageHandle =
+            PnP_CreateTelemetryMessageHandle(nullptr, "{\"temp\":25}");
+
+        REQUIRE(messageHandle != nullptr);
+        IoTHubMessage_Destroy(messageHandle);
+    }
+
+    SECTION("Creates telemetry message with component property")
+    {
+        IOTHUB_MESSAGE_HANDLE messageHandle =
+            PnP_CreateTelemetryMessageHandle("deviceUpdate", "{\"state\":\"ok\"}");
+
+        REQUIRE(messageHandle != nullptr);
+
+        const char* value = IoTHubMessage_GetProperty(messageHandle, "$.sub");
+        REQUIRE(value != nullptr);
+        CHECK_THAT(value, Equals("deviceUpdate"));
+
+        IoTHubMessage_Destroy(messageHandle);
+    }
+
+    SECTION("Returns nullptr for invalid telemetry payload")
+    {
+        IOTHUB_MESSAGE_HANDLE messageHandle = PnP_CreateTelemetryMessageHandle("deviceUpdate", nullptr);
+        CHECK(messageHandle == nullptr);
+    }
+}
+
 /**
  * @brief Test PnP status codes
  */
@@ -969,5 +1001,72 @@ TEST_CASE("PnP_ProcessTwinData - Multiple Components", "[pnp_helper]")
 
         REQUIRE(result == true);
         CHECK(ctx.callCount == 4); // 3 component props + 1 root prop
+    }
+}
+
+/**
+ * @brief Test PnP_ProcessTwinData with JSON payloads whose root is not an object.
+ * Covers the GetDesiredJson error path where json_value_get_object returns NULL.
+ */
+TEST_CASE("PnP_ProcessTwinData - Non-Object Root JSON", "[pnp_helper]")
+{
+    SECTION("JSON array root returns false (complete update)")
+    {
+        const char* arrayJson = R"([1, 2, 3])";
+
+        PropertyCallbackContext ctx;
+        const char* components[] = { "comp1" };
+
+        bool result = PnP_ProcessTwinData(
+            DEVICE_TWIN_UPDATE_COMPLETE,
+            reinterpret_cast<const unsigned char*>(arrayJson),
+            strlen(arrayJson),
+            components,
+            1,
+            TestPropertyCallback,
+            &ctx);
+
+        CHECK(result == false);
+        CHECK(ctx.callCount == 0);
+    }
+
+    SECTION("JSON array root returns false (partial update)")
+    {
+        const char* arrayJson = R"([{"key": "value"}])";
+
+        PropertyCallbackContext ctx;
+        const char* components[] = { "comp1" };
+
+        bool result = PnP_ProcessTwinData(
+            DEVICE_TWIN_UPDATE_PARTIAL,
+            reinterpret_cast<const unsigned char*>(arrayJson),
+            strlen(arrayJson),
+            components,
+            1,
+            TestPropertyCallback,
+            &ctx);
+
+        CHECK(result == false);
+        CHECK(ctx.callCount == 0);
+    }
+
+    SECTION("JSON string root returns false")
+    {
+        const char* stringJson = R"("just a string")";
+
+        PropertyCallbackContext ctx;
+        const char* components[] = {};
+
+        bool result = PnP_ProcessTwinData(
+            DEVICE_TWIN_UPDATE_COMPLETE,
+            reinterpret_cast<const unsigned char*>(stringJson),
+            strlen(stringJson),
+            components,
+            0,
+            TestPropertyCallback,
+            &ctx);
+
+        CHECK(result == false);
+        CHECK(ctx.callCount == 0);
     }
 }

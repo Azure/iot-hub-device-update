@@ -20,3 +20,7 @@ target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types aduc::c_utils
     PRIVATE aduc::logging aduc::platform_layer Parson::parson)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

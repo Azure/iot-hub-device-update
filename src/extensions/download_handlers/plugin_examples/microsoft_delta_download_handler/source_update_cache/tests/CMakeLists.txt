@@ -8,11 +8,14 @@ disablertti ()
 find_package (Catch2 REQUIRED)
 find_package (Parson REQUIRED)
 
+# ---------------------------------------------------------------
+# Existing integration-style tests for source_update_cache_utils
+# ---------------------------------------------------------------
 add_executable (${PROJECT_NAME} "")
 
 target_include_directories (${PROJECT_NAME} PRIVATE inc ${ADUC_EXPORT_INCLUDES})
 
-target_sources (${PROJECT_NAME} PRIVATE source_update_cache_utils_ut.cpp)
+target_sources (${PROJECT_NAME} PRIVATE source_update_cache_utils_ut.cpp source_update_cache_ut.cpp)
 
 target_link_libraries (
     ${PROJECT_NAME}

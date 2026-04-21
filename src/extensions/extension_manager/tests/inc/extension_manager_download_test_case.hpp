@@ -22,6 +22,9 @@ enum class DownloadTestScenario
     Invalid,
     BasicDownloadSuccess,
     BasicDownloadFailure,
+    UnsupportedContractVersion,
+    MissingDownloadProc,
+    UnsupportedHashType,
 };
 
 class ExtensionManagerDownloadTestCase

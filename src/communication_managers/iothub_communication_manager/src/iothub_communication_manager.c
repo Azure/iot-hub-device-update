@@ -174,6 +174,7 @@ static void ADUC_DeviceClient_Destroy(ADUC_ClientHandle clientHandle)
  */
 void IoTHub_CommunicationManager_Deinit()
 {
+    Log_Info("IoTHub_CommunicationManager_Deinit: deinitializing communication manager");
     pthread_mutex_lock(&s_client_handle_mutex);
     if (g_aduc_client_handle_address != NULL && *g_aduc_client_handle_address != NULL)
     {
@@ -187,6 +188,7 @@ void IoTHub_CommunicationManager_Deinit()
     {
         IoTHub_Deinit();
         g_iothub_client_initialized = false;
+        Log_Info("IoTHub_CommunicationManager_Deinit: IoTHub deinitialized successfully");
     }
 }
 
@@ -520,10 +522,12 @@ bool GetConnectionInfoFromConnectionString(
     const ADUC_ConfigInfo* config = NULL;
     if (info == NULL)
     {
+        Log_Error("GetConnectionInfoFromConnectionString: info parameter is NULL");
         goto done;
     }
     if (connectionString == NULL)
     {
+        Log_Error("GetConnectionInfoFromConnectionString: connectionString parameter is NULL");
         goto done;
     }
 
@@ -607,8 +611,10 @@ done:
 bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
 {
     bool succeeded = false;
+    Log_Info("Attempting to get connection info from Identity Service (EIS)");
     if (info == NULL)
     {
+        Log_Error("GetConnectionInfoFromIdentityService: info parameter is NULL");
         goto done;
     }
     memset(info, 0, sizeof(*info));
@@ -737,7 +743,7 @@ static void ADUC_Refresh_IotHub_Connection_SAS_Token()
 
     if (!ADUC_DeviceClient_Create(g_aduc_client_handle_address, &info, true /* iotHubTracingEnabled */))
     {
-        Log_Error("ADUC_DeviceClient_Create failed");
+        Log_Error("ADUC_DeviceClient_Create failed during SAS token refresh");
         goto done;
     }
 

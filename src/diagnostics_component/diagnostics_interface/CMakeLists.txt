@@ -32,3 +32,7 @@ target_link_libraries (
             IotHubClient::iothub_client)
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()

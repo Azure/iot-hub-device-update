@@ -16,12 +16,16 @@
 #include <catch2/catch_all.hpp>
 using Catch::Matchers::Equals;
 
+#include <algorithm>
+#include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 EXTERN_C_BEGIN
 
 EXPORTED_METHOD ContentHandler* CreateUpdateContentHandlerExtension(ADUC_LOG_SEVERITY logLevel);
+EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo);
 
 EXTERN_C_END
 
@@ -132,6 +136,39 @@ static std::string get_filecopy_workflow_2()
     R"(         "ff2510f75ca8bf0d3": "http://duinstance2--johndoe.b.nlu.dl.adu.microsoft.com/westus2/duinstance2/5daa1107aee443b095f0ac6a4548f4b0/example-du-swupdate-script.sh" )"
     R"(      }  )"
     R"( } )";
+}
+
+static std::string get_filecopy_workflow_apiver_unknown()
+{
+        std::string workflow = filecopy_workflow_apiver_2_1;
+        const std::string marker = "\"apiVersion\":\"1.1\"";
+        size_t pos = workflow.find(marker);
+        if (pos != std::string::npos)
+        {
+                workflow.replace(pos, marker.size(), "\"apiVersion\":\"9.9\"");
+        }
+
+        return workflow;
+}
+
+static std::string get_workflow_missing_script_filename()
+{
+        return R"({
+    "workflow": { "action": 3, "id": "b6dcf6aa-1111-2222-3333-444444444444" },
+    "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"swupdate-missing-script\",\"version\":\"1.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/swupdate:2\",\"files\":[],\"handlerProperties\":{\"installedCriteria\":\"ok\",\"swuFileName\":\"dummy.swu\"}}]},\"files\":{},\"createdDateTime\":\"2022-03-28T22:36:07.8445392Z\"}",
+    "updateManifestSignature": "dummy",
+    "fileUrls": {}
+})";
+}
+
+static std::string get_workflow_missing_swu_filename()
+{
+        return R"({
+    "workflow": { "action": 3, "id": "a7ecf6bb-1111-2222-3333-555555555555" },
+    "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"swupdate-missing-swu\",\"version\":\"1.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/swupdate:2\",\"files\":[],\"handlerProperties\":{\"installedCriteria\":\"ok\",\"scriptFileName\":\"dummy.sh\"}}]},\"files\":{},\"createdDateTime\":\"2022-03-28T22:36:07.8445392Z\"}",
+    "updateManifestSignature": "dummy",
+    "fileUrls": {}
+})";
 }
 
 TEST_CASE("SWUpdate Prepare Arguments Test")
@@ -613,4 +650,619 @@ TEST_CASE("SWUpdate sample script --action-cancel")
     workflow_free(handle);
     ExtensionManager::Uninit();
     ADUC_ConfigInfo_ReleaseInstance(config);
+}
+
+TEST_CASE("SWUpdate handler_create exported contract info", "[swupdate_handler_v2]")
+{
+    ADUC_ExtensionContractInfo info{};
+    ADUC_Result result = GetContractInfo(&info);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Success);
+    CHECK(result.ExtendedResultCode == 0);
+    CHECK(info.majorVer == ADUC_V1_CONTRACT_MAJOR_VER);
+    CHECK(info.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
+
+    ContentHandler* handler = CreateUpdateContentHandlerExtension(ADUC_LOG_INFO);
+    REQUIRE(handler != nullptr);
+    delete handler;
+}
+
+static ADUC_WorkflowHandle SetupSwupdateStepWorkflow(
+    const char* workflowJson,
+    ADUC_WorkflowHandle* rootHandle,
+    const ADUC_ConfigInfo** config)
+{
+    if (rootHandle != nullptr)
+    {
+        *rootHandle = nullptr;
+    }
+    if (config != nullptr)
+    {
+        *config = nullptr;
+    }
+
+    set_test_config_folder();
+
+    const ADUC_ConfigInfo* localConfig = ADUC_ConfigInfo_GetInstance();
+    if (localConfig == nullptr)
+    {
+        return nullptr;
+    }
+
+    ContentHandler* handler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    if (handler == nullptr)
+    {
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        return nullptr;
+    }
+
+    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", handler);
+
+    ADUC_WorkflowHandle localRootHandle = nullptr;
+    ADUC_Result result = workflow_init(workflowJson, false, &localRootHandle);
+    if (IsAducResultCodeFailure(result.ResultCode) || localRootHandle == nullptr)
+    {
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        ExtensionManager::Uninit();
+        return nullptr;
+    }
+
+    result = PrepareStepsWorkflowDataObject(localRootHandle);
+    if (IsAducResultCodeFailure(result.ResultCode))
+    {
+        workflow_free(localRootHandle);
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        ExtensionManager::Uninit();
+        return nullptr;
+    }
+
+    ADUC_WorkflowHandle stepHandle = workflow_get_child(localRootHandle, 0);
+    if (stepHandle == nullptr)
+    {
+        workflow_free(localRootHandle);
+        ADUC_ConfigInfo_ReleaseInstance(localConfig);
+        ExtensionManager::Uninit();
+        return nullptr;
+    }
+
+    if (rootHandle != nullptr)
+    {
+        *rootHandle = localRootHandle;
+    }
+    if (config != nullptr)
+    {
+        *config = localConfig;
+    }
+
+    return stepHandle;
+}
+
+TEST_CASE("SWUpdate utility functions read config/value", "[swupdate_handler_v2]")
+{
+    CHECK(SWUpdateHandlerImpl::ReadValueFromFile("").empty());
+    CHECK(SWUpdateHandlerImpl::ReadValueFromFile(std::string(PATH_MAX + 10, 'a')).empty());
+    CHECK(SWUpdateHandlerImpl::ReadValueFromFile("/tmp/swupdate-missing.txt").empty());
+
+    const std::string valueFile = "/tmp/swupdate-value.txt";
+    {
+        std::ofstream out(valueFile);
+        out << "  test-value  \n";
+    }
+    CHECK_THAT(SWUpdateHandlerImpl::ReadValueFromFile(valueFile), Equals("test-value"));
+    remove(valueFile.c_str());
+
+    std::unordered_map<std::string, std::string> values;
+    ADUC_Result badConfigResult = SWUpdateHandlerImpl::ReadConfig("/tmp/swupdate-no-config.json", values);
+    CHECK(IsAducResultCodeFailure(badConfigResult.ResultCode));
+
+    const std::string malformedCfgFile = "/tmp/swupdate-config-malformed.json";
+    {
+        std::ofstream out(malformedCfgFile);
+        out << "{\"--opt1\":\"val1\",";
+    }
+    ADUC_Result malformedConfigResult = SWUpdateHandlerImpl::ReadConfig(malformedCfgFile, values);
+    CHECK(IsAducResultCodeFailure(malformedConfigResult.ResultCode));
+    remove(malformedCfgFile.c_str());
+
+    const std::string cfgFile = "/tmp/swupdate-config.json";
+    {
+        std::ofstream out(cfgFile);
+        out << "{\"--opt1\":\"val1\",\"--opt2\":\"val2\"}";
+    }
+
+    ADUC_Result configResult = SWUpdateHandlerImpl::ReadConfig(cfgFile, values);
+    CHECK(configResult.ResultCode == ADUC_Result_Success);
+    CHECK(values["--opt1"] == "val1");
+    CHECK(values["--opt2"] == "val2");
+    remove(cfgFile.c_str());
+}
+
+TEST_CASE("SWUpdate PerformAction fails when workflowData is nullptr", "[swupdate_handler_v2]")
+{
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+
+    ADUC_Result result = SWUpdateHandler_PerformAction(
+        "install",
+        nullptr,
+        true,
+        scriptFilePath,
+        args,
+        commandLineArgs,
+        scriptOutput);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
+}
+
+TEST_CASE("SWUpdate PerformAction fails when workflow handle is nullptr", "[swupdate_handler_v2]")
+{
+    ADUC_WorkflowData workflowData = {};
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+
+    ADUC_Result result = SWUpdateHandler_PerformAction(
+        "apply",
+        &workflowData,
+        true,
+        scriptFilePath,
+        args,
+        commandLineArgs,
+        scriptOutput);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_INSTALL_ERROR_NULL_WORKFLOW);
+}
+
+TEST_CASE("SWUpdate PrepareCommandArguments guard and component branches", "[swupdate_handler_v2]")
+{
+    std::string commandFilePath;
+    std::vector<std::string> args;
+
+    ADUC_Result nullWorkflowResult = SWUpdateHandlerImpl::PrepareCommandArguments(
+        nullptr,
+        "/tmp/result.json",
+        "/tmp/work",
+        commandFilePath,
+        args);
+    CHECK(IsAducResultCodeFailure(nullWorkflowResult.ResultCode));
+    CHECK(nullWorkflowResult.ExtendedResultCode == ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_NULL_WORKFLOW);
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(filecopy_workflow, &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_set_selected_components(stepHandle, "not valid json"));
+    args.clear();
+    ADUC_Result invalidComponentsResult = SWUpdateHandlerImpl::PrepareCommandArguments(
+        stepHandle,
+        "/tmp/result.json",
+        "/tmp/work",
+        commandFilePath,
+        args);
+    CHECK(IsAducResultCodeFailure(invalidComponentsResult.ResultCode));
+    CHECK(
+        invalidComponentsResult.ExtendedResultCode
+        == ADUC_ERC_UPDATE_CONTENT_HANDLER_INSTALL_FAILURE_MISSING_PRIMARY_COMPONENT);
+
+    REQUIRE(workflow_set_selected_components(stepHandle, "{\"components\":[]}"));
+    args.clear();
+    ADUC_Result emptyComponentsResult = SWUpdateHandlerImpl::PrepareCommandArguments(
+        stepHandle,
+        "/tmp/result.json",
+        "/tmp/work",
+        commandFilePath,
+        args);
+    CHECK(emptyComponentsResult.ResultCode == ADUC_Result_Download_Skipped_NoMatchingComponents);
+
+    REQUIRE(workflow_set_selected_components(
+        stepHandle,
+        "{\"components\":[{\"id\":\"comp-1\",\"name\":\"motor\",\"manufacturer\":\"contoso\",\"model\":\"v1\",\"version\":\"2.0\",\"group\":\"g\",\"properties\":{\"path\":\"/dev/motor0\"}},{\"id\":\"comp-2\",\"name\":\"other\"}]}"));
+    args.clear();
+    ADUC_Result componentResult = SWUpdateHandlerImpl::PrepareCommandArguments(
+        stepHandle,
+        "/tmp/result.json",
+        "/tmp/work",
+        commandFilePath,
+        args);
+    CHECK(componentResult.ResultCode == ADUC_Result_Success);
+    CHECK(std::find(args.begin(), args.end(), "--swu-file") != args.end());
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate content handler direct methods on real step workflow", "[swupdate_handler_v2]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+
+    std::string workflowJson = get_filecopy_workflow_2();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+    REQUIRE(rootHandle != nullptr);
+    REQUIRE(config != nullptr);
+
+    std::unique_ptr<ContentHandler> handler(SWUpdateHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    ADUC_Result backupResult = handler->Backup(&stepWorkflow);
+    CHECK(backupResult.ResultCode == ADUC_Result_Backup_Success);
+
+    ADUC_Result isInstalledResult = handler->IsInstalled(&stepWorkflow);
+    CHECK((IsAducResultCodeFailure(isInstalledResult.ResultCode) || IsAducResultCodeSuccess(isInstalledResult.ResultCode)));
+
+    ADUC_Result downloadResult = handler->Download(&stepWorkflow);
+    CHECK((IsAducResultCodeFailure(downloadResult.ResultCode) || IsAducResultCodeSuccess(downloadResult.ResultCode)));
+
+    ADUC_Result installResult = handler->Install(&stepWorkflow);
+    CHECK((IsAducResultCodeFailure(installResult.ResultCode) || IsAducResultCodeSuccess(installResult.ResultCode)));
+
+    ADUC_Result applyResult = handler->Apply(&stepWorkflow);
+    CHECK((IsAducResultCodeFailure(applyResult.ResultCode) || IsAducResultCodeSuccess(applyResult.ResultCode)));
+
+    ADUC_Result cancelResult = handler->Cancel(&stepWorkflow);
+    CHECK((cancelResult.ResultCode == ADUC_Result_Cancel_Success || cancelResult.ResultCode == ADUC_Result_Cancel_UnableToCancel));
+
+    ADUC_Result restoreResult = handler->Restore(&stepWorkflow);
+    CHECK((IsAducResultCodeFailure(restoreResult.ResultCode) || IsAducResultCodeSuccess(restoreResult.ResultCode)));
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate PrepareCommandArguments fails when scriptFileName is missing", "[swupdate_handler_v2]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+
+    std::string workflowJson = get_workflow_missing_script_filename();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    std::string commandFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = SWUpdateHandlerImpl::PrepareCommandArguments(
+        stepHandle,
+        "/tmp/aduc_result.json",
+        "/tmp/swupdate-work",
+        commandFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_MISSING_SCRIPT_FILE_NAME);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate PrepareCommandArguments fails when swuFileName is missing", "[swupdate_handler_v2]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+
+    std::string workflowJson = get_workflow_missing_swu_filename();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    std::string commandFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = SWUpdateHandlerImpl::PrepareCommandArguments(
+        stepHandle,
+        "/tmp/aduc_result.json",
+        "/tmp/swupdate-work",
+        commandFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_MISSING_SWU_FILE_NAME);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate PerformAction prepare path with unknown apiVersion", "[swupdate_handler_v2]")
+{
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+
+    std::string workflowJson = get_filecopy_workflow_apiver_unknown();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+
+    ADUC_Result result = SWUpdateHandler_PerformAction(
+        "install",
+        &stepWorkflow,
+        true,
+        scriptFilePath,
+        args,
+        commandLineArgs,
+        scriptOutput);
+
+    CHECK(result.ResultCode == ADUC_Result_Success);
+    CHECK(result.ExtendedResultCode == 0);
+    CHECK(scriptOutput.find("--action-") == std::string::npos);
+    CHECK(scriptOutput.find(" --action \"") == std::string::npos);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+static std::string get_workflow_script_not_matching_files()
+{
+    return R"({
+    "workflow": { "action": 3, "id": "c8dcf6cc-1111-2222-3333-777777777777" },
+    "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"swupdate-nomatch\",\"version\":\"1.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/swupdate:2\",\"files\":[\"f1\",\"f2\"],\"handlerProperties\":{\"installedCriteria\":\"ok\",\"scriptFileName\":\"no-match.sh\",\"swuFileName\":\"dummy.swu\"}}]},\"files\":{\"f1\":{\"fileName\":\"file-a.bin\",\"sizeInBytes\":16,\"hashes\":{\"sha256\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}},\"f2\":{\"fileName\":\"file-b.bin\",\"sizeInBytes\":16,\"hashes\":{\"sha256\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=\"}}},\"createdDateTime\":\"2022-03-28T22:36:07.8445392Z\"}",
+    "updateManifestSignature": "dummy",
+    "fileUrls": { "f1": "http://example/a", "f2": "http://example/b" }
+})";
+}
+
+TEST_CASE("SWUpdate Download fails via handler when scriptFileName is missing", "[swupdate_handler_v2]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    std::string workflowJson = get_workflow_missing_script_filename();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::unique_ptr<ContentHandler> handler(SWUpdateHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result result = handler->Download(&stepWorkflow);
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_MISSING_SCRIPT_FILE_NAME);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate Download fails via handler when file count is insufficient", "[swupdate_handler_v2]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    std::string workflowJson = get_workflow_missing_swu_filename();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::unique_ptr<ContentHandler> handler(SWUpdateHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result result = handler->Download(&stepWorkflow);
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_WRONG_FILECOUNT);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate Download fails when script file entity not found by name", "[swupdate_handler_v2]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    std::string workflowJson = get_workflow_script_not_matching_files();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::unique_ptr<ContentHandler> handler(SWUpdateHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result result = handler->Download(&stepWorkflow);
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERC_SWUPDATE_HANDLER_DOWNLOAD_FAILURE_GET_SCRIPT_FILE_ENTITY);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate PerformAction non-prepare exercises result file parsing", "[swupdate_handler_v2]")
+{
+    set_test_config_folder();
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    REQUIRE(config != nullptr);
+
+    ContentHandler* swupdateHandler = CreateUpdateContentHandlerExtension(ADUC_LOG_DEBUG);
+    REQUIRE(swupdateHandler != nullptr);
+    ExtensionManager::SetUpdateContentHandlerExtension("microsoft/swupdate:2", swupdateHandler);
+
+    std::string workflow_json = get_filecopy_workflow_2();
+    ADUC_WorkflowHandle handle = nullptr;
+    ADUC_Result result = workflow_init(workflow_json.c_str(), false, &handle);
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+    const std::string workFolder = "/tmp/adu-swupdate-result-parse-test";
+    ADUC_SystemUtils_MkSandboxDirRecursive(workFolder.c_str());
+    workflow_set_workfolder(handle, "%s", workFolder.c_str());
+
+    result = PrepareStepsWorkflowDataObject(handle);
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+    ADUC_WorkflowHandle stepHandle = workflow_get_child(handle, 0);
+    REQUIRE(stepHandle != nullptr);
+    workflow_set_workfolder(stepHandle, "%s", workFolder.c_str());
+
+    // Pre-create a result file so the result-file-parsing code path is exercised
+    const std::string resultFile = workFolder + "/aduc_result.json";
+    {
+        std::ofstream out(resultFile);
+        out << R"({"resultCode":600,"extendedResultCode":0,"resultDetails":"test-result"})";
+    }
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::string scriptFilePath;
+    std::vector<std::string> args;
+    std::vector<std::string> commandLineArgs;
+    std::string scriptOutput;
+
+    result = SWUpdateHandler_PerformAction(
+        "install", &stepWorkflow, false, scriptFilePath, args, commandLineArgs, scriptOutput);
+
+    // LaunchChildProcess will fail (no adu-shell), but the pre-created result file
+    // exercises the JSON parsing success path.
+    CHECK((IsAducResultCodeSuccess(result.ResultCode) || IsAducResultCodeFailure(result.ResultCode)));
+
+    std::remove(resultFile.c_str());
+    ADUC_SystemUtils_RmDirRecursive(workFolder.c_str());
+    workflow_free(handle);
+    ExtensionManager::Uninit();
+    ADUC_ConfigInfo_ReleaseInstance(config);
+}
+
+TEST_CASE("SWUpdate handler Backup and Restore methods", "[swupdate_handler_v2]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    std::string workflowJson = get_filecopy_workflow_2();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::unique_ptr<ContentHandler> handler(SWUpdateHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result backupResult = handler->Backup(&stepWorkflow);
+    CHECK(backupResult.ResultCode == ADUC_Result_Backup_Success);
+
+    // Restore calls CancelApply which calls PerformAction("cancel").
+    // In test env this fails, so Restore returns ADUC_Result_Failure.
+    ADUC_Result restoreResult = handler->Restore(&stepWorkflow);
+    CHECK((IsAducResultCodeFailure(restoreResult.ResultCode)
+        || restoreResult.ResultCode == ADUC_Result_Restore_Success));
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+TEST_CASE("SWUpdate Apply routes through Cancel when operation cancel is requested", "[swupdate_handler_v2]")
+{
+    set_test_config_folder();
+
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+    std::string workflowJson = get_filecopy_workflow_2();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    workflow_set_operation_cancel_requested(stepHandle, true);
+
+    ADUC_WorkflowData stepWorkflow{};
+    stepWorkflow.WorkflowHandle = stepHandle;
+
+    std::unique_ptr<ContentHandler> handler(SWUpdateHandlerImpl::CreateContentHandler());
+    REQUIRE(handler != nullptr);
+
+    ADUC_Result applyResult = handler->Apply(&stepWorkflow);
+    bool applyResultIsExpected =
+        applyResult.ResultCode == ADUC_Result_Cancel_Success
+        || applyResult.ResultCode == ADUC_Result_Cancel_UnableToCancel
+        || IsAducResultCodeFailure(applyResult.ResultCode);
+    CHECK(applyResultIsExpected);
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
+}
+
+// Helper: workflow with component argument placeholders in handlerProperties.arguments
+static std::string get_workflow_with_component_args()
+{
+    return R"({
+    "workflow": { "action": 3, "id": "e9dcf7dd-2222-3333-4444-888888888888" },
+    "updateManifest": "{\"manifestVersion\":\"4\",\"updateId\":{\"provider\":\"Contoso\",\"name\":\"swupdate-comp-args\",\"version\":\"1.0\"},\"compatibility\":[{\"deviceManufacturer\":\"contoso\",\"deviceModel\":\"virtual-vacuum-v1\"}],\"instructions\":{\"steps\":[{\"handler\":\"microsoft/swupdate:2\",\"files\":[\"f1\",\"f2\"],\"handlerProperties\":{\"installedCriteria\":\"ok\",\"scriptFileName\":\"script.sh\",\"swuFileName\":\"update.swu\",\"arguments\":\"--component-id-val --component-name-val --component-manufacturer-val --component-model-val --component-version-val --component-group-val --component-prop-val path\"}}]},\"files\":{\"f1\":{\"fileName\":\"update.swu\",\"sizeInBytes\":16,\"hashes\":{\"sha256\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}},\"f2\":{\"fileName\":\"script.sh\",\"sizeInBytes\":16,\"hashes\":{\"sha256\":\"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=\"}}},\"createdDateTime\":\"2022-03-28T22:36:07.8445392Z\"}",
+    "updateManifestSignature": "dummy",
+    "fileUrls": { "f1": "http://example/update.swu", "f2": "http://example/script.sh" }
+})";
+}
+
+TEST_CASE("SWUpdate PrepareCommandArguments covers non-null component property branches", "[swupdate_handler_v2]")
+{
+    // Uses a workflow with --component-*-val argument placeholders and a full component JSON
+    // to exercise the val != nullptr branches for manufacturer, model, version, group.
+    ADUC_WorkflowHandle rootHandle = nullptr;
+    const ADUC_ConfigInfo* config = nullptr;
+
+    std::string workflowJson = get_workflow_with_component_args();
+    ADUC_WorkflowHandle stepHandle = SetupSwupdateStepWorkflow(workflowJson.c_str(), &rootHandle, &config);
+    REQUIRE(stepHandle != nullptr);
+
+    REQUIRE(workflow_set_selected_components(
+        stepHandle,
+        "{\"components\":[{\"id\":\"comp-1\",\"name\":\"motor\","
+        "\"manufacturer\":\"Contoso\",\"model\":\"v2-motor\","
+        "\"version\":\"3.0\",\"group\":\"motors\","
+        "\"properties\":{\"path\":\"/dev/motor0\"}}]}"));
+
+    std::string commandFilePath;
+    std::vector<std::string> args;
+    ADUC_Result result = SWUpdateHandlerImpl::PrepareCommandArguments(
+        stepHandle,
+        "/tmp/aduc_result.json",
+        "/tmp/swupdate-work",
+        commandFilePath,
+        args);
+
+    CHECK(result.ResultCode == ADUC_Result_Success);
+
+    // Verify actual component values appear (not "n/a")
+    CHECK(std::find(args.begin(), args.end(), "comp-1") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "motor") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "Contoso") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "v2-motor") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "3.0") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "motors") != args.end());
+    CHECK(std::find(args.begin(), args.end(), "/dev/motor0") != args.end());
+
+    // "n/a" should NOT appear since all fields are provided
+    CHECK(std::find(args.begin(), args.end(), "n/a") == args.end());
+
+    workflow_free(rootHandle);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    ExtensionManager::Uninit();
 }

@@ -31,6 +31,8 @@
 #include <system_error>
 #include <vector>
 
+#include "aduc/logging.h"
+
 using ADUC::LinuxPlatformLayer;
 using ADUC::StringUtils::cstr_wrapper;
 
@@ -152,22 +154,26 @@ static ContentHandler* GetUpdateManifestHandler(const ADUC_WorkflowData* workflo
  */
 ADUC_Result LinuxPlatformLayer::Download(const ADUC_WorkflowData* workflowData)
 {
+    Log_Info("LinuxPlatformLayer::Download called");
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
 
     if (contentHandler == nullptr)
     {
+        Log_Error("Download: failed to get update manifest handler (ERC: 0x%08x)", result.ExtendedResultCode);
         goto done;
     }
 
     result = contentHandler->Download(workflowData);
     if (_IsCancellationRequested)
     {
+        Log_Warn("Download: cancellation was requested during download");
         result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
         _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
     }
 
 done:
+    Log_Info("Download completed with result: %d, ERC: 0x%08x", result.ResultCode, result.ExtendedResultCode);
     return result;
 }
 
@@ -177,21 +183,25 @@ done:
  */
 ADUC_Result LinuxPlatformLayer::Install(const ADUC_WorkflowData* workflowData)
 {
+    Log_Info("LinuxPlatformLayer::Install called");
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
+        Log_Error("Install: failed to get update manifest handler (ERC: 0x%08x)", result.ExtendedResultCode);
         goto done;
     }
 
     result = contentHandler->Install(workflowData);
     if (_IsCancellationRequested)
     {
+        Log_Warn("Install: cancellation was requested during install");
         result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
         _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
     }
 
 done:
+    Log_Info("Install completed with result: %d, ERC: 0x%08x", result.ResultCode, result.ExtendedResultCode);
     return result;
 }
 
@@ -201,21 +211,25 @@ done:
  */
 ADUC_Result LinuxPlatformLayer::Apply(const ADUC_WorkflowData* workflowData)
 {
+    Log_Info("LinuxPlatformLayer::Apply called");
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
+        Log_Error("Apply: failed to get update manifest handler (ERC: 0x%08x)", result.ExtendedResultCode);
         goto done;
     }
 
     result = contentHandler->Apply(workflowData);
     if (_IsCancellationRequested)
     {
+        Log_Warn("Apply: cancellation was requested during apply");
         result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
         _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
     }
 
 done:
+    Log_Info("Apply completed with result: %d, ERC: 0x%08x", result.ResultCode, result.ExtendedResultCode);
     return result;
 }
 
@@ -225,10 +239,12 @@ done:
  */
 ADUC_Result LinuxPlatformLayer::Backup(const ADUC_WorkflowData* workflowData)
 {
+    Log_Info("LinuxPlatformLayer::Backup called");
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
+        Log_Error("Backup: failed to get update manifest handler (ERC: 0x%08x)", result.ExtendedResultCode);
         goto done;
     }
 
@@ -237,11 +253,13 @@ ADUC_Result LinuxPlatformLayer::Backup(const ADUC_WorkflowData* workflowData)
     // If cancel is requested during backup, we will proceed to finish the backup.
     if (_IsCancellationRequested)
     {
+        Log_Warn("Backup: cancellation was requested during backup");
         result = ADUC_Result{ ADUC_Result_Failure_Cancelled };
         _IsCancellationRequested = false; // For replacement, we can't call Idle so reset here
     }
 
 done:
+    Log_Info("Backup completed with result: %d, ERC: 0x%08x", result.ResultCode, result.ExtendedResultCode);
     return result;
 }
 /**
@@ -250,10 +268,12 @@ done:
  */
 ADUC_Result LinuxPlatformLayer::Restore(const ADUC_WorkflowData* workflowData)
 {
+    Log_Info("LinuxPlatformLayer::Restore called");
     ADUC_Result result{ ADUC_Result_Failure };
     ContentHandler* contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
+        Log_Error("Restore: failed to get update manifest handler (ERC: 0x%08x)", result.ExtendedResultCode);
         goto done;
     }
 
@@ -263,6 +283,7 @@ ADUC_Result LinuxPlatformLayer::Restore(const ADUC_WorkflowData* workflowData)
     // so the agent should try to restore to the previous state - proceed to finish the restore.
 
 done:
+    Log_Info("Restore completed with result: %d, ERC: 0x%08x", result.ResultCode, result.ExtendedResultCode);
     return result;
 }
 
@@ -316,6 +337,7 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
 
     if (workflowData == nullptr)
     {
+        Log_Error("IsInstalled: workflowData is NULL");
         ADUC_Result result;
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_NULL_WORKFLOW;
@@ -326,6 +348,7 @@ ADUC_Result LinuxPlatformLayer::IsInstalled(const ADUC_WorkflowData* workflowDat
     contentHandler = GetUpdateManifestHandler(workflowData, &result);
     if (contentHandler == nullptr)
     {
+        Log_Error("IsInstalled: failed to get update manifest handler");
         result.ResultCode = ADUC_Result_Failure;
         result.ExtendedResultCode = ADUC_ERC_UPDATE_CONTENT_HANDLER_ISINSTALLED_FAILURE_BAD_UPDATETYPE;
         return result;
@@ -365,6 +388,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     pwd = getpwnam(ADUC_FILE_USER);
     if (pwd == nullptr)
     {
+        Log_Error("SandboxCreate: getpwnam failed for user '%s'", ADUC_FILE_USER);
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_USER };
     }
 
@@ -377,6 +401,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     grp = getgrnam(ADUC_FILE_GROUP);
     if (grp == nullptr)
     {
+        Log_Error("SandboxCreate: getgrnam failed for group '%s'", ADUC_FILE_GROUP);
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_LOWERLEVEL_SANDBOX_CREATE_FAILURE_NO_ADU_GROUP };
     }
     gid_t aduGroupId = grp->gr_gid;

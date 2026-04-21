@@ -1,5 +1,3 @@
-set (target_name extension_manager_tests)
-
 include (agentRules)
 compileasc99 ()
 disablertti ()
@@ -7,10 +5,17 @@ disablertti ()
 find_package (Catch2 REQUIRED)
 find_package (Parson REQUIRED)
 
+# ==============================================================================
+# Existing test target (links against real aduc::extension_manager)
+# ==============================================================================
+set (target_name extension_manager_tests)
+
 add_executable (${target_name})
 
 target_sources (${target_name} PRIVATE src/extension_manager_ut.cpp
-                                       src/extension_manager_download_test_case.cpp)
+                                       src/extension_manager_download_test_case.cpp
+                                       src/extension_manager_helper_ut.cpp
+                                       src/content_handler_ut.cpp)
 
 target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
                                                   ${ADU_EXTENSION_INCLUDES})
@@ -18,6 +23,7 @@ target_include_directories (${target_name} PUBLIC inc ${ADUC_EXPORT_INCLUDES}
 target_link_libraries (
     ${target_name}
     PRIVATE aduc::extension_manager
+            aduc::config_utils
             aduc::entity_utils
             aduc::parser_utils
             aduc::string_utils
