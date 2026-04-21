@@ -4,8 +4,16 @@
 #include <aduc/exports/extension_common_export_symbols.h> // for GetContractInfo__EXPORT_SYMBOL
 
 //
-// Content Downloader Extension export V1 symbols.
-// These are the V1 symbols that must be implemented by a content downloader extension.
+// Content Downloader Extension export symbols.
+//
+// V1 contract (1.0) symbols:
+//   - GetContractInfo (optional, defaults to V1 if absent)
+//   - Initialize(const char* initializeData)
+//   - Download(...)
+//
+// V2 contract (2.0) adds:
+//   - Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
+//   - Cleanup()  (optional, called before library unload if present)
 //
 
 /**
@@ -20,18 +28,16 @@
 /**
  * @brief Initializes the content downloader.
  *
- * @param initializeData The initialization data.
- * @param logLevel The log level for the content downloader.
- * @return ADUC_Result The result.
- * @details ADUC_Result Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
+ * V1 contract: ADUC_Result Initialize(const char* initializeData)
+ * V2 contract: ADUC_Result Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
  */
 #define CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL "Initialize"
 
 /**
- * @brief Cleanup logic before library is unloaded.
+ * @brief Cleanup logic before library is unloaded (V2 contract only).
+ * @details void Cleanup()
  */
 #define CONTENT_DOWNLOADER__Cleanup__EXPORT_SYMBOL "Cleanup"
-
 
 /**
  * @brief The download export.

@@ -143,7 +143,7 @@ void ExtensionManagerDownloadTestCase::RunScenario()
 void ExtensionManagerDownloadTestCase::InitCommon()
 {
     ExtensionManager::SetContentDownloaderLibrary(&mockLib);
-    ExtensionManager::SetContentDownloaderContractVersion(mockContractInfo);
+    ExtensionManager::SetContentDownloaderContractVersion(contractVersion);
 
     unique_json_value msgValue{ json_parse_file(pnpMsgPath.c_str()) };
     unique_json_value updateManifestValue{ json_parse_file(updateManifestPath.c_str()) };

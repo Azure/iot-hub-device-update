@@ -18,3 +18,10 @@ bool ADUC_ContractUtils_IsV1Contract(ADUC_ExtensionContractInfo* contractInfo)
         || (contractInfo->majorVer == ADUC_V1_CONTRACT_MAJOR_VER
             && contractInfo->minorVer == ADUC_V1_CONTRACT_MINOR_VER);
 }
+
+bool ADUC_ContractUtils_IsV2Contract(ADUC_ExtensionContractInfo* contractInfo)
+{
+    return contractInfo != NULL
+        && contractInfo->majorVer == ADUC_V2_CONTRACT_MAJOR_VER
+        && contractInfo->minorVer == ADUC_V2_CONTRACT_MINOR_VER;
+}

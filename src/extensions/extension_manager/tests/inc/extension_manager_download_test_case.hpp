@@ -9,6 +9,7 @@
 #ifndef EXTENSIONMANAGER_DOWNLOAD_TEST_CASE
 #define EXTENSIONMANAGER_DOWNLOAD_TEST_CASE
 
+#include <aduc/contract_utils.h>
 #include <aduc/extension_manager.hpp>
 #include <aduc/result.h>
 
@@ -32,6 +33,12 @@ public:
     ExtensionManagerDownloadTestCase& operator=(ExtensionManagerDownloadTestCase&&) = delete;
 
     ExtensionManagerDownloadTestCase(DownloadTestScenario scenario) : download_scenario{ scenario }
+    {
+    }
+
+    ExtensionManagerDownloadTestCase(
+        DownloadTestScenario scenario, ADUC_ExtensionContractInfo contractInfo)
+        : download_scenario{ scenario }, contractVersion{ contractInfo }
     {
     }
 
@@ -59,6 +66,7 @@ private:
 
 private:
     DownloadTestScenario download_scenario{ DownloadTestScenario::Invalid };
+    ADUC_ExtensionContractInfo contractVersion{ ADUC_V1_CONTRACT_MAJOR_VER, ADUC_V1_CONTRACT_MINOR_VER };
     ADUC_Result actual_result{};
     ADUC_Result expected_result{};
 

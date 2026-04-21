@@ -13,6 +13,10 @@
 
 EXTERN_C_BEGIN
 
+// V1 contract: Initialize takes only initializeData.
+typedef ADUC_Result (*InitializeV1Proc)(const char* initializeData);
+
+// V2 contract: Initialize takes initializeData and logLevel.
 typedef ADUC_Result (*InitializeProc)(const char* initializeData, ADUC_LOG_SEVERITY logLevel);
 
 typedef ADUC_Result (*DownloadProc)(
