@@ -25,6 +25,27 @@ If the symbol exists, it will be called to populate the ADUC_ExtensionContractIn
 
 If the agent does not support the contract version opted-into by the extension, then it will fail with an ExtendedResultCode matching the pattern `ADUC_ERC_{ExtensionType}_UNSUPPORTED_CONTRACT_VERSION` in [result_codes.json](../../scripts/error_code_generator_defs/result_codes.json) or in the build-generated [src/inc/aduc/result.h](../../src/inc/aduc/result.h).
 
+## Content Downloader Contract Versions
+
+### V1 (1.0)
+
+The original content downloader contract. Required exports:
+
+- `GetContractInfo` (optional; omitting defaults to V1)
+- `Initialize(const char* initializeData)`
+- `Download(...)`
+
+### V2 (2.0)
+
+V2 extends V1 with logging initialization support and a cleanup hook:
+
+- `GetContractInfo` (should report version 2.0)
+- `Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)` — accepts a log level so the downloader can initialize its own logging
+- `Download(...)` — unchanged from V1
+- `Cleanup()` — optional; called before the library is unloaded to release logging and other resources
+
+The agent detects the contract version at load time via `GetContractInfo` and dispatches accordingly. V1 extensions continue to work without changes.
+
 ## Back compatibility
 
 To support older custom extensions prior to GA, not including `GetContractInfo` symbol will be implicitly conflated with extension version 1.0 for the extension type, but eventually a version of the agent will make omitting `GetContractInfo` a failure, so it is strongly suggested to include it and to update older extensions.
