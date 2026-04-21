@@ -67,8 +67,19 @@ else ()
 endif ()
 
 add_definitions (-DADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
-add_definitions (-DADUC_ENABLE_CONSOLE_LOG=${ADUC_ENABLE_CONSOLE_LOG})
-add_definitions (-DADUC_ENABLE_FILE_LOG=${ADUC_ENABLE_FILE_LOG})
+# Convert CMake booleans (ON/OFF) to C preprocessor integers (1/0)
+# so that #if ADUC_ENABLE_CONSOLE_LOG / #if ADUC_ENABLE_FILE_LOG work correctly in init.c.
+if (ADUC_ENABLE_CONSOLE_LOG)
+    add_definitions (-DADUC_ENABLE_CONSOLE_LOG=1)
+else ()
+    add_definitions (-DADUC_ENABLE_CONSOLE_LOG=0)
+endif ()
+
+if (ADUC_ENABLE_FILE_LOG)
+    add_definitions (-DADUC_ENABLE_FILE_LOG=1)
+else ()
+    add_definitions (-DADUC_ENABLE_FILE_LOG=0)
+endif ()
 
 
 set (ADUC_TYPES_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
