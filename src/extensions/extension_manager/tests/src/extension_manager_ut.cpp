@@ -405,7 +405,7 @@ TEST_CASE("InitializeContentDownloader fails when downloader lib not loaded")
     ExtMgrCleanup cleanup;
     ExtensionManager::SetContentDownloaderLibrary(nullptr);
 
-    ADUC_Result result = ExtensionManager::InitializeContentDownloader("test");
+    ADUC_Result result = ExtensionManager::InitializeContentDownloader("test", ADUC_LOG_DEBUG);
     CHECK(result.ResultCode == 0);
 }
 
@@ -415,9 +415,9 @@ TEST_CASE("InitializeContentDownloader fails when contract version is unsupporte
 
     int fakeLib = 42;
     ExtensionManager::SetContentDownloaderLibrary(&fakeLib);
-    ExtensionManager::SetContentDownloaderContractVersion({ 2, 0 });
+    ExtensionManager::SetContentDownloaderContractVersion({ 3, 0 });
 
-    ADUC_Result result = ExtensionManager::InitializeContentDownloader("test");
+    ADUC_Result result = ExtensionManager::InitializeContentDownloader("test", ADUC_LOG_DEBUG);
 
     CHECK(result.ResultCode == ADUC_GeneralResult_Failure);
     CHECK(result.ExtendedResultCode == ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION);
@@ -459,7 +459,7 @@ TEST_CASE("ExtensionManager_InitializeContentDownloader wrapper returns failure 
     ExtMgrCleanup cleanup;
     ExtensionManager::SetContentDownloaderLibrary(nullptr);
 
-    ADUC_Result result = ExtensionManager_InitializeContentDownloader("test");
+    ADUC_Result result = ExtensionManager_InitializeContentDownloader("test", ADUC_LOG_DEBUG);
     CHECK(result.ResultCode == 0);
 }
 

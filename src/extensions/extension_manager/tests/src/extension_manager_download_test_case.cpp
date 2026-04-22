@@ -142,7 +142,7 @@ void ExtensionManagerDownloadTestCase::RunScenario()
         break;
 
     case DownloadTestScenario::UnsupportedContractVersion:
-        ExtensionManager::SetContentDownloaderContractVersion({ 2, 0 });
+        ExtensionManager::SetContentDownloaderContractVersion({ 3, 0 });
         mockProcResolver = mockDownloadSuccessProcResolver;
         expected_result.ResultCode = ADUC_GeneralResult_Failure;
         expected_result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION;
