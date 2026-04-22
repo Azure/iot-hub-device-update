@@ -45,8 +45,8 @@ EXTERN_C_BEGIN
  */
 EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contractInfo)
 {
-    contractInfo->majorVer = ADUC_V1_CONTRACT_MAJOR_VER;
-    contractInfo->minorVer = ADUC_V1_CONTRACT_MINOR_VER;
+    contractInfo->majorVer = ADUC_V2_CONTRACT_MAJOR_VER;
+    contractInfo->minorVer = ADUC_V2_CONTRACT_MINOR_VER;
     return ADUC_Result{ ADUC_GeneralResult_Success, 0 };
 }
 
@@ -54,10 +54,12 @@ EXPORTED_METHOD ADUC_Result GetContractInfo(ADUC_ExtensionContractInfo* contract
  * @brief Initializes the content downloader.
  *
  * @param initializeData The initialization data.
+ * @param logLevel The desired loglevel if logging is used.
  * @return ADUC_Result The result.
  */
-EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData)
+EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
+    ADUC_Logging_Init(logLevel, "deliveryoptimization-content-downloader");
     ADUC_Result result{ ADUC_GeneralResult_Success };
 
 #if defined(WIN32)
@@ -97,6 +99,14 @@ EXPORTED_METHOD ADUC_Result Initialize(const char* initializeData)
 
 done:
     return result;
+}
+
+/**
+ * @brief Cleanup logic before library is unloaded.
+ */
+EXPORTED_METHOD void Cleanup()
+{
+    ADUC_Logging_Uninit();
 }
 
 /**

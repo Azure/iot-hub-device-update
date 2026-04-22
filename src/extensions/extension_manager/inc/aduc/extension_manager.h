@@ -14,6 +14,7 @@
 #include <aduc/types/download.h> /* ADUC_DownloadProgressCallback */
 #include <aduc/types/update_content.h> /* ADUC_FileEntity */
 #include <aduc/types/workflow.h> /* ADUC_WorkflowHandle */
+#include <aduc/logging.h> /* ADUC_LOG_SEVERITY */
 
 EXTERN_C_BEGIN
 
@@ -21,9 +22,10 @@ EXTERN_C_BEGIN
  * @brief Initializes the content downloader.
  *
  * @param initializeData The initialization data.
+ * @param logLevel The log level for the content downloader.
  * @return ADUC_Result The result of initialization.
  */
-ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData);
+ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel);
 
 /**
  * @brief Downloads by using metadata download handler id and falls back to download with content downloader extension.
