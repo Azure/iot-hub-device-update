@@ -10,9 +10,14 @@
 
 #include "aduc/adu_core_exports.h"
 
+
 EXTERN_C_BEGIN
 
-typedef ADUC_Result (*InitializeProc)(const char* initializeData);
+// V1 contract: Initialize takes only initializeData.
+typedef ADUC_Result (*InitializeV1Proc)(const char* initializeData);
+
+// V2 contract: Initialize takes initializeData and logLevel.
+typedef ADUC_Result (*InitializeProc)(const char* initializeData, ADUC_LOG_SEVERITY logLevel);
 
 typedef ADUC_Result (*DownloadProc)(
     const ADUC_FileEntity* entity,
@@ -20,6 +25,8 @@ typedef ADUC_Result (*DownloadProc)(
     const char* workFolder,
     unsigned int timeoutInSeconds,
     ADUC_DownloadProgressCallback downloadProgressCallback);
+
+typedef void (*CleanupProc)();
 
 EXTERN_C_END
 

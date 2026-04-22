@@ -16,6 +16,9 @@
 #define ADUC_V1_CONTRACT_MAJOR_VER 1 //!< The major version of the v1 contract model
 #define ADUC_V1_CONTRACT_MINOR_VER 0 //!< The minor version of the v1 contract model
 
+#define ADUC_V2_CONTRACT_MAJOR_VER 2 //!< The major version of the v2 contract model
+#define ADUC_V2_CONTRACT_MINOR_VER 0 //!< The minor version of the v2 contract model
+
 /**
  * @brief The Extenstion Contract Info struct that wraps the version for the contract information
  */
@@ -33,6 +36,13 @@ EXTERN_C_BEGIN
  * @returns true if a v1 contract version ; false otherwise
  */
 bool ADUC_ContractUtils_IsV1Contract(ADUC_ExtensionContractInfo* contractInfo);
+
+/**
+ * @brief Checks if @p contractInfo is a v2 contract
+ * @param contractInfo the contractInfo to check
+ * @returns true if a v2 contract version ; false otherwise
+ */
+bool ADUC_ContractUtils_IsV2Contract(ADUC_ExtensionContractInfo* contractInfo);
 
 EXTERN_C_END
 

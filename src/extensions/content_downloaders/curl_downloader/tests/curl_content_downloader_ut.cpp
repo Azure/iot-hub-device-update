@@ -470,7 +470,7 @@ TEST_CASE("Initialize returns success with non-null data")
     CHECK(result.ResultCode == ADUC_GeneralResult_Success);
 }
 
-TEST_CASE("GetContractInfo populates version 1.0 and returns success")
+TEST_CASE("GetContractInfo populates version 2.0 and returns success")
 {
     ADUC_ExtensionContractInfo contractInfo{};
     contractInfo.majorVer = 99;
@@ -479,8 +479,8 @@ TEST_CASE("GetContractInfo populates version 1.0 and returns success")
     ADUC_Result result = GetContractInfo(&contractInfo);
 
     CHECK(result.ResultCode == ADUC_GeneralResult_Success);
-    CHECK(contractInfo.majorVer == ADUC_V1_CONTRACT_MAJOR_VER);
-    CHECK(contractInfo.minorVer == ADUC_V1_CONTRACT_MINOR_VER);
+    CHECK(contractInfo.majorVer == ADUC_V2_CONTRACT_MAJOR_VER);
+    CHECK(contractInfo.minorVer == ADUC_V2_CONTRACT_MINOR_VER);
 }
 
 TEST_CASE("Download EXPORT delegates to Download_curl (nullptr entity)")

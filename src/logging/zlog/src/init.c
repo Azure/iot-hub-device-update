@@ -122,6 +122,12 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
  */
 void ADUC_Logging_Uninit()
 {
+    // Guard against double-uninit: if already at 0 or below, nothing to do.
+    if (atomic_load(&ref_count) <= 0)
+    {
+        return;
+    }
+
     // atomic_fetch_sub returns the previous value, so if it was > 1, there are still other users
     if (atomic_fetch_sub(&ref_count, 1) > 1)
     {

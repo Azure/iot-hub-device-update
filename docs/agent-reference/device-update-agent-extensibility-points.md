@@ -100,6 +100,10 @@ See [DeliveryOptimization github](https://github.com/microsoft/do-client) for mo
 
 The shared library must export the symbols with function symbols documented in [extension_content_downloader_export_symbols.h](../../src/extensions/inc/aduc/exports/extension_content_downloader_export_symbols.h)
 
+**V1 contract (1.0)** requires `Initialize(const char* initializeData)` and `Download(...)`.
+
+**V2 contract (2.0)** changes `Initialize` to accept a log level parameter — `Initialize(const char* initializeData, ADUC_LOG_SEVERITY logLevel)` — and adds an optional `Cleanup()` export called before the library is unloaded. V2 downloaders should report version 2.0 from `GetContractInfo`. See [extension-contract-versions](./extension-contract-versions.md) for details.
+
 Examples include [deliveryoptimization-content-downloader](../../src/extensions/content_downloaders/deliveryoptimization_downloader/deliveryoptimization_content_downloader.EXPORTS.cpp) and [curl-content-downloader](../../src/extensions/content_downloaders/curl_downloader/curl_content_downloader.EXPORTS.cpp).
 
 ## Download Handler extension type
