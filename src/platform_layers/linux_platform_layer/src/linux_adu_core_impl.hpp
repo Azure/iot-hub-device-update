@@ -10,7 +10,9 @@
 
 #include <atomic>
 #include <exception>
+#include <mutex>
 #include <thread>
+#include <utility>
 
 #include <time.h>
 
@@ -84,8 +86,10 @@ private:
                     workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
-            // Allow the thread to work independently of this main thread.
-            worker.detach();
+            // Transfer ownership of the worker thread to the platform layer instance so
+            // that its lifetime is bounded by the platform layer (avoids use-after-free
+            // of workCompletionData/workflowData if the agent shuts down mid-operation).
+            static_cast<LinuxPlatformLayer*>(token)->TrackWorker(std::move(worker));
 
             // Indicate that we've spun off a thread to do the actual work.
             return ADUC_Result{ ADUC_Result_Download_InProgress };
@@ -135,8 +139,10 @@ private:
                     workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
-            // Allow the thread to work independently of this main thread.
-            worker.detach();
+            // Transfer ownership of the worker thread to the platform layer instance so
+            // that its lifetime is bounded by the platform layer (avoids use-after-free
+            // of workCompletionData/workflowData if the agent shuts down mid-operation).
+            static_cast<LinuxPlatformLayer*>(token)->TrackWorker(std::move(worker));
 
             // Indicate that we've spun off a thread to do the actual work.
             result = { ADUC_Result_Backup_InProgress };
@@ -188,8 +194,10 @@ private:
                     workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
-            // Allow the thread to work independently of this main thread.
-            worker.detach();
+            // Transfer ownership of the worker thread to the platform layer instance so
+            // that its lifetime is bounded by the platform layer (avoids use-after-free
+            // of workCompletionData/workflowData if the agent shuts down mid-operation).
+            static_cast<LinuxPlatformLayer*>(token)->TrackWorker(std::move(worker));
 
             // Indicate that we've spun off a thread to do the actual work.
             result = { ADUC_Result_Install_InProgress };
@@ -239,8 +247,10 @@ private:
                     workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
-            // Allow the thread to work independently of this main thread.
-            worker.detach();
+            // Transfer ownership of the worker thread to the platform layer instance so
+            // that its lifetime is bounded by the platform layer (avoids use-after-free
+            // of workCompletionData/workflowData if the agent shuts down mid-operation).
+            static_cast<LinuxPlatformLayer*>(token)->TrackWorker(std::move(worker));
 
             // Indicate that we've spun off a thread to do the actual work.
             return ADUC_Result{ ADUC_Result_Apply_InProgress };
@@ -288,8 +298,10 @@ private:
                     workCompletionData->WorkCompletionToken, result, true /* isAsync */);
             } };
 
-            // Allow the thread to work independently of this main thread.
-            worker.detach();
+            // Transfer ownership of the worker thread to the platform layer instance so
+            // that its lifetime is bounded by the platform layer (avoids use-after-free
+            // of workCompletionData/workflowData if the agent shuts down mid-operation).
+            static_cast<LinuxPlatformLayer*>(token)->TrackWorker(std::move(worker));
 
             // Indicate that we've spun off a thread to do the actual work.
             return ADUC_Result{ ADUC_Result_Restore_InProgress };
@@ -419,6 +431,44 @@ private:
      * @brief Was Cancel called?
      */
     std::atomic_bool _IsCancellationRequested{ false };
+
+    /**
+     * @brief Serializes access to @p _activeWorker so that installation of a new
+     * worker thread and shutdown-time joining cannot race.
+     */
+    std::mutex _activeWorkerMutex;
+
+    /**
+     * @brief Tracks the currently running async worker thread spawned by one of
+     * the Download/Backup/Install/Apply/Restore callbacks.
+     *
+     * The async callbacks rely on pointers (workCompletionData, workflowData)
+     * that are owned by the agent and guaranteed valid only until
+     * WorkCompletionCallback fires. Previously the worker was detached, meaning
+     * agent shutdown could invalidate those pointers while the worker was still
+     * running (use-after-free). Keeping the thread joinable lets the destructor
+     * wait for it to finish before the platform layer (and anything it reaches
+     * into) goes away.
+     */
+    std::thread _activeWorker;
+
+    /**
+     * @brief Installs @p worker as the currently tracked async worker, joining
+     * any previous worker first so that at most one async operation is in
+     * flight and so that prior pointer captures are guaranteed released.
+     *
+     * The workflow engine only dispatches one async operation at a time, but we
+     * still join defensively to make the ownership model explicit.
+     */
+    void TrackWorker(std::thread&& worker)
+    {
+        std::lock_guard<std::mutex> lock(_activeWorkerMutex);
+        if (_activeWorker.joinable())
+        {
+            _activeWorker.join();
+        }
+        _activeWorker = std::move(worker);
+    }
 };
 } // namespace ADUC
 
