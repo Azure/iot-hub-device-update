@@ -1,0 +1,10 @@
+{
+  "extensions": [
+    {
+      "name": "swupdate_handler_v2",
+      "json_path": "../../src/extensions/step_handlers/swupdate_handler_v2/swupdate_handler_result_codes.json",
+      "header_path": "swupdate_handler_result_codes.h",
+      "description": "SWUpdate Handler v2 Extended Result Codes"
+    }
+  ]
+}

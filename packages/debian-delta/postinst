@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# postinst
+# post-install script for deviceupdate-agent-delta-handler debian package.
+# Registers the delta download handler extension with the ADU agent.
+# Runs post installing/unpacking of the debian package.
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+
+echo "******************** Running $0 $1 ***********************"
+
+set -e
+
+adu_bin_path=/usr/bin/AducIotAgent
+adu_extensions_sources_dir=/var/lib/adu/extensions/sources
+adu_delta_download_handler_file=libmicrosoft_delta_download_handler.so
+adu_delta_lib_dir=/usr/lib/adu-delta
+
+# Ensure delta library dependencies are in the library path
+if [ -d "$adu_delta_lib_dir" ]; then
+    echo "$adu_delta_lib_dir" > /etc/ld.so.conf.d/adu-delta.conf
+    ldconfig
+fi
+
+register_delta_download_handler() {
+    echo "Register delta download handler..."
+    if [ -f "$adu_extensions_sources_dir/$adu_delta_download_handler_file" ]; then
+        $adu_bin_path -l 2 --extension-type downloadHandler --extension-id "microsoft/delta:1" --register-extension $adu_extensions_sources_dir/$adu_delta_download_handler_file
+        echo "Delta download handler registered successfully."
+    else
+        echo "ERROR! $adu_extensions_sources_dir/$adu_delta_download_handler_file does not exist." >&2
+        return 1
+    fi
+}
+
+case "$1" in
+    configure)
+        register_delta_download_handler
+
+        # Notify user to restart the ADU agent
+        echo "============================================================"
+        echo
+        echo "     Delta download handler has been installed."
+        echo "     ADU Agent service should be restarted."
+        echo
+        echo "     Please run 'sudo systemctl restart deviceupdate-agent'"
+        echo
+        echo "============================================================"
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

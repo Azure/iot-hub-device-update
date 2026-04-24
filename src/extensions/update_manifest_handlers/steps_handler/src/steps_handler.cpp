@@ -7,6 +7,7 @@
  */
 #include "aduc/steps_handler.hpp"
 
+#include "aduc/aducsdk.h"
 #include "aduc/calloc_wrapper.hpp" // cstr_wrapper
 #include "aduc/component_enumerator_extension.hpp"
 #include "aduc/extension_manager.hpp"
@@ -151,6 +152,7 @@ ADUC_Result PrepareStepsWorkflowDataObject(ADUC_WorkflowHandle handle)
 
                 try
                 {
+                    workflow_set_service_status(handle, ADUC_ServiceStatus_Downloading);
                     result = ExtensionManager::Download(
                         &entity, handle, &Default_ExtensionManager_Download_Options, nullptr);
                 }
@@ -945,6 +947,8 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
                 // Skipping 'backup', 'install' and 'apply'.
                 goto instanceDone;
             }
+
+            workflow_set_service_status(handle, ADUC_ServiceStatus_Installing);
 
             //
             // Perform 'backup' action before install.

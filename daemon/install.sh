@@ -33,7 +33,7 @@ adu_group=adu
 sample_du_config=$(
     cat << END_OF_JSON
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "aduShellTrustedUsers": [
     "adu",
     "do"
@@ -52,7 +52,8 @@ sample_du_config=$(
       "manufacturer": <Place your device property manufacturer here>,
       "model": <Place your device property model here>
     }
-  ]
+  ],
+  "idlePauseMilliseconds": 30000
 }
 END_OF_JSON
 )

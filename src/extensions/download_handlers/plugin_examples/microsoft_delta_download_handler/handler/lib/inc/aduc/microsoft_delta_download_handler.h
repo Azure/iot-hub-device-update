@@ -48,4 +48,15 @@ ADUC_Result MicrosoftDeltaDownloadHandler_ProcessUpdate(
 ADUC_Result MicrosoftDeltaDownloadHandler_OnUpdateWorkflowCompleted(
     const ADUC_WorkflowHandle workflowHandle, const char* updateCacheBasePath);
 
+/**
+ * @brief Called to immediately cache source updates before system reboot/restart.
+ * Unconditionally moves update payloads from sandbox to cache without checking if already installed.
+ *
+ * @param workflowHandle The workflow handle.
+ * @param updateCacheBasePath The update cache base path. Use NULL for default.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result MicrosoftDeltaDownloadHandler_CacheSourceUpdate(
+    const ADUC_WorkflowHandle workflowHandle, const char* updateCacheBasePath);
+
 #endif /* __DELTA_DOWNLOAD_HANDLER_H__ */

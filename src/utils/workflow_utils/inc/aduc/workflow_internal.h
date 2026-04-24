@@ -16,6 +16,9 @@
 #include <azure_c_shared_utility/vector.h>
 #include <parson.h>
 
+// Forward declaration
+typedef void* ViewStateMgrHandle;
+
 /**
  * @brief A struct containing data needed for an update workflow.
  *
@@ -66,6 +69,7 @@ typedef struct tagADUC_Workflow
     ino_t* UpdateFileInodes;
 
     bool ForceUpdate; /**< Always process this workflow, even when the previous update was successful. */
+    void* vsm;
 } ADUC_Workflow;
 
 #endif // WORKFLOW_INTERNAL_H

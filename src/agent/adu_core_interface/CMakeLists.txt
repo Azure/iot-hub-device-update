@@ -39,6 +39,7 @@ target_link_libraries (
             aduc::reporting_utils
             aduc::rootkeypackage_utils
             aduc::rootkey_workflow
+            aduc::viewstatemgr
             aduc::workflow_data_utils
             aduc::workflow_utils
             Parson::parson)

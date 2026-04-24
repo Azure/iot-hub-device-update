@@ -58,6 +58,13 @@ public:
      */
     ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle workflowHandle) const noexcept;
     /**
+     * @brief CacheSourceUpdate method for DownloadHandlerPlugin
+     * Called to immediately cache source updates before reboot/restart
+     * @param workflowHandle workflow handle
+     * @return ADUC_Result result of the cache operation
+     */
+    ADUC_Result CacheSourceUpdate(const ADUC_WorkflowHandle workflowHandle) const noexcept;
+    /**
      * @brief GetContractInfo method for DownloadHandlerPlugin
      * @param[out] contractInfo The extension contract info
      * @return ADUC_Result result of the update

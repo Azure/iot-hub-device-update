@@ -186,6 +186,8 @@ typedef struct tagADUC_WorkflowData
     JSON_Array* Results;
 
     char* rootKeyPkgUrl; /**< The root key package URL. */
+    void* vsm; /**< The viewstate manager handle. */
+    bool receivedC2DMsg; /** Whether have received C2D message. */
 } ADUC_WorkflowData;
 
 #endif // ADUC_TYPES_WORKFLOW_H

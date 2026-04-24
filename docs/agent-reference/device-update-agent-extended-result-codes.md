@@ -1,8 +1,8 @@
-# Device Update Agent result codes and extended result codes
+# Device Update Agent Result Codes and Extended Result Codes
 
-## Result Code
+## Result Codes
 
-The followings are Result Code that visible in the Device or Module Twin:
+Result Codes are visible in the Device or Module Twin:
 
 | Result Code | C Macro                                             |
 | ----------- | --------------------------------------------------- |
@@ -33,25 +33,110 @@ See [adu_core.h](../../src/adu_types/inc/aduc/types/adu_core.h) for more detail.
 
 ## Extended Result Code Structure (32 bits)
 
-For each extended result code there is a facility which is made up of components which in turn have results. These facilities, components, and results are described in the [result_code.json](../../scripts/error_code_generator_defs/result_codes.json) file. The json file is processed when building with the `build.sh` script to generate the `result.h` file which is then used for compiling the project.
+Extended Result Codes (ERCs) are 32-bit values structured as:
 
-There is always a version of the `result.h` file checked-in to the GitHub repository [here](../../src/inc/aduc/result.h), however if there are changes made to the `result_codes.json` file you will need to re-generate the `result.h` file.
+```
+0xFCCRRRRR
+  │││└─────── Result Code (20 bits, 0x00000 - 0xFFFFF)
+  ││└──────── Component Code (8 bits, 0x00 - 0xFF)
+  │└───────── Facility Code (4 bits, 0x0 - 0xF)
+```
 
-## Decoding an Error Code
+Facilities, components, and results are defined in [result_codes.json](../../scripts/error_code_generator_defs/result_codes.json). This JSON file is processed during the CMake configure step to generate [result.h](../../src/inc/aduc/result.h).
 
-To decode an error code within the repository you have two options.
+## Extension Result Codes
 
-1. Manually decrypt the facility, component, and error code and look it up in the result_codes.json
-2. Take the whole Extended Result Code value in hexadecimal or decimal format (e.g. 807403522 or 0x30200002 ) and then search for the value in the `result.h` file. You should get the name of the error which can then be searched to find the origination point.
+Step handlers can define their own result codes in separate JSON files within their extension directories. These are automatically included in `result.h` through the extension configuration system.
 
-## Decoding Error Codes from a Subprocess or Child Process of Device Update
+**Note:** Currently, only the **SWUpdate Handler v2** (`microsoft/swupdate:2`) uses this extension mechanism. Other step handlers may adopt this pattern in the future.
 
-If the error code you are searching for does NOT come up from the search check to see if it is one that comes from a subcomponent of Device Update which does not record its result codes within Device Update (e.g. Delivery Optimization, APT Child Process, etc.).
+### SWUpdate Handler Result Codes
 
-Delivery Optmization Error Codes will have a facility code of `13` or `0xD` and extension codes will have reserved common error codes of 0-300 with their associated facility.
+The SWUpdate handler defines its result codes in:
+- **JSON Source:** `src/extensions/step_handlers/swupdate_handler_v2/swupdate_handler_result_codes.json`
+- **Generated Header:** `src/inc/aduc/swupdate_handler_result_codes.h`
 
-These will require manual decoding and use of the faciltiies and codes to check for their origin. Once you have found the facility and/or component you can search for the invokation of the static Extension and Child Proccess Error Code Generator macros in the code base to see where they originate from and/or how to handle them.
+Example SWUpdate handler result code format:
+- **Facility**: `0x3` (ADUC_FACILITY_EXTENSION_UPDATE_CONTENT_HANDLER)
+- **Component**: `0x01` (ADUC_CONTENT_HANDLER_SWUPDATE)
+- **Result**: Variable (defined in JSON)
+
+### Extension Configuration
+
+Extensions are registered in `scripts/error_code_generator_defs/extension_configs.json`:
+
+```json
+{
+  "extensions": [
+    {
+      "name": "swupdate_handler_v2",
+      "json_path": "../../src/extensions/step_handlers/swupdate_handler_v2/swupdate_handler_result_codes.json",
+      "header_path": "swupdate_handler_result_codes.h",
+      "description": "SWUpdate Handler v2 Extended Result Codes"
+    }
+  ]
+}
+```
+
+## Result Code Generation System
+
+### Generator Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `error_code_defs_generator.py` | Generates main `result.h` from `result_codes.json` |
+| `extension_result_code_generator.py` | Generates extension-specific headers (e.g., `swupdate_handler_result_codes.h`) |
+| `generate_all_extension_headers.py` | Wrapper that processes all extensions in `extension_configs.json` |
+
+### Build Integration
+
+The CMake build system automatically:
+1. Runs `generate_all_extension_headers.py` to create extension headers
+2. Runs `error_code_defs_generator.py` to create `result.h` with `#include` directives for extensions
+3. Uses smart-write caching to avoid regeneration if sources haven't changed
+
+### Adding New Result Codes to SWUpdate Handler
+
+1. Edit `src/extensions/step_handlers/swupdate_handler_v2/swupdate_handler_result_codes.json`
+2. Add new entry to `result_codes` array:
+   ```json
+   {
+       "name": "ADUC_ERC_SWUPDATE_HANDLER_YOUR_ERROR",
+       "value": 1027,
+       "description": "Description of your error"
+   }
+   ```
+3. Reconfigure CMake (headers regenerate automatically)
+4. Commit both JSON and generated header
+
+### Adding a New Extension (Future)
+
+1. Create extension folder with `<extension>_result_codes.json`
+2. Add entry to `scripts/error_code_generator_defs/extension_configs.json`
+3. Reconfigure CMake to regenerate headers
+
+## Decoding Error Codes
+
+### Option 1: Search by Hex Value
+Take the Extended Result Code (e.g., `0x30200002` or `807403522`) and search in:
+- `src/inc/aduc/result.h`
+- `src/inc/aduc/swupdate_handler_result_codes.h`
+
+### Option 2: Manual Decode
+Extract the facility, component, and result from the hex value and look up in the appropriate JSON file.
+
+### Subprocess Error Codes
+
+Some error codes come from subprocesses that don't record their codes in Device Update (e.g., Delivery Optimization, APT child processes).
+
+- **Delivery Optimization**: Facility code `0xD` (13)
+- **Extension common errors**: Result codes 0-300 with their facility
+
+Search for `MAKE_ADUC_EXTENDEDRESULTCODE_FOR_COMPONENT_*` macros in the codebase to find their origin.
 
 ## References
 
-See [result.h](../../src/inc/aduc/result.h) for a list of all `extended result codes`.
+- [result.h](../../src/inc/aduc/result.h) - All extended result codes
+- [result_codes.json](../../scripts/error_code_generator_defs/result_codes.json) - Core result code definitions
+- [extension_configs.json](../../scripts/error_code_generator_defs/extension_configs.json) - Extension registry
+- [swupdate_handler_result_codes.json](../../src/extensions/step_handlers/swupdate_handler_v2/swupdate_handler_result_codes.json) - SWUpdate handler result codes

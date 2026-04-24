@@ -40,6 +40,6 @@ If you want to use the Device Update Agent on an OS or platform that isn't suppo
 
 2. Once you get a basic IoT Hub Plug and Play Device Client sample up and running on the device, look at our current Device Update Agent implementation to implement over-the-air ‘Update Actions’ using the Device Update Service.
 
-* [Understand Device Update for Azure IoT Hub Agent](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-agent-overview)
-* [Understand how Device Update for IoT Hub uses IoT Plug and Play](https://docs.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play)
+* [Understand Device Update for Azure IoT Hub Agent](https://learn.microsoft.com/azure/iot-hub-device-update/device-update-agent-overview)
+* [Understand how Device Update for IoT Hub uses IoT Plug and Play](https://learn.microsoft.com/azure/iot-hub-device-update/device-update-plug-and-play)
 * [IoT Hub Device Update Public Preview source code](../../src)

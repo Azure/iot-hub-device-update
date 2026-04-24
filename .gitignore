@@ -53,4 +53,12 @@ out*/
 .vcpkg/
 .vcpkg-installed/
 
+## SDK Examples binaries
+simple_status_check
+status_monitor
+
+### Temporary files
+.tmp
+out_test_cache/
+**/.result_h_generation_cache
 *.gcov

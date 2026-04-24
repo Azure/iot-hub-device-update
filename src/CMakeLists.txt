@@ -67,15 +67,27 @@ else ()
 endif ()
 
 add_definitions (-DADUC_LOG_FOLDER="${ADUC_LOG_FOLDER}")
-add_definitions (-DADUC_ENABLE_CONSOLE_LOG=${ADUC_ENABLE_CONSOLE_LOG})
-add_definitions (-DADUC_ENABLE_FILE_LOG=${ADUC_ENABLE_FILE_LOG})
+# Convert CMake booleans (ON/OFF) to C preprocessor integers (1/0)
+# so that #if ADUC_ENABLE_CONSOLE_LOG / #if ADUC_ENABLE_FILE_LOG work correctly in init.c.
+if (ADUC_ENABLE_CONSOLE_LOG)
+    add_definitions (-DADUC_ENABLE_CONSOLE_LOG=1)
+else ()
+    add_definitions (-DADUC_ENABLE_CONSOLE_LOG=0)
+endif ()
+
+if (ADUC_ENABLE_FILE_LOG)
+    add_definitions (-DADUC_ENABLE_FILE_LOG=1)
+else ()
+    add_definitions (-DADUC_ENABLE_FILE_LOG=0)
+endif ()
 
 
 set (ADUC_TYPES_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
-set (ADUC_EXPORT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
+set (ADUC_EXPORT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/inc ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc ${CMAKE_CURRENT_SOURCE_DIR}/sdk/inc)
 set (ADU_SHELL_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/adu-shell/inc)
 set (ADU_EXTENSION_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/extensions/inc
-                            ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc)
+                            ${CMAKE_CURRENT_SOURCE_DIR}/adu_types/inc
+                            ${CMAKE_CURRENT_SOURCE_DIR}/extensions/step_handlers/swupdate_handler_v2/inc)
 
 add_subdirectory (libaducpal)
 add_subdirectory (agent)
@@ -95,7 +107,9 @@ add_subdirectory (extensions)
 add_subdirectory (logging)
 add_subdirectory (platform_layers)
 add_subdirectory (rootkey_workflow)
+add_subdirectory (sdk)
 add_subdirectory (utils)
+add_subdirectory (viewstatemgr)
 
 # Tools
 add_subdirectory (${CMAKE_SOURCE_DIR}/tools/rootkey_validator ${CMAKE_BINARY_DIR}/tools/rootkey_validator)

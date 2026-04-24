@@ -8,8 +8,11 @@
  */
 
 #include "aduc/source_update_cache_utils.h"
+#include <aduc/hash_utils.h> // ADUC_HashUtils_VerifyWithStrongestHash
+#include <aduc/logging.h> // Log_*
 #include <aduc/parser_utils.h> // ADUC_FileEntity_Uninit
 #include <aduc/path_utils.h> // PathUtils_SanitizePathSegment
+#include <aduc/result.h> // ADUC_ERC_*
 #include <aduc/string_c_utils.h> // IsNullOrEmpty
 #include <aduc/system_utils.h> // ADUC_SystemUtils_*
 #include <aduc/types/update_content.h> // ADUC_FileEntity
@@ -17,10 +20,12 @@
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy_s, strcat_s
 #include <azure_c_shared_utility/strings.h> // STRING_*
 #include <stdlib.h> // free, malloc
+#include <time.h> // clock_gettime, CLOCK_MONOTONIC
 
 #include <aducpal/stdio.h> //rename
 
 #include <libgen.h> // dirname
+#include <sys/statvfs.h> // statvfs
 
 EXTERN_C_BEGIN
 
@@ -159,31 +164,63 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
     ADUC_UpdateId* updateId = NULL;
     STRING_HANDLE updateCacheFilePath = NULL;
     char dirPath[1024] = "";
+    struct timespec funcStartTime, funcEndTime;
+    struct timespec fileStartTime, fileEndTime;
+    long totalCopyMs = 0;
+
+    clock_gettime(CLOCK_MONOTONIC, &funcStartTime);
 
     size_t countPayloads = workflow_get_update_files_count(workflowHandle);
+    Log_Info("[TIMING] MoveToUpdateCache: Processing %zu payload(s)", countPayloads);
+
     for (size_t index = 0; index < countPayloads; ++index)
     {
+        clock_gettime(CLOCK_MONOTONIC, &fileStartTime);
+
         if (!workflow_get_update_file(workflowHandle, index, &fileEntity))
         {
-            Log_Error("get update file %d", index);
+            Log_Error("[DELTA] Failed to get update file %d", index);
+            goto done;
+        }
+
+        // Validate fileEntity has hash information to prevent segfaults
+        if (fileEntity.Hash == NULL || fileEntity.HashCount == 0)
+        {
+            Log_Error("[DELTA] FileEntity %d has no hash information (Hash=%p, HashCount=%d)",
+                      index, fileEntity.Hash, fileEntity.HashCount);
+            result.ExtendedResultCode = ADUC_ERC_NOTRECOVERABLE;
+            goto done;
+        }
+
+        if (fileEntity.Hash[0].value == NULL || fileEntity.Hash[0].type == NULL)
+        {
+            Log_Error("[DELTA] FileEntity %d has invalid hash data (value=%p, type=%p)",
+                      index, fileEntity.Hash[0].value, fileEntity.Hash[0].type);
+            result.ExtendedResultCode = ADUC_ERC_NOTRECOVERABLE;
             goto done;
         }
 
         workflow_get_entity_workfolder_filepath(workflowHandle, &fileEntity, &sandboxUpdatePayloadFile);
 
-        result = workflow_get_expected_update_id(workflowHandle, &updateId);
-        if (IsAducResultCodeFailure(result.ResultCode))
+        if (sandboxUpdatePayloadFile == NULL)
         {
-            Log_Error("get updateId, erc 0x%08x", result.ExtendedResultCode);
+            Log_Error("[DELTA] Failed to get workfolder filepath for file %d", index);
+            result.ExtendedResultCode = ADUC_ERC_NOTRECOVERABLE;
             goto done;
         }
 
-        // When update is already installed, payloads would not be downloaded but it would still
-        // attempt to move to cache with OnUpdateWorkflowCompleted contract call because overall
-        // is it Apply Success result, so guard against non-existent sandbox file.
-        if (!SystemUtils_IsFile(STRING_c_str(sandboxUpdatePayloadFile), NULL))
+        result = workflow_get_expected_update_id(workflowHandle, &updateId);
+        if (IsAducResultCodeFailure(result.ResultCode))
         {
-            result.ExtendedResultCode = ADUC_ERC_MISSING_SOURCE_SANDBOX_FILE;
+            Log_Error("[DELTA] Failed to get updateId, erc 0x%08x", result.ExtendedResultCode);
+            goto done;
+        }
+
+        if (updateId == NULL || updateId->Provider == NULL)
+        {
+            Log_Error("[DELTA] Invalid updateId (updateId=%p, Provider=%p)",
+                      updateId, updateId ? updateId->Provider : NULL);
+            result.ExtendedResultCode = ADUC_ERC_NOTRECOVERABLE;
             goto done;
         }
 
@@ -197,6 +234,39 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
         {
             result.ExtendedResultCode = ADUC_ERC_MOVE_CREATE_CACHE_PATH;
             goto done;
+        }
+
+        // Check if file already exists in cache with valid hash
+        // This handles the case where CacheSourceUpdate was called before reboot
+        // and OnUpdateWorkflowCompleted is now being called after reboot
+        if (SystemUtils_IsFile(STRING_c_str(updateCacheFilePath), NULL))
+        {
+            // Verify the cached file hash matches the expected hash from FileEntity
+            // Note: fileEntity.Hash was already validated at the start of the loop
+            if (ADUC_HashUtils_VerifyWithStrongestHash(
+                    STRING_c_str(updateCacheFilePath), fileEntity.Hash, fileEntity.HashCount))
+            {
+                // Cache file exists and hash is valid - already cached correctly
+                Log_Info(
+                    "[DELTA] File already cached at '%s' with valid hash - skipping",
+                    STRING_c_str(updateCacheFilePath));
+
+                ADUC_FileEntity_Uninit(&fileEntity);
+                ADUC_UpdateId_UninitAndFree(updateId);
+                updateId = NULL;
+                STRING_delete(updateCacheFilePath);
+                updateCacheFilePath = NULL;
+                STRING_delete(sandboxUpdatePayloadFile);
+                sandboxUpdatePayloadFile = NULL;
+                continue; // Skip to next file
+            }
+            else
+            {
+                // Cache file exists but hash verification failed - will overwrite
+                Log_Warn(
+                    "[DELTA] Cache file exists at '%s' but hash verification failed - will overwrite",
+                    STRING_c_str(updateCacheFilePath));
+            }
         }
 
         if (strcpy_s(dirPath, ARRAY_SIZE(dirPath), STRING_c_str(updateCacheFilePath)) != 0)
@@ -218,6 +288,23 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
             goto done;
         }
 
+        // Check available disk space at destination
+        struct statvfs vfs;
+        if (statvfs(dirPathCache, &vfs) == 0)
+        {
+            unsigned long long availableBytes = (unsigned long long)vfs.f_bavail * vfs.f_frsize;
+            double availableMB = availableBytes / (1024.0 * 1024.0);
+            Log_Info(
+                "[DELTA] Destination '%s' has %.2f MB available (%.2f GB)",
+                dirPathCache,
+                availableMB,
+                availableMB / 1024.0);
+        }
+        else
+        {
+            Log_Warn("[DELTA] Failed to get disk space for destination '%s', errno: %d", dirPathCache, errno);
+        }
+
         // First try to move the file.
         // errno EXDEV would be common if copying across different mount points.
         // For any failure, it falls back to copy.
@@ -227,19 +314,137 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
         res = ADUCPAL_rename(STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
         if (res != 0)
         {
-            Log_Warn("rename, errno %d", errno);
+            Log_Warn("[DELTA] Rename failed with errno %d (EXDEV=%d) - falling back to copy", errno, EXDEV);
 
-            // fallback to copy
-            //
-            if (ADUC_SystemUtils_CopyFileToDir(
-                    STRING_c_str(sandboxUpdatePayloadFile), dirPathCache, false /* overwriteExistingFile */)
-                != 0)
+            // fallback to file-to-file copy with explicit target path
+            // Note: Cannot use CopyFileToDir as it uses basename from source which would not match our hash-based filename
+            FILE* sourceFile = fopen(STRING_c_str(sandboxUpdatePayloadFile), "rb");
+            if (sourceFile == NULL)
             {
-                Log_Error("Copy Failed");
+                Log_Error("[DELTA] Failed to open source file '%s' for reading: errno %d", STRING_c_str(sandboxUpdatePayloadFile), errno);
                 result.ExtendedResultCode = ADUC_ERC_MOVE_COPYFALLBACK;
                 goto done;
             }
+
+            FILE* destFile = fopen(STRING_c_str(updateCacheFilePath), "wb");
+            if (destFile == NULL)
+            {
+                Log_Error("[DELTA] Failed to open destination file '%s' for writing: errno %d", STRING_c_str(updateCacheFilePath), errno);
+                fclose(sourceFile);
+                result.ExtendedResultCode = ADUC_ERC_MOVE_COPYFALLBACK;
+                goto done;
+            }
+
+            // Copy file contents
+            unsigned char buffer[8192];
+            size_t bytesRead;
+            bool copyFailed = false;
+            while ((bytesRead = fread(buffer, 1, sizeof(buffer), sourceFile)) > 0)
+            {
+                if (fwrite(buffer, 1, bytesRead, destFile) != bytesRead)
+                {
+                    Log_Error("[DELTA] Write failed during copy to '%s': errno %d", STRING_c_str(updateCacheFilePath), errno);
+                    copyFailed = true;
+                    break;
+                }
+            }
+
+            // Check for read errors after loop
+            if (ferror(sourceFile))
+            {
+                Log_Error("[DELTA] Read error during copy from '%s': errno %d", STRING_c_str(sandboxUpdatePayloadFile), errno);
+                copyFailed = true;
+            }
+
+            fclose(sourceFile);
+            fclose(destFile);
+
+            if (copyFailed)
+            {
+                // Clean up the partially written destination file
+                Log_Warn("[DELTA] Removing incomplete destination file: '%s'", STRING_c_str(updateCacheFilePath));
+                unlink(STRING_c_str(updateCacheFilePath));
+                result.ExtendedResultCode = ADUC_ERC_MOVE_COPYFALLBACK;
+                goto done;
+            }
+
+            Log_Info("[DELTA] File copy completed from '%s' to '%s'", STRING_c_str(sandboxUpdatePayloadFile), STRING_c_str(updateCacheFilePath));
+
+            // Verify the copied file has the expected hash to ensure copy succeeded
+            // Note: fileEntity.Hash was already validated at the start of the loop
+            Log_Debug("Verifying copied file integrity: '%s'", STRING_c_str(updateCacheFilePath));
+            if (!ADUC_HashUtils_VerifyWithStrongestHash(
+                    STRING_c_str(updateCacheFilePath),
+                    fileEntity.Hash,
+                    fileEntity.HashCount))
+            {
+                Log_Error("[DELTA] Hash verification failed after copy - file may be corrupted or zero-length");
+                // Clean up the invalid file
+                Log_Warn("[DELTA] Removing file with invalid hash: '%s'", STRING_c_str(updateCacheFilePath));
+                unlink(STRING_c_str(updateCacheFilePath));
+                result.ExtendedResultCode = ADUC_ERC_MOVE_HASH_VERIFICATION_FAILED;
+                goto done;
+            }
+            Log_Info("[DELTA] Copy and hash verification succeeded for '%s'", STRING_c_str(updateCacheFilePath));
         }
+
+        // Create metadata .info file
+        STRING_HANDLE infoFilePath = STRING_construct(STRING_c_str(updateCacheFilePath));
+        if (infoFilePath != NULL)
+        {
+            if (STRING_concat(infoFilePath, ".info") == 0)
+            {
+                // Get current timestamp
+                time_t now = time(NULL);
+                struct tm* tm_info = gmtime(&now);
+                char timestamp[64];
+                strftime(timestamp, sizeof(timestamp), "%Y-%m-%dT%H:%M:%SZ", tm_info);
+
+                // Build JSON metadata
+                char metadata[2048];
+                snprintf(
+                    metadata,
+                    sizeof(metadata),
+                    "{\n"
+                    "  \"originalFilename\": \"%s\",\n"
+                    "  \"cachedTimestamp\": \"%s\",\n"
+                    "  \"provider\": \"%s\",\n"
+                    "  \"sourceHash\": \"%s\",\n"
+                    "  \"hashAlgorithm\": \"%s\",\n"
+                    "  \"fileSize\": %zu,\n"
+                    "  \"sourceUpdateId\": {\n"
+                    "    \"provider\": \"%s\",\n"
+                    "    \"name\": \"%s\",\n"
+                    "    \"version\": \"%s\"\n"
+                    "  }\n"
+                    "}\n",
+                    fileEntity.TargetFilename,
+                    timestamp,
+                    provider,
+                    hash,
+                    alg,
+                    fileEntity.SizeInBytes,
+                    updateId->Provider,
+                    updateId->Name,
+                    updateId->Version);
+
+                if (ADUC_SystemUtils_WriteStringToFile(STRING_c_str(infoFilePath), metadata) == 0)
+                {
+                    Log_Info("[DELTA] Created metadata file: %s", STRING_c_str(infoFilePath));
+                }
+                else
+                {
+                    Log_Warn("[DELTA] Failed to create metadata file: %s", STRING_c_str(infoFilePath));
+                }
+            }
+            STRING_delete(infoFilePath);
+        }
+
+        clock_gettime(CLOCK_MONOTONIC, &fileEndTime);
+        long fileMs = (fileEndTime.tv_sec - fileStartTime.tv_sec) * 1000 +
+                      (fileEndTime.tv_nsec - fileStartTime.tv_nsec) / 1000000;
+        totalCopyMs += fileMs;
+        Log_Info("[TIMING] MoveToUpdateCache: File %zu cached in %ld ms", index, fileMs);
 
         ADUC_FileEntity_Uninit(&fileEntity);
 
@@ -254,6 +459,12 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
     }
 
     result.ResultCode = ADUC_Result_Success;
+
+    clock_gettime(CLOCK_MONOTONIC, &funcEndTime);
+    long totalMs = (funcEndTime.tv_sec - funcStartTime.tv_sec) * 1000 +
+                   (funcEndTime.tv_nsec - funcStartTime.tv_nsec) / 1000000;
+    Log_Info("[TIMING] MoveToUpdateCache: Completed %zu file(s) in %ld ms total (copy time: %ld ms)",
+             countPayloads, totalMs, totalCopyMs);
 
 done:
     ADUC_FileEntity_Uninit(&fileEntity);

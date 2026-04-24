@@ -112,10 +112,10 @@ set_cache_with_env_or_default (ADUC_VERSION_MAJOR "1" STRING
 set_cache_with_env_or_default (ADUC_VERSION_MINOR "2" STRING
                                "The minor part of the semantic version")
 
-set_cache_with_env_or_default (ADUC_VERSION_PATCH "0" STRING
+set_cache_with_env_or_default (ADUC_VERSION_PATCH "1" STRING
                                "The patch part of the semantic version")
 
-set_cache_with_env_or_default (ADUC_VERSION_PRERELEASE "" STRING
+set_cache_with_env_or_default (ADUC_VERSION_PRERELEASE "private-preview" STRING
                                "The pre-release part of the semantic version")
 
 set_cache_with_env_or_default (ADUC_VERSION_BUILD "" STRING
@@ -158,6 +158,11 @@ set (
         STRING
         "Path to the folder containing data file(s) for the ADU Agent. e.g. installedcriteria file."
 )
+
+set (
+    ADUC_DATASTORE_DIRECTORY
+    "/var/lib/adu/datastore"
+    CACHE STRING "Directory path to the datastore file.")
 
 set (
     ADUC_TEST_DATA_PATH_SEGMENT
@@ -258,7 +263,12 @@ set (
 set (
     ADUC_COMMANDS_FIFO_NAME
     "${ADUC_DATA_FOLDER}/du-commands.fifo"
-    CACHE STRING "The named-pipe for commands IPC.")
+    CACHE STRING "The named-pipe for commands IPC for legacy, pre-versioned api.")
+
+set (
+    ADUC_API_DEFAULT_FIFO_PATH
+    "${ADUC_DATA_FOLDER}/api/apireq.fifo"
+    CACHE STRING "The default named-pipe for incoming version 1 Cross Process API request.")
 
 set (
     ADUC_ROOTKEY_PKG_URL_OVERRIDE
@@ -480,6 +490,15 @@ get_filename_component (ADUC_PATH_TO_ERROR_CODE_JSON_FILE
 get_filename_component (ADUC_GENERATED_ERROR_CODE_FILE_PATH
     "${ADUC_GENERATED_ERROR_CODE_FOLDER_PATH}/${ADUC_ERROR_CODE_DEFS_FILENAME}" ABSOLUTE)
 
+# Extension Configurations
+set (
+    ADUC_EXTENSIONS_CONFIG_FILENAME
+    "extension_configs.json"
+    CACHE STRING "Name of the extension configurations JSON file")
+
+cmake_path (SET ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/${ADUC_EXTENSIONS_CONFIG_FILENAME}")
+
 #######
 # BEGIN Delta Downloader Handler Source Update Cache Configurations
 
@@ -517,12 +536,18 @@ option (ADUC_ENABLE_E2E_TESTING "Enable e2e test pipeline settings" OFF)
 option (ADUC_ENABLE_SRVC_E2E_TESTING "Enable service side test agent settings" OFF)
 option (ADUC_ROOTKEY_PKG_DOWNLOAD_WITH_CURL
         "Use Curl to download the Rootkey Package instead of DeliveryOptimization agent" OFF)
+option (
+    ADUC_BUILD_DELTA_HANDLER
+    "Build the Microsoft Delta Download Handler with iot-hub-device-update-delta library support"
+    OFF)
 option (ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION
         "Build with Delivery Optimization support" ON)
 option (ADUC_ENABLE_CONSOLE_LOG "Enable console logging" ON)
 option (ADUC_ENABLE_FILE_LOG "Enable file logging" ON)
 
 ### End CMake Options
+
+### End External Dependencies
 
 # Construct the absolute path to the adu configuration file.
 get_filename_component (ADUC_CONF_FILE_PATH "${ADUC_CONF_FOLDER}/${ADUC_CONF_FILE}" ABSOLUTE)
@@ -540,26 +565,134 @@ set (
     "${DIAGNOSTICS_CONFIG_FILE_PATH}"
     CACHE STRING "Path to the diagnostics configuration file.")
 
-# Generate the error code definition file
+# Generate the error code definition file with hash-based caching
 find_package (
     Python3
     COMPONENTS Interpreter
     REQUIRED)
 
 set (ERROR_CODE_GENERATOR_ARGS "--json-file-path" "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}"
-                               "--result-file-path" "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
+                               "--result-file-path" "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
+                               "--extensions-config" "${ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE}")
 
-execute_process (
-    COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
-            ${ERROR_CODE_GENERATOR_ARGS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
+# Cache file to track source file changes
+set (RESULT_H_CACHE_FILE "${CMAKE_BINARY_DIR}/.result_h_generation_cache")
 
-if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
+# Option to force regeneration
+option (ADUC_FORCE_REGENERATE_RESULT_H
+        "Force regeneration of result.h even if sources haven't changed" OFF)
+
+# Calculate SHA256 hashes of all source files that affect generation
+file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" JSON_FILE_HASH)
+file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}" SCRIPT_FILE_HASH)
+file (SHA256 "${ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE}" EXTENSIONS_CONFIG_HASH)
+
+# Include extension generator scripts and per-extension JSON files in hash
+cmake_path (SET _EXT_RESULT_CODE_GEN NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/extension_result_code_generator.py")
+cmake_path (SET _EXT_HEADERS_WRAPPER NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/generate_all_extension_headers.py")
+set (_EXT_GENERATOR_HASHES "")
+if (EXISTS "${_EXT_RESULT_CODE_GEN}")
+    file (SHA256 "${_EXT_RESULT_CODE_GEN}" _H)
+    string (APPEND _EXT_GENERATOR_HASHES "|${_H}")
+endif ()
+if (EXISTS "${_EXT_HEADERS_WRAPPER}")
+    file (SHA256 "${_EXT_HEADERS_WRAPPER}" _H)
+    string (APPEND _EXT_GENERATOR_HASHES "|${_H}")
+endif ()
+file (GLOB _EXT_JSON_FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/step_handlers/*/swupdate_handler_result_codes.json"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/step_handlers/*/*_result_codes.json")
+foreach (_EXT_JSON IN LISTS _EXT_JSON_FILES)
+    file (SHA256 "${_EXT_JSON}" _H)
+    string (APPEND _EXT_GENERATOR_HASHES "|${_H}")
+endforeach ()
+
+set (SOURCE_FILES_HASH "${JSON_FILE_HASH}|${SCRIPT_FILE_HASH}|${EXTENSIONS_CONFIG_HASH}${_EXT_GENERATOR_HASHES}")
+
+# Determine if result.h needs to be regenerated
+set (NEED_REGENERATE_RESULT_H TRUE)
+set (REGENERATE_REASON "result.h does not exist")
+
+if (NOT ADUC_FORCE_REGENERATE_RESULT_H)
+    if (EXISTS "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}")
+        if (EXISTS "${RESULT_H_CACHE_FILE}")
+            file (READ "${RESULT_H_CACHE_FILE}" CACHED_HASH)
+            if (CACHED_HASH STREQUAL SOURCE_FILES_HASH)
+                set (NEED_REGENERATE_RESULT_H FALSE)
+                message (STATUS "result.h is up-to-date (sources unchanged)")
+            else ()
+                set (REGENERATE_REASON "source files changed (hash mismatch)")
+            endif ()
+        else ()
+            set (REGENERATE_REASON "cache file missing")
+        endif ()
+    endif ()
+else ()
+    set (REGENERATE_REASON "forced regeneration (-DADUC_FORCE_REGENERATE_RESULT_H=ON)")
+endif ()
+
+if (NEED_REGENERATE_RESULT_H)
+    message (STATUS "Generating result.h from result_codes.json (reason: ${REGENERATE_REASON})...")
+
+    # First, generate extension result code headers using the wrapper script
+    cmake_path (SET ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER NORMALIZE
+                "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/generate_all_extension_headers.py")
+
+    if (EXISTS "${ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER}")
+        message (STATUS "Generating extension result code headers...")
+        execute_process (
+            COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_EXTENSION_HEADERS_GENERATOR_WRAPPER}
+                    --config "${ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE}"
+                    --source-dir "${CMAKE_CURRENT_SOURCE_DIR}"
+            RESULT_VARIABLE GENERATE_EXTENSION_HEADERS_RESULT
+            OUTPUT_VARIABLE EXTENSION_HEADERS_OUTPUT
+            ERROR_VARIABLE EXTENSION_HEADERS_ERROR)
+
+        if (NOT GENERATE_EXTENSION_HEADERS_RESULT EQUAL "0")
+            message (WARNING "Extension header generation failed:\n${EXTENSION_HEADERS_OUTPUT}\n${EXTENSION_HEADERS_ERROR}")
+        else ()
+            message (STATUS "Extension headers generation output:\n${EXTENSION_HEADERS_OUTPUT}")
+        endif ()
+    endif ()
+
+    # Then generate result.h
+    execute_process (
+        COMMAND ${Python3_EXECUTABLE} ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}
+                ${ERROR_CODE_GENERATOR_ARGS}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        RESULT_VARIABLE GENERATE_ERROR_CODE_DEFS_RESULT)
+
+    if (NOT GENERATE_ERROR_CODE_DEFS_RESULT EQUAL "0")
+        message (
+            FATAL_ERROR
+                "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
+        )
+    endif ()
+
+    # Format the generated result.h file with clang-format if available
+    find_program (CLANG_FORMAT_EXECUTABLE NAMES clang-format)
+    if (CLANG_FORMAT_EXECUTABLE)
+        message (STATUS "Running clang-format on generated result.h")
+        execute_process (
+            COMMAND ${CLANG_FORMAT_EXECUTABLE} -i "${ADUC_GENERATED_ERROR_CODE_FILE_PATH}"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE CLANG_FORMAT_RESULT)
+
+        if (NOT CLANG_FORMAT_RESULT EQUAL "0")
+            message (WARNING "clang-format failed on result.h, but continuing build")
+        endif ()
+    else ()
+        message (STATUS "clang-format not found, skipping formatting of result.h")
+    endif ()
+
+    # Save the hash to cache file after successful generation
+    file (WRITE "${RESULT_H_CACHE_FILE}" "${SOURCE_FILES_HASH}")
+    message (STATUS "result.h generated successfully and cache updated")
+else ()
     message (
-        FATAL_ERROR
-            "Failed to generate error code definition file using ${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}"
-    )
+        STATUS "Skipping result.h regeneration (use -DADUC_FORCE_REGENERATE_RESULT_H=ON to force)")
 endif ()
 
 if (ADUC_BUILD_UNIT_TESTS)

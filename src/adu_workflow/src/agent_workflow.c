@@ -28,14 +28,20 @@
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
+#include "aduc/timer.h"
 #include "aduc/types/workflow.h"
+#include "aduc/viewstatemgr.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "root_key_util.h" // RootKeyUtility_GetReportingErc
 
 #include <pthread.h>
+#include <stdbool.h>
 
 // fwd decl
+static void s_onPauseTimerStart();
+static void s_onPauseTimerStop();
+static void s_onPauseTimerTimeout();
 void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 
 // This lock is used for critical sections where main and worker thread could read/write to ADUC_workflowData
@@ -44,6 +50,13 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
 //     * (main thread and worker thread) ADUC_Workflow_WorkCompletionCallback
 //         - when asynchronously called (worker thread) it takes the lock
 static pthread_mutex_t s_workflow_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static AducTimerSignals s_pause_timer_signals = {
+    .onStart = s_onPauseTimerStart,
+    .onStop = s_onPauseTimerStop,
+    .onTimeout = s_onPauseTimerTimeout,
+};
+AducTimer g_idle_pause_timer = { 0 };
 
 static inline void s_workflow_lock(void)
 {
@@ -340,6 +353,23 @@ const ADUC_WorkflowHandlerMapEntry* GetWorkflowHandlerMapEntryForAction(ADUCITF_
     return entry;
 }
 
+int ADUC_Workflow_Init()
+{
+    int result = AducTimer_init(&g_idle_pause_timer, s_pause_timer_signals, 200 /* update_interval_ms */);
+    if (result != 0)
+    {
+        Log_Error("AducTimer_init failed: %d", result);
+        return result;
+    }
+
+    return 0;
+}
+
+void ADUC_Workflow_Uninit()
+{
+    AducTimer_uninit(&g_idle_pause_timer);
+}
+
 /**
  * @brief Called regularly to allow for cooperative multitasking during work.
  *
@@ -350,7 +380,6 @@ void ADUC_Workflow_DoWork(ADUC_WorkflowData* workflowData)
     // As this method will be called many times, rather than call into adu_core_export_helpers to call into upper-layer,
     // just call directly into upper-layer here.
     const ADUC_UpdateActionCallbacks* updateActionCallbacks = &(workflowData->UpdateActionCallbacks);
-
     updateActionCallbacks->DoWorkCallback(updateActionCallbacks->PlatformLayerHandle, workflowData);
 }
 
@@ -455,6 +484,7 @@ void ADUC_Workflow_HandlePropertyUpdate(
         ADUC_Workflow_SetUpdateStateWithResult(currentWorkflowData, ADUCITF_State_Failed, result);
         return;
     }
+    workflow_set_vsm(nextWorkflow, currentWorkflowData->vsm);
 
     ADUCITF_UpdateAction nextUpdateAction = workflow_get_action(nextWorkflow);
 
@@ -735,6 +765,9 @@ void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData)
         Cleanup_Previous_Sandboxes(workflowData);
     }
 
+    ADUC_WorkflowData_SetReceivedC2D(workflowData);
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Initializing);
+
     //
     // Transition to the next phase for this workflow
     //
@@ -991,7 +1024,6 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
                     // Reset workflow state to process deployment and transfer
                     // the deferred workflow to current.
                     workflow_update_for_replacement(workflowData->WorkflowHandle);
-
                 }
                 else
                 {
@@ -1237,6 +1269,58 @@ static void CallDownloadHandlerOnUpdateWorkflowCompleted(const ADUC_WorkflowHand
 }
 
 /**
+ * @brief For each update payload that has a DownloadHandlerId, load the handler and call CacheSourceUpdate.
+ * This is called BEFORE reboot/restart to ensure source files are cached while sandbox still exists.
+ *
+ * @param workflowHandle The workflow handle.
+ * @details This function will not fail but if a download handler's CacheSourceUpdate fails, side effects include logging the error result codes.
+ */
+static void CallDownloadHandlerCacheSourceUpdate(const ADUC_WorkflowHandle workflowHandle)
+{
+    size_t payloadCount = workflow_get_update_files_count(workflowHandle);
+    for (size_t i = 0; i < payloadCount; ++i)
+    {
+        ADUC_Result result;
+        memset(&result, 0, sizeof(result));
+
+        ADUC_FileEntity fileEntity;
+        memset(&fileEntity, 0, sizeof(fileEntity));
+
+        if (!workflow_get_update_file(workflowHandle, i, &fileEntity))
+        {
+            continue;
+        }
+
+        if (IsNullOrEmpty(fileEntity.DownloadHandlerId))
+        {
+            ADUC_FileEntity_Uninit(&fileEntity);
+            continue;
+        }
+
+        // NOTE: do not free the handle as it is owned by the DownloadHandlerFactory.
+        DownloadHandlerHandle* handle = ADUC_DownloadHandlerFactory_LoadDownloadHandler(fileEntity.DownloadHandlerId);
+        ADUC_FileEntity_Uninit(&fileEntity);
+        if (handle != NULL)
+        {
+            result = ADUC_DownloadHandlerPlugin_CacheSourceUpdate(handle, workflowHandle);
+            if (IsAducResultCodeFailure(result.ResultCode))
+            {
+                Log_Warn(
+                    "CacheSourceUpdate, result 0x%08x, erc 0x%08x",
+                    result.ResultCode,
+                    result.ExtendedResultCode);
+
+                workflow_add_erc(workflowHandle, result.ExtendedResultCode);
+            }
+            else
+            {
+                Log_Info("CacheSourceUpdate succeeded before reboot");
+            }
+        }
+    }
+}
+
+/**
  * @brief Set a new update state.
  *
  * @param[in,out] workflowData Workflow data object.
@@ -1336,6 +1420,33 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
         Log_Info("UpdateAction: Idle. WorkFolder is not valid. Nothing to destroy.");
     }
 
+    if (!ADUC_WorkflowData_GetReceivedC2D(workflowData))
+    {
+        // if we have not received C2D message yet, then we want the external
+        // viewstate to indicate to callers that we are still initializing
+        // so that they do not falsely think that agent is not busy since
+        // it has not yet attempted to see if there is an update deployment
+        // available.
+        viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Initializing);
+    }
+    else
+    {
+        const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+        if (config != NULL && config->idlePauseMilliseconds > 0)
+        {
+            Log_Info("Starting idle pause timer with %d ms timeout ...", config->idlePauseMilliseconds);
+            AducTimer_Start(&g_idle_pause_timer, config->idlePauseMilliseconds);
+
+            // Set view state manager to Paused when idle pause timer starts
+            viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Paused);
+        }
+        else
+        {
+            // No pause timer configured, set directly to Idle
+            viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Idle);
+        }
+    }
+
     //
     // Notify callback that we're now back to idle.
     //
@@ -1360,16 +1471,12 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
 ADUC_Result ADUC_Workflow_MethodCall_ProcessDeployment(ADUC_MethodCall_Data* methodCallData)
 {
     ADUC_WorkflowData* workflowData = methodCallData->WorkflowData;
-
-    ADUC_Result result = { .ResultCode = ADUC_Result_Success , .ExtendedResultCode = 0 };
+    ADUC_Result result = { .ResultCode = ADUC_Result_Success, .ExtendedResultCode = 0 };
     Log_Info("Workflow step: ProcessDeployment");
-
-    //
-    // Shouldn't have to handle anything else here. WorkflowData already made?
-    //
-
-
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DeploymentInProgress);
+
+    // Set view state manager to Initializing when deployment starts
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Initializing);
 
     return result;
 }
@@ -1379,7 +1486,6 @@ void ADUC_Workflow_MethodCall_ProcessDeployment_Complete(ADUC_MethodCall_Data* m
     UNREFERENCED_PARAMETER(methodCallData);
     UNREFERENCED_PARAMETER(result);
 }
-
 
 /**
  * @brief Called to do download.
@@ -1430,6 +1536,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Download(ADUC_MethodCall_Data* methodCallDa
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_DownloadStarted);
 
+    // Set view state manager to Downloading when download starts
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Downloading);
+
     result = updateActionCallbacks->DownloadCallback(
         updateActionCallbacks->PlatformLayerHandle, &(methodCallData->WorkCompletionData), workflowData);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -1475,6 +1584,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Install(ADUC_MethodCall_Data* methodCallDat
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_InstallStarted);
 
+    // Set view state manager to Installing when install starts
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Installing);
+
     Log_Info("Calling InstallCallback");
 
     result = updateActionCallbacks->InstallCallback(
@@ -1494,6 +1606,9 @@ void ADUC_Workflow_MethodCall_Install_Complete(ADUC_MethodCall_Data* methodCallD
         // If 'install' indicated a reboot required result from apply, go ahead and reboot.
         Log_Info("Install indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        // Set view state manager to Rebooting when reboot is required
+        viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Rebooting);
 
         int success = ADUC_MethodCall_RebootSystem();
         if (success == 0)
@@ -1553,6 +1668,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Backup(ADUC_MethodCall_Data* methodCallData
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_BackupStarted);
 
+    // Set view state manager to Installing when backup starts
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Installing);
+
     Log_Info("Calling BackupCallback");
 
     result = updateActionCallbacks->BackupCallback(
@@ -1594,6 +1712,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Apply(ADUC_MethodCall_Data* methodCallData)
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_ApplyStarted);
 
+    // Set view state manager to Installing when apply starts
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Applying);
+
     Log_Info("Calling ApplyCallback");
 
     result = updateActionCallbacks->ApplyCallback(
@@ -1609,13 +1730,56 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         || workflow_is_reboot_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a reboot required result from apply, go ahead and reboot.
-        Log_Info("Apply indicated success with RebootRequired - rebooting system now");
+        Log_Info("Apply indicated success with RebootRequired - creating reboot lock file");
+
+        // Create lock file with agent PID to signal reboot wrapper
+        FILE* lockFile = fopen("/var/run/adu-agent-reboot.lock", "w");
+        if (lockFile != NULL)
+        {
+            fprintf(lockFile, "%d\n", getpid());
+            fclose(lockFile);
+            Log_Info("Created reboot lock file with PID %d", getpid());
+        }
+        else
+        {
+            Log_Warn("Failed to create reboot lock file, proceeding anyway");
+        }
+
+        // Cache source updates BEFORE rebooting while sandbox still exists
+        Log_Info("Caching source updates before reboot");
+        CallDownloadHandlerCacheSourceUpdate(methodCallData->WorkflowData->WorkflowHandle);
+
+        // Report reboot pending status to cloud
+        Log_Info("Reporting reboot pending status to cloud");
+        ADUC_Result rebootPendingResult = { ADUC_Result_Apply_RebootPending, 0 };
+        ADUC_Workflow_WorkCompletionCallback(methodCallData, rebootPendingResult, false);
+
+        // Remove lock file to signal reboot wrapper it can proceed
+        Log_Info("Removing reboot lock file to signal wrapper");
+        if (remove("/var/run/adu-agent-reboot.lock") != 0)
+        {
+            Log_Warn("Failed to remove reboot lock file");
+        }
+
+        Log_Info("Initiating system reboot");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        // Set view state manager to Rebooting when reboot is required
+        viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Rebooting);
 
         int success = ADUC_MethodCall_RebootSystem();
         if (success == 0)
         {
             methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_InProgress;
+            Log_Info("Reboot initiated successfully - waiting for SIGTERM from system shutdown");
+
+            // Wait for SIGTERM from shutdown process
+            // Timeout is handled by reboot wrapper (60 seconds default)
+            // During this period, agent is idle and will be terminated by system
+            sleep(120); // Sleep longer than wrapper timeout to ensure we're terminated by SIGTERM
+
+            // If we reach here, SIGTERM didn't arrive - log and continue
+            Log_Warn("Reboot timeout expired without SIGTERM - system may not have rebooted");
         }
         else
         {
@@ -1628,7 +1792,12 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
         || workflow_is_agent_restart_requested(methodCallData->WorkflowData->WorkflowHandle))
     {
         // If apply indicated a restart is required, go ahead and restart the agent.
-        Log_Info("Apply indicated success with AgentRestartRequired - restarting the agent now");
+        Log_Info("Apply indicated success with AgentRestartRequired - caching source updates before restart");
+
+        // Cache source updates BEFORE restarting agent
+        CallDownloadHandlerCacheSourceUpdate(methodCallData->WorkflowData->WorkflowHandle);
+
+        Log_Info("Restarting the agent now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
 
         int success = ADUC_MethodCall_RestartAgent();
@@ -1677,6 +1846,9 @@ ADUC_Result ADUC_Workflow_MethodCall_Restore(ADUC_MethodCall_Data* methodCallDat
 
     ADUC_Workflow_SetUpdateState(workflowData, ADUCITF_State_RestoreStarted);
 
+    // Set view state manager to Installing when restore starts
+    viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Installing);
+
     Log_Info("Calling RestoreCallback");
 
     result = updateActionCallbacks->RestoreCallback(
@@ -1694,6 +1866,9 @@ void ADUC_Workflow_MethodCall_Restore_Complete(ADUC_MethodCall_Data* methodCallD
         // If restore indicated a reboot required result from restore, go ahead and reboot.
         Log_Info("Restore indicated success with RebootRequired - rebooting system now");
         methodCallData->WorkflowData->SystemRebootState = ADUC_SystemRebootState_Required;
+
+        // Set view state manager to Rebooting when reboot is required
+        viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Rebooting);
 
         int success = ADUC_MethodCall_RebootSystem();
         if (success == 0)
@@ -1780,4 +1955,40 @@ ADUC_Result ADUC_Workflow_MethodCall_IsInstalled(const ADUC_WorkflowData* workfl
     Log_Info("Calling IsInstalledCallback to check if content is installed.");
     return updateActionCallbacks->IsInstalledCallback(
         updateActionCallbacks->PlatformLayerHandle, (ADUC_WorkflowDataToken)workflowData);
+}
+
+static void s_onPauseTimerStart()
+{
+    Log_Info("Idle pause timer START. Ignoring new workflow processing...");
+}
+
+static void s_onPauseTimerStop()
+{
+    Log_Info("Idle pause timer STOP. Ready to process new workflows.");
+}
+
+static void s_onPauseTimerTimeout()
+{
+    Log_Info("Idle pause timer TIMEOUT. Ready to process new workflows.");
+
+    // Set view state manager to Idle when pause timer expires
+    // Only set to Idle if not currently in Reporting state
+    ADUC_ServiceStatus currentStatus;
+    viewstatemgr_svcstatus_get(&g_vsm, &currentStatus);
+    if (currentStatus != ADUC_ServiceStatus_Reporting)
+    {
+        viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Idle);
+    }
+    // If currently Reporting, leave it as is - the completion callback will handle the transition
+}
+
+/**
+ * @brief Called when D2C reporting message is completed to handle proper state transitions
+ */
+void ADUC_Workflow_HandleReportingCompleted(void)
+{
+    // Note: The idle pause timer is started in ADUC_Workflow_MethodCall_Idle when
+    // the workflow actually transitions to Idle state. We don't want to start it
+    // here on every D2C message completion as that would cause the status to
+    // incorrectly flip to PAUSED/IDLE during active workflow operations.
 }
