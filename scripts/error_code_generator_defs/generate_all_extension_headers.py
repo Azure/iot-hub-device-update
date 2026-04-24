@@ -108,7 +108,10 @@ def main():
             print(f"  {result.stderr}", file=sys.stderr)
             failed_extensions.append(ext_name)
         else:
-            print(f"  SUCCESS: Generated {header_path.name}")
+            if "No changes detected" in result.stdout:
+                print(f"  SUCCESS: {header_path.name} (up-to-date)")
+            else:
+                print(f"  SUCCESS: Generated {header_path.name}")
 
     if failed_extensions:
         print(

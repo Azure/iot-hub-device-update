@@ -63,7 +63,7 @@ public:
      * @param[in] initializeData A string contains downloader initialization data.
      * @return ADUC_Result
      */
-    static ADUC_Result InitializeContentDownloader(const char* initializeData);
+    static ADUC_Result InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel);
 
     /**
      * @brief The default download proc resolver.

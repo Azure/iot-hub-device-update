@@ -582,11 +582,34 @@ set (RESULT_H_CACHE_FILE "${CMAKE_BINARY_DIR}/.result_h_generation_cache")
 option (ADUC_FORCE_REGENERATE_RESULT_H
         "Force regeneration of result.h even if sources haven't changed" OFF)
 
-# Calculate SHA256 hashes of source files
+# Calculate SHA256 hashes of all source files that affect generation
 file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_JSON_FILE}" JSON_FILE_HASH)
 file (SHA256 "${ADUC_PATH_TO_ERROR_CODE_GENERATOR_SCRIPT}" SCRIPT_FILE_HASH)
 file (SHA256 "${ADUC_PATH_TO_EXTENSIONS_CONFIG_FILE}" EXTENSIONS_CONFIG_HASH)
-set (SOURCE_FILES_HASH "${JSON_FILE_HASH}|${SCRIPT_FILE_HASH}|${EXTENSIONS_CONFIG_HASH}")
+
+# Include extension generator scripts and per-extension JSON files in hash
+cmake_path (SET _EXT_RESULT_CODE_GEN NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/extension_result_code_generator.py")
+cmake_path (SET _EXT_HEADERS_WRAPPER NORMALIZE
+            "${ADUC_ERROR_CODE_JSON_FOLDER_PATH}/generate_all_extension_headers.py")
+set (_EXT_GENERATOR_HASHES "")
+if (EXISTS "${_EXT_RESULT_CODE_GEN}")
+    file (SHA256 "${_EXT_RESULT_CODE_GEN}" _H)
+    string (APPEND _EXT_GENERATOR_HASHES "|${_H}")
+endif ()
+if (EXISTS "${_EXT_HEADERS_WRAPPER}")
+    file (SHA256 "${_EXT_HEADERS_WRAPPER}" _H)
+    string (APPEND _EXT_GENERATOR_HASHES "|${_H}")
+endif ()
+file (GLOB _EXT_JSON_FILES
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/step_handlers/*/swupdate_handler_result_codes.json"
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/extensions/step_handlers/*/*_result_codes.json")
+foreach (_EXT_JSON IN LISTS _EXT_JSON_FILES)
+    file (SHA256 "${_EXT_JSON}" _H)
+    string (APPEND _EXT_GENERATOR_HASHES "|${_H}")
+endforeach ()
+
+set (SOURCE_FILES_HASH "${JSON_FILE_HASH}|${SCRIPT_FILE_HASH}|${EXTENSIONS_CONFIG_HASH}${_EXT_GENERATOR_HASHES}")
 
 # Determine if result.h needs to be regenerated
 set (NEED_REGENERATE_RESULT_H TRUE)

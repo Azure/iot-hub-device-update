@@ -409,6 +409,19 @@ void ExtensionManager::UnloadAllExtensions()
     // Make sure we unload every handlers first.
     UnloadAllUpdateContentHandlers();
 
+    // Call Cleanup on the content downloader if it is a V2 contract.
+    if (_contentDownloader != nullptr
+        && ADUC_ContractUtils_IsV2Contract(&_contentDownloaderContractVersion))
+    {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        CleanupProc cleanup = reinterpret_cast<CleanupProc>(
+            ADUCPAL_dlsym(_contentDownloader, CONTENT_DOWNLOADER__Cleanup__EXPORT_SYMBOL));
+        if (cleanup != nullptr)
+        {
+            cleanup();
+        }
+    }
+
     for (auto& lib : _libs)
     {
         ADUCPAL_dlclose(lib.second);
@@ -778,10 +791,9 @@ done:
     return result;
 }
 
-ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initializeData)
+ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
     void* lib = nullptr;
-    InitializeProc _initialize = nullptr;
 
     ADUC_Result result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
     if (IsAducResultCodeFailure(result.ResultCode))
@@ -789,7 +801,55 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
         goto done;
     }
 
-    if (!ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion))
+    if (ADUC_ContractUtils_IsV2Contract(&ExtensionManager::_contentDownloaderContractVersion))
+    {
+        // V2 contract: Initialize(const char*, ADUC_LOG_SEVERITY)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        InitializeProc initializeV2 =
+            reinterpret_cast<InitializeProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
+        if (initializeV2 == nullptr)
+        {
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
+            goto done;
+        }
+
+        try
+        {
+            result = initializeV2(initializeData, logLevel);
+        }
+        catch (...)
+        {
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION };
+            goto done;
+        }
+    }
+    else if (ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion))
+    {
+        // V1 contract: Initialize(const char*)
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        InitializeV1Proc initializeV1 =
+            reinterpret_cast<InitializeV1Proc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
+        if (initializeV1 == nullptr)
+        {
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
+            goto done;
+        }
+
+        try
+        {
+            result = initializeV1(initializeData);
+        }
+        catch (...)
+        {
+            result = { /* .ResultCode = */ ADUC_Result_Failure,
+                       /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION };
+            goto done;
+        }
+    }
+    else
     {
         Log_Error(
             "Unsupported contract version %d.%d",
@@ -797,26 +857,6 @@ ADUC_Result ExtensionManager::InitializeContentDownloader(const char* initialize
             ExtensionManager::_contentDownloaderContractVersion.minorVer);
         result.ResultCode = ADUC_GeneralResult_Failure;
         result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_UNSUPPORTED_CONTRACT_VERSION;
-        goto done;
-    }
-
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    _initialize = reinterpret_cast<InitializeProc>(ADUCPAL_dlsym(lib, CONTENT_DOWNLOADER__Initialize__EXPORT_SYMBOL));
-    if (_initialize == nullptr)
-    {
-        result = { /* .ResultCode = */ ADUC_Result_Failure,
-                   /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZEPROC_NOTIMP };
-        goto done;
-    }
-
-    try
-    {
-        result = _initialize(initializeData);
-    }
-    catch (...)
-    {
-        result = { /* .ResultCode = */ ADUC_Result_Failure,
-                   /* .ExtendedResultCode = */ ADUC_ERC_CONTENT_DOWNLOADER_INITIALIZE_EXCEPTION };
         goto done;
     }
 
@@ -844,6 +884,8 @@ ADUC_Result ExtensionManager::Download(
     ADUC_Result result = { /* .ResultCode = */ ADUC_Result_Failure, /* .ExtendedResultCode = */ 0 };
     ADUC::StringUtils::STRING_HANDLE_wrapper targetUpdateFilePath{ nullptr };
 
+    workflow_set_result_details(workflowHandle, "");
+
     if (!workflow_get_entity_workfolder_filepath(workflowHandle, entity, targetUpdateFilePath.address_of()))
     {
         Log_Error("Cannot construct child manifest file path.");
@@ -858,7 +900,8 @@ ADUC_Result ExtensionManager::Download(
         goto done;
     }
 
-    if (!ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion))
+    if (!ADUC_ContractUtils_IsV1Contract(&ExtensionManager::_contentDownloaderContractVersion)
+        && !ADUC_ContractUtils_IsV2Contract(&ExtensionManager::_contentDownloaderContractVersion))
     {
         Log_Error(
             "Unsupported contract version %d.%d",
@@ -917,9 +960,11 @@ ADUC_Result ExtensionManager::Download(
                 goto done;
             }
         }
-
-        result = { /* .ResultCode = */ ADUC_Result_Success, /* .ExtendedResultCode = */ 0 };
-        goto done;
+        else
+        {
+            result = { /* .ResultCode = */ ADUC_Result_Success, /* .ExtendedResultCode = */ 0 };
+            goto done;
+        }
     }
 
     result.ResultCode = ADUC_Result_Failure;
@@ -992,15 +1037,19 @@ ADUC_Result ExtensionManager::Download(
     result.ExtendedResultCode = 0;
 
 done:
-
+    if (IsAducResultCodeFailure(result.ResultCode) && strlen(workflow_peek_result_details(workflowHandle)) == 0)
+    {
+        workflow_set_result_details(workflowHandle, "Download of '%s' failed with extended result code 0x%x",
+                                    targetUpdateFilePath.c_str(), result.ExtendedResultCode);
+    }
     return result;
 }
 
 EXTERN_C_BEGIN
 
-ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData)
+ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
-    return ExtensionManager::InitializeContentDownloader(initializeData);
+    return ExtensionManager::InitializeContentDownloader(initializeData, logLevel);
 }
 
 ADUC_Result ExtensionManager_Download(
