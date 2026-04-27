@@ -835,6 +835,68 @@ TEST_CASE("IoTHub_CommunicationManager_Init and Deinit lifecycle")
 // Tests for ConnectionStatus_Callback exercising the "broken for X seconds" sub-branch
 //
 
+// Forward declaration of the internal categorization helper (kept out of the
+// public header). See GitHub issue #779.
+typedef enum tagADUC_ConnUnauthCategory
+{
+    ADUC_ConnUnauth_TransientSasRenewal = 0,
+    ADUC_ConnUnauth_Broken = 1,
+} ADUC_ConnUnauthCategory;
+
+extern "C" ADUC_ConnUnauthCategory IoTHub_CommunicationManager_CategorizeUnauthenticated(
+    IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason);
+
+TEST_CASE("Issue #779: SAS token expiry must not be categorized as 'broken'")
+{
+    // Expected SAS-token renewal: must NOT be treated as a broken connection.
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN)
+        == ADUC_ConnUnauth_TransientSasRenewal);
+
+    // Real failures must still be categorized as broken.
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL)
+        == ADUC_ConnUnauth_Broken);
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED)
+        == ADUC_ConnUnauth_Broken);
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_NO_NETWORK)
+        == ADUC_ConnUnauth_Broken);
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR)
+        == ADUC_ConnUnauth_Broken);
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED)
+        == ADUC_ConnUnauth_Broken);
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE)
+        == ADUC_ConnUnauth_Broken);
+    CHECK(
+        IoTHub_CommunicationManager_CategorizeUnauthenticated(IOTHUB_CLIENT_CONNECTION_OK)
+        == ADUC_ConnUnauth_Broken);
+}
+
+TEST_CASE("Issue #779: SAS expiry callback is handled benignly")
+{
+    // Authenticate first so any subsequent unauthenticated event would,
+    // under the old behavior, reset g_first_unauthenticated_time and log
+    // "IoTHub connection is broken."
+    IoTHub_CommunicationManager_ConnectionStatus_Callback(
+        IOTHUB_CLIENT_CONNECTION_AUTHENTICATED, IOTHUB_CLIENT_CONNECTION_OK, nullptr);
+    REQUIRE(IoTHub_CommunicationManager_IsAuthenticated() == true);
+
+    // SAS-token expiry: must not crash and must flip IsAuthenticated.
+    IoTHub_CommunicationManager_ConnectionStatus_Callback(
+        IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED, IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN, nullptr);
+    CHECK(IoTHub_CommunicationManager_IsAuthenticated() == false);
+
+    // A second SAS expiry in a row should also be treated benignly.
+    IoTHub_CommunicationManager_ConnectionStatus_Callback(
+        IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED, IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN, nullptr);
+    CHECK(IoTHub_CommunicationManager_IsAuthenticated() == false);
+}
+
 TEST_CASE("ConnectionStatus_Callback exercises both unauthenticated sub-branches")
 {
     SECTION("First unauthenticated triggers 'connection is broken' path")
@@ -849,7 +911,7 @@ TEST_CASE("ConnectionStatus_Callback exercises both unauthenticated sub-branches
         // First unauthenticated - hits "IoTHub connection is broken." branch
         IoTHub_CommunicationManager_ConnectionStatus_Callback(
             IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED,
-            IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN,
+            IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL,
             nullptr);
         CHECK(IoTHub_CommunicationManager_IsAuthenticated() == false);
     }

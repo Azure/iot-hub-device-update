@@ -214,6 +214,41 @@ ADUC_ClientHandle IoTHub_CommunicationManager_GetHandle()
 }
 
 /**
+ * @brief Categorization of an UNAUTHENTICATED connection status event.
+ *
+ * Used to distinguish the benign, expected case where the Azure IoT C SDK
+ * is rotating an expired SAS token (and will reconnect on its own) from
+ * a real connection failure that warrants an error in the logs.
+ */
+typedef enum tagADUC_ConnUnauthCategory
+{
+    ADUC_ConnUnauth_TransientSasRenewal = 0, /**< Expected SAS token renewal; log at Info. */
+    ADUC_ConnUnauth_Broken = 1, /**< Real failure; log at Error. */
+} ADUC_ConnUnauthCategory;
+
+/**
+ * @brief Categorizes an IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED event by reason.
+ *
+ * SAS-token expiry is part of the SDK's normal token-rotation flow (it fires
+ * about every 48 minutes for symmetric-key auth) and should not be reported
+ * as a broken connection. See GitHub issue #779.
+ *
+ * @param reason The IOTHUB_CLIENT_CONNECTION_STATUS_REASON reported alongside
+ *               the UNAUTHENTICATED status.
+ * @return ADUC_ConnUnauth_TransientSasRenewal for benign SAS-token rotation,
+ *         ADUC_ConnUnauth_Broken otherwise.
+ */
+ADUC_ConnUnauthCategory IoTHub_CommunicationManager_CategorizeUnauthenticated(
+    IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
+{
+    if (reason == IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN)
+    {
+        return ADUC_ConnUnauth_TransientSasRenewal;
+    }
+    return ADUC_ConnUnauth_Broken;
+}
+
+/**
  * @brief A callback use for processing the IoT Hub Client connection status changed event.
  *
  * @param status An IoT Hub connection status
@@ -236,7 +271,16 @@ void IoTHub_CommunicationManager_ConnectionStatus_Callback(
         g_authentication_retries = 0;
         break;
     case IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED:
-        if (g_last_authenticated_time >= g_first_unauthenticated_time)
+        if (IoTHub_CommunicationManager_CategorizeUnauthenticated(status_reason)
+            == ADUC_ConnUnauth_TransientSasRenewal)
+        {
+            // Expected SAS-token rotation. The SDK will refresh the token and
+            // reconnect on its own; do not log an error and do not reset
+            // g_first_unauthenticated_time so that a *real* outage that
+            // follows still trips the "broken for N seconds" branch below.
+            Log_Info("IoTHub SAS token expired; SDK will renew the connection.");
+        }
+        else if (g_last_authenticated_time >= g_first_unauthenticated_time)
         {
             Log_Error("IoTHub connection is broken.");
             g_first_unauthenticated_time = now_time;
