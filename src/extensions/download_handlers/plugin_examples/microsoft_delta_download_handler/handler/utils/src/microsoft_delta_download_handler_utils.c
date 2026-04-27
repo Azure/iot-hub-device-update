@@ -60,10 +60,11 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
 
     if (result.ResultCode == ADUC_Result_Success_Cache_Miss)
     {
+        Log_Info("[DELTA] Source update not found in cache - cannot perform delta reconstruction");
         goto done;
     }
 
-    Log_Debug("cached source update found at '%s'. Downloading delta update...", STRING_c_str(sourceUpdatePathHandle));
+    Log_Info("[DELTA] Source update found in cache at '%s' - proceeding with delta reconstruction", STRING_c_str(sourceUpdatePathHandle));
 
     //
     // Download the delta update file.
@@ -71,7 +72,7 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
     result = downloadDeltaUpdateFn(workflowHandle, relatedFile);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("DeltaUpdate download failed, erc 0x%08x.", result.ExtendedResultCode);
+        Log_Error("[DELTA] Delta update download failed, erc 0x%08x", result.ExtendedResultCode);
         goto done;
     }
 
@@ -82,7 +83,7 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
         workflowHandle, relatedFile, &deltaUpdatePathHandle);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("get delta update sandbox path, erc 0x%08x.", result.ExtendedResultCode);
+        Log_Error("[DELTA] Get delta update sandbox path failed, erc 0x%08x", result.ExtendedResultCode);
         goto done;
     }
 
@@ -96,7 +97,7 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_ProcessRelatedFile(
     result = processDeltaUpdateFn(srcPath, deltaPath, payloadFilePath);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("processing delta update failed, ERC 0x%08x", result.ExtendedResultCode);
+        Log_Error("[DELTA] Processing delta update failed, ERC 0x%08x", result.ExtendedResultCode);
         goto done;
     }
 
@@ -137,14 +138,14 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_LookupSourceUpdateCachePath(
         MicrosoftDeltaDownloadHandlerUtils_GetSourceUpdateProperties(relatedFile, &sourceUpdateHash, &sourceUpdateAlg);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("get source update properties failed, erc 0x%08x", result.ExtendedResultCode);
+        Log_Error("[DELTA] Get source update properties failed, erc 0x%08x", result.ExtendedResultCode);
         goto done;
     }
 
     result = workflow_get_expected_update_id(workflowHandle, &updateId);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("get updateId, erc 0x%08x", result.ExtendedResultCode);
+        Log_Error("[DELTA] Get updateId failed, erc 0x%08x", result.ExtendedResultCode);
         goto done;
     }
 
@@ -158,13 +159,13 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_LookupSourceUpdateCachePath(
         &sourceUpdatePath);
     if (IsAducResultCodeFailure(result.ResultCode))
     {
-        Log_Error("source lookup failed, erc 0x%08x", result.ExtendedResultCode);
+        Log_Error("[DELTA] Source lookup failed, erc 0x%08x", result.ExtendedResultCode);
         goto done;
     }
 
     if (result.ResultCode == ADUC_Result_Success_Cache_Miss)
     {
-        Log_Warn("source update cache miss");
+        Log_Warn("[DELTA] Source update cache miss - no matching source found");
         goto done;
     }
 
@@ -177,7 +178,7 @@ done:
     STRING_delete(sourceUpdateHash);
     STRING_delete(sourceUpdateAlg);
     workflow_free_update_id(updateId);
-    free(sourceUpdatePath);
+    STRING_delete(sourceUpdatePath);
 
     return result;
 }
@@ -222,7 +223,7 @@ ADUC_Result MicrosoftDeltaDownloadHandlerUtils_GetSourceUpdateProperties(
 
     if (IsNullOrEmpty(sourceHash) || IsNullOrEmpty(sourceAlg))
     {
-        Log_Error("Missing microsoft.sourceFileHash or microsoft.sourceFileHashAlgorithm relatedFile property.");
+        Log_Error("[DELTA] Missing microsoft.sourceFileHash or microsoft.sourceFileHashAlgorithm relatedFile property");
 
         result.ExtendedResultCode = ADUC_ERC_DDH_RELATEDFILE_BAD_OR_MISSING_HASH_PROPERTIES;
 

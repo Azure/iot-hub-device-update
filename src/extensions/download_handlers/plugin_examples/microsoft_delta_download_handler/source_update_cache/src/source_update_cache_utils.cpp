@@ -126,7 +126,7 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
                     };
                     if (stat(filePath.c_str(), &st) != 0)
                     {
-                        Log_Warn("filter - stat '%s', errno: %d", filePath.c_str(), errno);
+                        Log_Warn("[DELTA] Filter stat '%s' failed, errno: %d", filePath.c_str(), errno);
                         st.st_ino = ADUC_INODE_SENTINEL_VALUE;
                         return false; // err on the side of not removing it
                     }
@@ -153,7 +153,7 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
             };
             if (stat(filePath.c_str(), &st) != 0)
             {
-                Log_Warn("pq push - stat '%s', errno: %d", filePath.c_str(), errno);
+                Log_Warn("[DELTA] Stat '%s' failed for cache purge, errno: %d", filePath.c_str(), errno);
             }
             else
             {
@@ -173,7 +173,7 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
             if (res != 0)
             {
                 Log_Error(
-                    "unlink '%s', inode %d - errno: %d", filePathForDelete.c_str(), cachePurgeFile.GetInode(), errno);
+                    "[DELTA] unlink '%s', inode %d - errno: %d", filePathForDelete.c_str(), cachePurgeFile.GetInode(), errno);
                 result = -1; // overall it is a failure, but keep going to attempt to free up space.
                 continue;
             }
@@ -188,11 +188,11 @@ int ADUC_SourceUpdateCacheUtils_PurgeOldestFromUpdateCache(
     catch (const std::exception& e)
     {
         const char* what = e.what();
-        Log_Error("Unhandled std exception: %s", what);
+        Log_Error("[DELTA] Unhandled std exception: %s", what);
     }
     catch (...)
     {
-        Log_Error("Unhandled exception");
+        Log_Error("[DELTA] Unhandled exception");
     }
 
     return result;

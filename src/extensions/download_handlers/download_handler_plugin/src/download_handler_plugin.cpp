@@ -166,6 +166,56 @@ ADUC_Result DownloadHandlerPlugin::OnUpdateWorkflowCompleted(const ADUC_Workflow
 }
 
 /**
+ * @brief Calls the download handler plugin's export function to immediately cache source updates.
+ * This is called before reboot/restart to ensure source files are cached while sandbox exists.
+ *
+ * @param workflowHandle The workflow handle.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result DownloadHandlerPlugin::CacheSourceUpdate(const ADUC_WorkflowHandle workflowHandle) const noexcept
+{
+    ADUC_Result result{ ADUC_GeneralResult_Success, 0 };
+
+    Log_Info("DownloadHandlerPlugin attempting to call CacheSourceUpdate export");
+
+    try
+    {
+        // CacheSourceUpdate is optional - if not implemented, gracefully skip
+        using CacheSourceUpdateFn = ADUC_Result (*)(const ADUC_WorkflowHandle workflowHandle);
+        CallExport<CacheSourceUpdateFn, true /* ExportReturnsAducResult */>(
+            DOWNLOAD_HANDLER__CacheSourceUpdate__EXPORT_SYMBOL, lib, &result /* outResult */, workflowHandle);
+
+        Log_Info("CacheSourceUpdate export called successfully - rc: %d, erc: %08x", result.ResultCode, result.ExtendedResultCode);
+    }
+    catch (const aduc::PluginException& pe)
+    {
+        // CacheSourceUpdate is optional, so plugin not implementing it is not an error
+        Log_Info("CacheSourceUpdate not implemented by plugin (optional callback) - exception: %s, symbol: %s", pe.what(), pe.Symbol().c_str());
+        result.ResultCode = ADUC_GeneralResult_Success;
+        result.ExtendedResultCode = 0;
+    }
+    catch (const std::exception& e)
+    {
+        result.ResultCode = ADUC_GeneralResult_Failure;
+        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_STDEXCEPTION;
+        Log_Error("CacheSourceUpdate std exception: '%s'", e.what());
+    }
+    catch (...)
+    {
+        result.ResultCode = ADUC_Result_Failure;
+        result.ExtendedResultCode = ADUC_ERC_DOWNLOAD_HANDLER_PLUGIN_ON_UPDATE_WORKFLOW_COMPLETED_NONSTDEXCEPTION;
+        Log_Error("CacheSourceUpdate non std exception");
+    }
+
+    Log_Info(
+        "DownloadHandlerPlugin CacheSourceUpdate final result - rc: %d, erc: %08x",
+        result.ResultCode,
+        result.ExtendedResultCode);
+
+    return result;
+}
+
+/**
  * @brief Gets the contract info for the download handler plugin.
  *
  * @param[out] contractInfo The contract info.
@@ -228,6 +278,28 @@ ADUC_Result ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(
     {
         auto plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
         result = plugin->OnUpdateWorkflowCompleted(workflowHandle);
+    }
+
+    return result;
+}
+
+/**
+ * @brief The C API for immediately caching source updates before reboot/restart.
+ *
+ * @param handle  The download handler handle opaque object.
+ * @param workflowHandle  The workflow handle.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result ADUC_DownloadHandlerPlugin_CacheSourceUpdate(
+    const DownloadHandlerHandle handle, const ADUC_WorkflowHandle workflowHandle)
+{
+    ADUC_Result result = { ADUC_GeneralResult_Success, 0 };
+
+    // Do not free the DownloadHandlerHandle handle that is owned by DownloadHandlerFactory.
+    if (handle != nullptr)
+    {
+        auto plugin = reinterpret_cast<DownloadHandlerPlugin*>(handle);
+        result = plugin->CacheSourceUpdate(workflowHandle);
     }
 
     return result;

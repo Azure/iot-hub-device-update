@@ -9,6 +9,7 @@
 #define ADUC_WORKFLOW_UTILS_H
 
 #include "aduc/adu_types.h"
+#include "aduc/aducsdk.h"
 #include "aduc/result.h"
 #include "aduc/types/update_content.h"
 #include "aduc/types/workflow.h"
@@ -813,6 +814,20 @@ bool workflow_init_workflow_handle(ADUC_WorkflowData* workflowData);
  * @return true on success.
  */
 bool workflow_set_update_action_object(ADUC_WorkflowHandle handle, JSON_Object* jsonObj);
+
+/**
+ * @brief Sets the viewstate manager.
+ */
+void workflow_set_vsm(ADUC_WorkflowHandle handle, void* vsm);
+
+/**
+ * @brief Sets the viewstate manager status
+ *
+ * @param handle The workflow handle
+ * @param status The service status
+ * @return true on success.
+ */
+bool workflow_set_service_status(ADUC_WorkflowHandle handle, ADUC_ServiceStatus status);
 
 EXTERN_C_END
 

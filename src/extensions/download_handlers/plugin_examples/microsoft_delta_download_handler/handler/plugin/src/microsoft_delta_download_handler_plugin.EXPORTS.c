@@ -84,6 +84,18 @@ EXPORTED_METHOD ADUC_Result OnUpdateWorkflowCompleted(const ADUC_WorkflowHandle 
 }
 
 /**
+ * @brief Called to immediately cache source updates before system reboot/restart.
+ * This is invoked by the workflow before initiating a reboot.
+ *
+ * @param[in] workflowHandle The workflow handle.
+ * @return ADUC_Result The result.
+ */
+EXPORTED_METHOD ADUC_Result CacheSourceUpdate(const ADUC_WorkflowHandle workflowHandle)
+{
+    return MicrosoftDeltaDownloadHandler_CacheSourceUpdate(workflowHandle, NULL /* updateCacheBasePath */);
+}
+
+/**
  * @brief Gets the extension contract info.
  *
  * @param[out] contractInfo The extension contract info.

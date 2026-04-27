@@ -13,7 +13,7 @@ fi
 error() { echo -e "\033[1;31mError:\033[0m $*" >&2; }
 warn() { echo -e "\033[1;33mWarning:\033[0m $*" >&2; }
 
-current_schema_version="1.1"
+current_schema_version="1.2"
 
 conf_file=$1
 new_conf_file="/etc/adu/du-config.json"
@@ -55,7 +55,8 @@ json_content=$(
         "connectionData": "$connection_string"
       }<% ADUC_MANUFACTURER %><% ADUC_MODEL %>
     }
-  ]
+  ],
+  "idlePauseMilliseconds": 30000
 }
 END_OF_JSON
 )

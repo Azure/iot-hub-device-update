@@ -13,7 +13,11 @@ target_sources (${target_name} PRIVATE src/microsoft_delta_download_handler_plug
 target_link_libraries (${target_name} PRIVATE aduc::adu_types aduc::contract_utils
                                               aduc::microsoft-delta-download-handler aduc::logging)
 
-install (TARGETS ${target_name} LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER})
+# Install to the extensions folder
+# Mark as part of the deltahandler component for separate packaging
+install (TARGETS ${target_name}
+         LIBRARY DESTINATION ${ADUC_EXTENSIONS_INSTALL_FOLDER}
+         COMPONENT deltahandler)
 
 if (ADUC_BUILD_UNIT_TESTS)
     add_subdirectory (tests)

@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# preinst
+# pre-install script for deviceupdate-agent-delta-handler debian package.
+# Checks dependencies before installation.
+# See https://www.debian.org/doc/debian-policy/ch-maintainerscripts.html
+
+echo "******************** Running $0 $1 ***********************"
+
+set -e
+
+case "$1" in
+    install|upgrade)
+        # Verify that the base ADU agent is installed
+        if ! dpkg -s deviceupdate-agent > /dev/null 2>&1; then
+            echo "ERROR: deviceupdate-agent package must be installed first." >&2
+            exit 1
+        fi
+
+        echo "Pre-installation checks passed."
+    ;;
+
+    abort-upgrade)
+    ;;
+
+    *)
+        echo "preinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

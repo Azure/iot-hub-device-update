@@ -12,6 +12,15 @@
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 
+// viewstatemgr is required by agent_workflow - provide the global variable definition
+extern "C"
+{
+#include "aduc/viewstatemgr.h"
+
+// Define the global ViewStateManager instance required by agent_workflow
+ViewStateManager g_vsm = { 0 };
+}
+
 #include <catch2/catch_all.hpp>
 #include <cstring>
 #include <string>
@@ -336,6 +345,34 @@ static void InitMockCallbacks(ADUC_UpdateActionCallbacks* callbacks)
 }
 
 //
+// Unit Tests for ADUC_Workflow_Init and ADUC_Workflow_Uninit
+//
+
+TEST_CASE("ADUC_Workflow_Init and Uninit")
+{
+    SECTION("Init and Uninit should succeed")
+    {
+        int result = ADUC_Workflow_Init();
+        CHECK(result == 0);
+
+        // Uninit should not crash
+        ADUC_Workflow_Uninit();
+    }
+
+    SECTION("Multiple Init and Uninit calls")
+    {
+        int result = ADUC_Workflow_Init();
+        CHECK(result == 0);
+        ADUC_Workflow_Uninit();
+
+        // Second init should also succeed
+        result = ADUC_Workflow_Init();
+        CHECK(result == 0);
+        ADUC_Workflow_Uninit();
+    }
+}
+
+//
 // Unit Tests for ADUC_Workflow_MethodCall_IsInstalled
 //
 
@@ -443,6 +480,20 @@ TEST_CASE("ADUC_Workflow_DefaultDownloadProgressCallback")
     {
         ADUC_Workflow_DefaultDownloadProgressCallback(
             "test-workflow", "file-001", ADUC_DownloadProgressState_InProgress, UINT64_MAX / 2, UINT64_MAX);
+        CHECK(true);
+    }
+}
+
+//
+// Unit Tests for ADUC_Workflow_HandleReportingCompleted
+//
+
+TEST_CASE("ADUC_Workflow_HandleReportingCompleted")
+{
+    SECTION("Function executes without crash")
+    {
+        // This function is a no-op stub currently - test that it doesn't crash
+        ADUC_Workflow_HandleReportingCompleted();
         CHECK(true);
     }
 }
@@ -3066,6 +3117,17 @@ TEST_CASE("WorkflowData utilities")
 
         ADUC_WorkflowData_SetLastReportedState(ADUCITF_State_InstallSucceeded, &workflowData);
         CHECK(ADUC_WorkflowData_GetLastReportedState(&workflowData) == ADUCITF_State_InstallSucceeded);
+    }
+
+    SECTION("SetReceivedC2D and GetReceivedC2D")
+    {
+        ADUC_WorkflowData workflowData;
+        memset(&workflowData, 0, sizeof(workflowData));
+
+        CHECK(ADUC_WorkflowData_GetReceivedC2D(&workflowData) == false);
+
+        ADUC_WorkflowData_SetReceivedC2D(&workflowData);
+        CHECK(ADUC_WorkflowData_GetReceivedC2D(&workflowData) == true);
     }
 
     SECTION("SetLastCompletedWorkflowId")

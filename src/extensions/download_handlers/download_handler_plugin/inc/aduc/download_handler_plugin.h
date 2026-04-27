@@ -21,6 +21,16 @@ typedef void* DownloadHandlerHandle;
 ADUC_Result ADUC_DownloadHandlerPlugin_OnUpdateWorkflowCompleted(
     const DownloadHandlerHandle handle, const ADUC_WorkflowHandle workflowHandle);
 
+/**
+ * @brief Called to immediately cache source updates before system reboot/restart.
+ *
+ * @param[in] handle The handle to the download handler.
+ * @param[in] workflowHandle The workflow handle.
+ * @return ADUC_Result The result.
+ */
+ADUC_Result ADUC_DownloadHandlerPlugin_CacheSourceUpdate(
+    const DownloadHandlerHandle handle, const ADUC_WorkflowHandle workflowHandle);
+
 EXTERN_C_END
 
 #endif // DOWNLOAD_HANDLER_PLUGIN_H

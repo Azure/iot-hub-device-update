@@ -33,4 +33,8 @@ target_link_libraries (
 # See https://github.com/catchorg/Catch2/blob/master/contrib/Catch.cmake
 include (CTest)
 include (Catch)
-catch_discover_tests (${PROJECT_NAME})
+if (NOT CMAKE_CROSSCOMPILING)
+    catch_discover_tests (${PROJECT_NAME})
+else ()
+    add_test (NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME})
+endif ()

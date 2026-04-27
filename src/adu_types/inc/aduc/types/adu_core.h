@@ -252,6 +252,7 @@ typedef enum tagADUC_ResultCode
     ADUC_Result_Apply_RequiredReboot = 706,                  /**< Succeeded. A deferred device reboot is required, to complete the task. */
     ADUC_Result_Apply_RequiredImmediateAgentRestart = 707,   /**< Succeeded. An immediate agent restart is required, to complete the task. */
     ADUC_Result_Apply_RequiredAgentRestart = 708,            /**< Succeeded. A deferred agent restart is required, to complete the task. */
+    ADUC_Result_Apply_RebootPending = 709,                   /**< Succeeded. Apply completed, reboot is pending. */
 
     ADUC_Result_Cancel_Success = 800,            /**< Succeeded. */
     ADUC_Result_Cancel_UnableToCancel = 801,     /**< Not a failure. Cancel is best effort. */

@@ -395,6 +395,16 @@ TEST_CASE("DiagnosticsComponent_GetDeviceName - Edge Cases")
         CHECK_FALSE(DiagnosticsComponent_GetDeviceName(&deviceName2));
     }
 
+    SECTION("GetDeviceName with NULL output parameter returns false")
+    {
+        DiagnosticsComponent_DestroyDeviceName();
+        CHECK(DiagnosticsComponent_SetDeviceName("test-device", nullptr));
+
+        // Passing NULL as the output parameter
+        CHECK_FALSE(DiagnosticsComponent_GetDeviceName(nullptr));
+
+        DiagnosticsComponent_DestroyDeviceName();
+    }
 }
 
 TEST_CASE("DiagnosticsComponent_SetDeviceName - Special Characters and Unicode")

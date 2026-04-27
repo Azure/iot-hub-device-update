@@ -413,25 +413,29 @@ TEST_CASE("ADUC_StringFormat")
         CHECK(retval.get() == nullptr);
     }
 }
-TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
+TEST_CASE("ADUC_Safe_StrCopyN properly copies strings")
+{
     char dest[10];
 
     // Edge cases
 
-    SECTION("Handle NULL source") {
+    SECTION("Handle NULL source")
+    {
         memset(dest, 0, sizeof(dest));
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, NULL, sizeof(dest), 1);
         CHECK(num_chars_copied == 0);
     }
 
-    SECTION("Handle NULL destination") {
+    SECTION("Handle NULL destination")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "test";
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(NULL, src, sizeof(dest), 4);
         CHECK(num_chars_copied == 0);
     }
 
-    SECTION("Handle zero size") {
+    SECTION("Handle zero size")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "test";
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, 0, 4);
@@ -440,16 +444,17 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
 
     // mainline cases
 
-    SECTION("Copy a shorter string") {
+    SECTION("Copy a shorter string")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "short";
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 5);
         CHECK(num_chars_copied == 5);
         CHECK(strcmp(dest, "short") == 0);
-
     }
 
-    SECTION("Copy a string of exact length") {
+    SECTION("Copy a string of exact length")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "123456789"; // 9 + 1 null-term
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), strlen(src));
@@ -457,7 +462,8 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         REQUIRE(strcmp(dest, src) == 0);
     }
 
-    SECTION("Handle longer source string by truncating") {
+    SECTION("Handle longer source string by truncating")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "12345678901234"; // 14 + 1
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 14);
@@ -465,7 +471,8 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         REQUIRE(strcmp(dest, "123456789") == 0);
     }
 
-    SECTION("Handle subset of longer source string that is still longer than dest") {
+    SECTION("Handle subset of longer source string that is still longer than dest")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "12345678901234"; // 14 + 1
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 11);
@@ -477,7 +484,8 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         REQUIRE(strcmp(dest, "123456789") == 0);
     }
 
-    SECTION("Handle subset of longer source string, exactly as long as dest buffer - 1") {
+    SECTION("Handle subset of longer source string, exactly as long as dest buffer - 1")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "12345678901234"; // 14 + 1
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 9);
@@ -485,11 +493,112 @@ TEST_CASE("ADUC_Safe_StrCopyN properly copies strings") {
         REQUIRE(strcmp(dest, "123456789") == 0);
     }
 
-    SECTION("Handle subset of longer source string, that is less-than dest buffer - 1") {
+    SECTION("Handle subset of longer source string, that is less-than dest buffer - 1")
+    {
         memset(dest, 0, sizeof(dest));
         const char* src = "12345678901234"; // 14 + 1
         const size_t num_chars_copied = ADUC_Safe_StrCopyN(dest, src, sizeof(dest), 8);
         CHECK(num_chars_copied == 8);
         REQUIRE(strcmp(dest, "12345678") == 0);
+    }
+}
+
+TEST_CASE("RmvAfterLastChar removes characters after last delimiter")
+{
+    SECTION("Handle NULL input")
+    {
+        char* result = RmvAfterLastChar(nullptr, '/');
+        CHECK(result == nullptr);
+    }
+
+    SECTION("Handle empty string")
+    {
+        cstr_wrapper result(RmvAfterLastChar("", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals(""));
+    }
+
+    SECTION("Remove filename from filepath - main use case")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/path/to/some/file.txt", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/path/to/some/"));
+    }
+
+    SECTION("Handle no delimiter found - returns copy of entire string")
+    {
+        cstr_wrapper result(RmvAfterLastChar("filename.txt", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("filename.txt"));
+    }
+
+    SECTION("Handle delimiter at end")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/path/to/dir/", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/path/to/dir/"));
+    }
+
+    SECTION("Handle multiple delimiters - uses last occurrence")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/a/b/c/d.txt", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/a/b/c/"));
+    }
+
+    SECTION("Handle single delimiter at beginning")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/filename.txt", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/"));
+    }
+
+    SECTION("Handle root directory file - specific use case")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/foo.txt", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/"));
+    }
+
+    SECTION("Handle only delimiter character")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/"));
+    }
+
+    SECTION("Handle different delimiter character")
+    {
+        cstr_wrapper result(RmvAfterLastChar("a:b:c:d", ':'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("a:b:c:"));
+    }
+
+    SECTION("Handle Windows-style path")
+    {
+        cstr_wrapper result(RmvAfterLastChar("C:\\path\\to\\file.txt", '\\'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("C:\\path\\to\\"));
+    }
+
+    SECTION("Handle consecutive delimiters")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/path//to///file.txt", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/path//to///"));
+    }
+
+    SECTION("Handle single character string without delimiter")
+    {
+        cstr_wrapper result(RmvAfterLastChar("a", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("a"));
+    }
+
+    SECTION("Handle single character string with delimiter")
+    {
+        cstr_wrapper result(RmvAfterLastChar("/", '/'));
+        REQUIRE(result.get() != nullptr);
+        CHECK_THAT(result.get(), Equals("/"));
     }
 }

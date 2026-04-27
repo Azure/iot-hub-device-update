@@ -544,12 +544,13 @@ bool GetConnectionInfoFromConnectionString(
 
     if (info->connType == ADUC_ConnType_NotSet)
     {
-        Log_Error("Connection string is invalid");
+        Log_Error("Connection type is invalid");
         goto done;
     }
 
     if (x509Cert)
     {
+        Log_Info("Initializing X.509 authentication data");
         assert(x509PrivateKey);
         assert(x509CaCert);
         info->authType = ADUC_AuthType_X509;
@@ -571,6 +572,8 @@ bool GetConnectionInfoFromConnectionString(
                 goto done;
             }
         }
+        // Show x509 config info
+        Log_Info("Successfully initialized X.509 authentication - connectionString:%s", &info->connectionString);
     }
     else
     {

@@ -154,13 +154,16 @@ int ADUC_SystemUtils_MkDir(const char* path, uid_t userId, gid_t groupId, mode_t
     if (stat(path, &st) != 0)
     {
         /* Directory does not exist. EEXIST for race condition */
-        if (ADUCPAL_mkdir(path, mode) != 0 && errno != EEXIST)
+        int mkdir_result = ADUCPAL_mkdir(path, mode);
+        if (mkdir_result != 0 && errno != EEXIST)
         {
             Log_Error("Could not create directory %s errno: %d", path, errno);
             return errno;
         }
 
-        if (groupId != -1 || userId != -1)
+        // Only try to chown if we actually created the directory (mkdir succeeded)
+        // Don't try to chown if directory already existed (EEXIST)
+        if (mkdir_result == 0 && (groupId != -1 || userId != -1))
         {
             // Now that we have created the directory, take ownership of it.
             // Note: getuid and getgid are always successful.

@@ -92,6 +92,7 @@ MAKE_ADUC_EXTENDEDRESULTCODE(const int32_t facility, const int32_t component, co
 // Extended Result Code Definitions
 //
 {ExtendedResultCodeDefines}
+{ExtensionIncludes}
 //
 // STATIC FUNCTIONS, NOT GENERATED BUT USE GENERATED FUNCTIONS
 //
@@ -297,7 +298,7 @@ class ComponentCode(object):
 
     def get_enum_define_with_comment(self, define_offset=2):
         offset = define_offset*" "
-        return f"{offset}{self.name}={self.value}, {self.get_enum_doxy_comment()}\n"
+        return f"{offset}{self.name} = {self.value}, {self.get_enum_doxy_comment()}\n"
 
     def get_func_def_string(self, facility_func_decl):
         return component_func_definition.format(ComponentName=self.name, ComponentDecl=self.get_component_func_decl_string(), FacilityFuncDeclString=facility_func_decl)
@@ -333,17 +334,20 @@ class ResultCode(object):
 
 
 class ErrorCodeDefinitionGenerator(object):
-    def __init__(self, _json_path, _result_h_path="./result.h", *args):
+    def __init__(self, _json_path, _result_h_path="./result.h", _extensions_config_path=None, *args):
         """
         Initializer for the class that generates the result.h file from result_codes.json
 
         :param str: _json_path path to the json file defining the facilities, components, and results
         :param str: _result_h_path path to generate the result.h file at
+        :param str: _extensions_config_path optional path to extensions configuration JSON
         """
         super(ErrorCodeDefinitionGenerator, self).__init__(*args)
         self.result_h_path = _result_h_path
         self.json_path = _json_path
+        self.extensions_config_path = _extensions_config_path
         self.facilities = []
+        self.extension_headers = []
 
     def add_facility_code(self, facility):
         """
@@ -479,6 +483,56 @@ typedef enum tag{f_name}_Components
                     erc_defs += f"{result_doxy_comment}{result_def}\n"
 
         return erc_defs
+    
+    def load_extension_headers(self):
+        """
+        Loads extension header paths from the extensions config file.
+        
+        Returns True on success, False on failure
+        """
+        if not self.extensions_config_path:
+            return True  # No extensions to load is not an error
+        
+        if not os.path.exists(self.extensions_config_path):
+            print(f"Extensions config file not found: {self.extensions_config_path}")
+            return False
+        
+        try:
+            with open(self.extensions_config_path, 'r') as f:
+                config = json.load(f)
+            
+            extensions = config.get('extensions', [])
+            for ext in extensions:
+                header_path = ext.get('header_path')
+                description = ext.get('description', ext.get('name', 'Extension'))
+                if header_path:
+                    self.extension_headers.append({
+                        'path': header_path,
+                        'description': description
+                    })
+                    print(f"Found extension: {description} ({header_path})")
+            
+            return True
+        except Exception as e:
+            print(f"Error loading extensions config: {e}")
+            return False
+    
+    def get_extension_includes(self):
+        """
+        Generates the #include statements for extension headers.
+        
+        Returns the string version of the C #include directives
+        """
+        if not self.extension_headers:
+            return ""
+        
+        includes = "\n//\n// Extension Result Code Headers\n//\n"
+        for ext in self.extension_headers:
+            includes += f"// {ext['description']}\n"
+            includes += f"#include \"{ext['path']}\"\n"
+        includes += "\n"
+        
+        return includes
 
     def generate_result_h_file(self):
         """
@@ -489,21 +543,40 @@ typedef enum tag{f_name}_Components
         facility_and_component_code_defs = self.get_facility_and_component_code_defs()
         erc_generation_functions = self.get_erc_make_functions()
         extended_result_code_defs = self.get_extended_result_code_defs()
+        extension_includes = self.get_extension_includes()
 
         if (facility_and_component_code_defs == "" or erc_generation_functions == "" or extended_result_code_defs == ""):
             return False
 
-        file_contents = error_code_definition_file.format(FacilityAndComponentEnums=facility_and_component_code_defs,
-                                                          ExtendedResultCodeGenerationFunctions=erc_generation_functions, ExtendedResultCodeDefines=extended_result_code_defs)
+        file_contents = error_code_definition_file.format(
+            FacilityAndComponentEnums=facility_and_component_code_defs,
+            ExtendedResultCodeGenerationFunctions=erc_generation_functions, 
+            ExtendedResultCodeDefines=extended_result_code_defs,
+            ExtensionIncludes=extension_includes)
 
-        try:
-            with open(self.result_h_path, 'w') as result_h_file:
-                result_h_file.write(file_contents)
+        # Smart-write: only update file if content has changed
+        should_write = True
+        if os.path.exists(self.result_h_path):
+            try:
+                with open(self.result_h_path, 'r') as existing_file:
+                    existing_content = existing_file.read()
+                    if existing_content == file_contents:
+                        print(f"No changes detected in {self.result_h_path}, skipping write")
+                        should_write = False
+            except Exception as e:
+                print(f"Could not read existing file for comparison: {e}")
+                # If we can't read, assume we should write
 
-        except Exception as e:
+        if should_write:
+            try:
+                with open(self.result_h_path, 'w') as result_h_file:
+                    result_h_file.write(file_contents)
+                    print(f"Updated {self.result_h_path}")
 
-            print("An unknown error occurred", e)
-            return False
+            except Exception as e:
+
+                print("An unknown error occurred", e)
+                return False
 
         return True
 
@@ -612,16 +685,20 @@ typedef enum tag{f_name}_Components
 if (__name__ == '__main__'):
     json_file_path = ""
     result_file_path = ""
+    extensions_config_path = ""
 
     parser = argparse.ArgumentParser(description='Generate error code definition file')
     parser.add_argument('-j', '--json-file-path', required=True,
                         help='The file path to the json file that describes the results')
     parser.add_argument('-r', '--result-file-path',
                         required=True, help='The file to write the error code definitions to')
+    parser.add_argument('-e', '--extensions-config', required=False,
+                        help='Optional: JSON file with extension result code configurations')
     args = parser.parse_args()
 
     json_file_path = args.json_file_path
     result_file_path = args.result_file_path
+    extensions_config_path = args.extensions_config
 
     if (not os.path.exists(json_file_path)):
         print("The path: " + json_file_path + " does not exist!")
@@ -657,7 +734,15 @@ if (__name__ == '__main__'):
     print("Generating result.h file at: " + str(result_h_abs_path))
 
     result_generator = ErrorCodeDefinitionGenerator(
-        json_file_abs_path, result_h_abs_path)
+        json_file_abs_path, result_h_abs_path, extensions_config_path)
+
+    # Load extension configurations if provided
+    if extensions_config_path:
+        extensions_config_abs_path = os.path.abspath(extensions_config_path)
+        print(f"Loading extensions config from: {extensions_config_abs_path}")
+        if not result_generator.load_extension_headers():
+            print("Failed to load extension configurations")
+            sys.exit(1)
 
     print("Parsing JSON file...")
 

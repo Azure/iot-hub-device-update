@@ -1,8 +1,19 @@
 # How To Build the Device Update Agent
 
-This guide provides detailed instructions for building the Device Update for IoT Hub agent from source.
+This guide provides comprehensive instructions for building the Device Update agent, including dependency management, platform-specific guidance, and customization options.
 
-## Table of Contents
+## Quick Navigation
+
+-   [Dependencies Overview](#dependencies-of-device-update-agent) - Complete dependency reference
+-   [Platform Compatibility](#platform-compatibility-matrix) - Supported platforms and versions
+-   [Installation Guide](#installing-dependencies) - Automated dependency installation
+-   [Build Scenarios](#dependency-matrix-by-build-scenario) - Choose the right build for your needs
+-   [Platform Instructions](#platform-specific-instructions) - Ubuntu, Debian, Yocto guidance
+-   [Environment Caching](#environment-caching-and-configuration-sharing) - Shared configuration between scripts
+-   [Troubleshooting](#troubleshooting-dependencies) - Common issues and solutions
+-   [Building Process](#building-the-device-update-agent-for-linux) - Actual build steps
+-   [As a standalone solution](#as-a-standalone-solution) - Integration approaches
+-   [Dependency Strategy](#dependency-build-strategy-and-cross-platform-considerations) - Why we build from source
 
 -   [Supported Platforms](#supported-platforms)
 -   [Build Dependencies](#build-dependencies)
@@ -17,302 +28,545 @@ This guide provides detailed instructions for building the Device Update for IoT
 -   [Advanced Options](#build-options-for-mqtt-and-mqtt-over-websockets-iothub-transport-providers)
 -   [Troubleshooting](#troubleshooting)
 
-## Supported Platforms
-
-The Device Update agent has been tested and verified on the following platforms:
-
-| OS Distribution | Version | Architecture | Status | Build Status | Notes |
-|----------------|---------|--------------|--------|--------------|-------|
-| Ubuntu | 20.04 LTS | AMD64 | ✓ Supported | - | With Delivery Optimization |
-| Ubuntu | 22.04 LTS | AMD64 | ✓ Fully Supported | [![Build Status](https://dev.azure.com/azure-device-update/adu-linux-client/_apis/build/status/Azure.iot-hub-device-update?branchName=main)](https://dev.azure.com/azure-device-update/adu-linux-client/_build/latest?definitionId=27&branchName=main) | Primary development platform |
-| Ubuntu | 24.04 LTS | AMD64 | ✓ Fully Supported | - | curl downloader only, [see notes](#ubuntu-2404-lts-specifics) |
-| Ubuntu | 18.04 LTS | AMD64 | ✗ Not Supported | - | End of support |
-| Debian | 11 (Bullseye) | AMD64 | ✓ Supported | - | With Delivery Optimization |
-| Debian | 12 (Bookworm) | AMD64 | ✓ Supported | - | With Delivery Optimization |
-| Debian | 13 (Trixie) | AMD64 | ✓ Supported | - | curl downloader only (DO not available) |
-| Debian | 10 (Buster) | AMD64 | ✗ Not Supported | - | End of support |
-
-## Build Dependencies
-
-The following table lists all build-time dependencies with their Last Known Good (LKG) versions and platform availability.
-
-**Note:** Dependencies marked with an asterisk (*) require special attention. Click the link for details about patches, limitations, or special build instructions.
-
-### Core Build Tools
-
-| Tool | Minimum Version | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Debian 13 | Source |
-|------|----------------|--------------|--------------|--------------|-----------|-----------|-----------|--------|
-| GCC | 10.0 | gcc-10 | gcc-10/11 | gcc-13 | gcc-10 | gcc-12 | gcc-12 | System package |
-| CMake | 3.10 | 3.16.3 | 3.22.1 | 3.28.3 | 3.18.4 | 3.25.1 | 3.31.6 | System package or [built from source](#installing-dependencies) |
-| Ninja | 1.10+ | 1.10.0 | 1.10.2 | 1.11.1 | 1.10.1 | 1.11.1 | 1.12.1 | System package |
-| Git | 2.0+ | 2.25.1 | 2.34.1 | 2.43.0 | 2.30.2 | 2.39.2 | 2.47.3 | System package |
-| pkg-config | - | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | System package |
-
-### Core Dependencies Built from Source
-
-| Dependency | LKG Version/Tag | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Debian 13 | Notes |
-|------------|----------------|--------------|--------------|--------------|-----------|-----------|-----------|-------|
-| Azure IoT C SDK | `LTS_08_2023` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-azure-iot-c-sdk) |
-| Azure Storage SDK for C++ | `azure-core_1.6.0` | ✓ | ✓ | ✓* | ✓ | ✓* | ✓* | [*Requires GCC 12+ patch](#building-azure-storage-sdk-for-c) |
-| Delivery Optimization SDK | `main` (latest) | ✓ | ✓ | ✗ | ✓ | ✓ | ✗ | [Not available on Ubuntu 24.04 or Debian 13](#building-delivery-optimization-sdk) |
-| Catch2 | `v3.8.0` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-catch2) (unit tests only) |
-| Parson | Latest | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | [Build instructions](#building-parson) |
-| Microsoft Delta Download Handler | Submodule | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | Built with agent |
+This section provides a comprehensive overview of all dependencies required to build and run the Device Update agent. Dependencies are organized by category with explanations of their purpose and requirements.
 
 ### System Package Dependencies
 
-| Package | Purpose | Ubuntu 20.04 | Ubuntu 22.04 | Ubuntu 24.04 | Debian 11 | Debian 12 | Debian 13 |
-|---------|---------|--------------|--------------|--------------|-----------|-----------|-----------|
-| libcurl4-openssl-dev | HTTP/HTTPS client | ✓ Required | ✓ Required | ✓ Required | ✓ Required | ✓ Required | ✓ Required |
-| libssl-dev | TLS/Crypto | ✓ (1.1.1) | ✓ (3.0) | ✓ (3.0) | ✓ (1.1.1) | ✓ (3.0) | ✓ (3.5) |
-| uuid-dev | UUID generation | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| zlib1g-dev | Compression | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+The following system packages are required for building the agent. These are automatically installed by [`scripts/install-deps.sh`](../../scripts/install-deps.sh).
 
-### Optional Development Tools
+#### Core Build Tools
+| Package | Purpose | Version Required |
+|---------|---------|------------------|
+| `build-essential` | Essential compilation tools (gcc, g++, libc6-dev, make) | Latest available |
+| `cmake` | Cross-platform build system generator | 3.5+ |
+| `ninja-build` | Fast parallel build tool (alternative to make) | Latest available |
+| `make` | Build automation tool | Latest available |
+| `git` | Version control for downloading source dependencies | Latest available |
+| `pkg-config` | Helper tool for compiling applications and libraries | Latest available |
 
+#### Compiler Requirements
+| Package | Purpose | Version Required |
+|---------|---------|------------------|
+| `gcc` / `g++` | GNU Compiler Collection | 6.3+ (7.4+ recommended) |
+| Alternative: `clang` | LLVM C/C++ compiler | 6.0+ |
+
+**Platform-specific compiler versions:**
+- **Debian 9**: gcc-6, g++-6 (6.3+) **(NO LONGER SUPPORTED as of 10/24/2025)**
+- **Ubuntu 18.04+**: gcc-8, g++-8 (7.4+ available by default, 8+ installed by script) **(NO LONGER SUPPORTED as of 10/24/2025)**
+- **Debian 11**: gcc-10, g++-10
+- **Debian 12**: gcc-12, g++-12
+- **Ubuntu 20.04/22.04**: gcc-10, g++-10
+- **Ubuntu 24.04**: gcc-13 (system default)
+- **Debian 13 (Trixie)**: gcc-12, g++-12 (installed by script, system has gcc-14)
+
+#### Network and Security Libraries
+| Package | Purpose | Required For |
+|---------|---------|--------------|
+| `libcurl4-openssl-dev` | HTTP/HTTPS client library | Download operations, web requests |
+| `libssl-dev` | OpenSSL development headers | Cryptographic operations, TLS/SSL |
+| `curl` | Command-line download utility | Script operations |
+| `wget` | Web file retrieval utility | Dependency downloads |
+
+#### System Utilities
+| Package | Purpose | Required For |
+|---------|---------|--------------|
+| `uuid-dev` | UUID generation library | Unique identifier generation |
+| `libxml2-dev` | XML parsing library | Configuration and manifest parsing |
+| `lsb-release` | Linux Standard Base information | OS version detection |
+
+### External Source Dependencies
+
+These major components are built from source during the build process:
+
+#### Azure IoT C SDK
+- **Repository**: [Azure/azure-iot-sdk-c](https://github.com/Azure/azure-iot-sdk-c)
+- **Purpose**: Connect to IoT Hub and call Azure IoT Plug and Play APIs
+- **Default Branch**: `LTS_08_2023`
+- **Required For**: All Azure IoT Hub communication (MQTT, device authentication, telemetry)
+- **Customization**: Use `--azure-iot-sdk-ref <branch/tag>` to specify version
+
+#### Delivery Optimization SDK
+- **Repository**: [microsoft/do-client](https://github.com/microsoft/do-client)
+- **Purpose**: Robust, efficient download mechanism for update packages
+- **Default Branch**: `develop`
+- **Required For**: Update package downloads (can be disabled with curl fallback)
+- **Customization**: Use `--do-ref <branch/tag>` to specify version
+- **Note**: Not available on Ubuntu 24.04 or Debian 13; curl downloader is used instead
+
+#### Azure Blob Storage File Upload Utility
+- **Purpose**: Upload files to Azure storage (logs, diagnostics)
+- **Required For**: Diagnostic data upload functionality
+
+#### IotHub Device Update Delta
+- **Purpose**: Delta update functionality for efficient incremental updates
+- **Required For**: Advanced update scenarios with delta compression
+
+### Development and Testing Dependencies
+
+#### Testing Framework
+| Package | Purpose | Installation |
+|---------|---------|--------------|
+| `Catch2` | C++ unit testing framework | Built from source |
+| **Default Version**: `v3.8.0` | Unit test execution | `--catch2-ref <version>` to customize |
+
+#### Static Analysis Tools (Optional)
+| Package | Purpose | Installation |
+|---------|---------|--------------|
+| `clang` | C/C++ compiler and analyzer | `apt install clang` |
+| `clang-tidy` | Clang-based linter | `apt install clang-tidy` |
+| `cppcheck` | Static analysis tool | `apt install cppcheck` |
+| `clang-format` | Code formatting | `apt install clang-format` |
+
+#### Additional Development Tools (Optional)
 | Tool | Purpose | Installation |
 |------|---------|--------------|
-| clang-format | Code formatting | `sudo apt install clang-format` |
-| cmake-format | CMake formatting | `sudo apt install python3-pip && sudo pip3 install cmake-format` |
-| valgrind | Memory testing | `sudo apt install valgrind` (3.19+ recommended) |
-| shellcheck | Shell script linting | Via install-deps.sh |
+| `cmake-format` | CMake file formatting | `pip3 install cmake-format` |
+| `shellcheck` | Shell script linting | Auto-installed by script |
+| `doxygen` | Documentation generation | `apt install doxygen` (for `--build-documentation`) |
+| `graphviz` | Graph visualization | `apt install graphviz` (for documentation) |
 
-## Runtime Dependencies
+### Optional Platform-Specific Dependencies
 
-The following dependencies are required to run the Device Update agent on deployed devices.
+#### Optional Platform-Specific Dependencies
 
-### Core Runtime Requirements
+#### SWUpdate Handler (Ubuntu)
+- **Purpose**: Support for SWUpdate-based system updates
+- **Installation**: `--install-swupdate`
+- **Default Version**: Latest from [sbabic/swupdate](https://github.com/sbabic/swupdate)
+- **Required Libraries**: `libconfig-dev` (auto-installed)
 
-| Dependency | Minimum Version | Package Name (Ubuntu) | Purpose |
-|------------|----------------|----------------------|---------|
-| systemd | 237+ | systemd | Daemon management |
-| libssl | 1.1+ | libssl3 (22.04+), libssl1.1 (20.04) | TLS/crypto operations |
-| libcurl | 7.58+ | libcurl4 | HTTP client |
-| curl (binary) | 7.58+ | curl | Content download (24.04), rootkey download |
+### Dependency Matrix by Build Scenario
 
-### Platform-Specific Runtime Dependencies
+The following table shows which dependencies are required for different build and deployment scenarios:
 
-**Ubuntu 20.04, 22.04, Debian 11, Debian 12:**
-- `deliveryoptimization-agent` >= 1.0.0 (primary downloader)
-- `libdeliveryoptimization` >= 1.0.0
-- `curl` (fallback downloader)
+| Dependency Category | Minimal Build | Production Build | Development | Testing | Documentation |
+|---------------------|:-------------:|:----------------:|:-----------:|:-------:|:-------------:|
+| **Core Build Tools** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Compiler (GCC/Clang)** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Network Libraries** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **System Utilities** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Azure IoT C SDK** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Delivery Optimization** | ❌* | ✅ | ✅ | ✅ | ❌ |
+| **Azure Storage SDK** | ❌ | ✅ | ✅ | ❌ | ❌ |
+| **Catch2 Testing** | ❌ | ❌ | ✅ | ✅ | ❌ |
+| **Static Analysis** | ❌ | ❌ | ✅ | ✅ | ❌ |
+| **SWUpdate** | ❌ | ❌** | ✅ | ✅ | ❌ |
+| **Documentation Tools** | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-**Ubuntu 24.04, Debian 13:**
-- `curl` (primary downloader)
-- Note: Delivery Optimization not available
+**Legend:**
+- ✅ Required
+- ❌ Not needed
+- ❌* Optional (can use curl fallback)
+- ❌** Optional (only if using SWUpdate updates)
 
-## Quick Start
+#### Installation Commands by Scenario
 
-For most users, building the agent is straightforward:
-
-```sh
-# Install all dependencies
-./scripts/install-deps.sh -a
-
-# Build the agent with unit tests and create Debian package
-./scripts/build.sh -c -u --build-packages
-
-# Install the package
-sudo apt install ./out/deviceupdate-agent_*.deb
-```
-
-For incremental builds after the initial build:
-
-```sh
-cd out
-ninja
-```
-
-To run tests:
-
-```sh
-cd out
-ctest
-# or
-ninja test
-```
-
-## Building Dependencies from Source
-
-The `install-deps.sh` script automates building dependencies, but this section documents the process, required versions, and any patches needed for each dependency.
-
-### Building Azure IoT C SDK
-
-**Repository:** [https://github.com/Azure/azure-iot-sdk-c](https://github.com/Azure/azure-iot-sdk-c)
-**LKG Version:** `LTS_08_2023` branch
-**Build Location:** `.workspace/azure-iot-sdk-c`
-**Platforms:** All supported (Ubuntu 20.04, 22.04, 24.04, Debian 11, 12)
-
-The Azure IoT C SDK provides the connectivity layer to Azure IoT Hub and implements the Azure IoT Plug and Play APIs.
-
-**Patches Required:** None
-
-**Build Options:**
-- MQTT transport (`use_mqtt=ON`)
-- MQTT over WebSockets (`use_wsio=ON`)
-- Both are built by default
-
-**Known Issues:** None
-
----
-
-### Building Azure Storage SDK for C++
-
-**Repository:** [https://github.com/Azure/azure-sdk-for-cpp](https://github.com/Azure/azure-sdk-for-cpp)
-**LKG Version:** `azure-core_1.6.0` tag
-**Build Location:** `.workspace/azure_storage_sdk_dir`
-**Platforms:** All supported (Ubuntu 20.04, 22.04, 24.04*, Debian 11, 12*)
-
-The Azure Storage SDK for C++ provides blob storage operations for file uploads.
-
-#### GCC 12+ Compatibility Patch
-
-**Affected Platforms:** Platforms using GCC 12 or later
-- Ubuntu 24.04 (GCC 13)
-- Debian 12 (GCC 12)
-- Debian 13 (GCC 12/14)
-- Any custom build environment with GCC 12+
-
-**Issue:** GCC 12 and later removed implicit standard library includes that previous versions provided. The Azure Storage SDK compilation fails with errors like:
-- `error: 'uint8_t' does not name a type`
-- `error: 'uint16_t' was not declared in this scope`
-
-**Patch File:** `scripts/patches/azure-storage-sdk-base64-cstdint.patch`
-
-**Affected Files:**
-- `sdk/core/azure-core/inc/azure/core/internal/cryptography/base64.hpp`
-- `sdk/core/azure-core/src/cryptography/base64.cpp`
-- `sdk/core/azure-core/inc/azure/core/uuid.hpp`
-
-**Solution:** The patch adds explicit `#include <cstdint>` directives to the affected files.
-
-**Automatic Application:**
-The `install-deps.sh` script automatically detects the GCC version during the Azure Storage SDK build process. If GCC version is 12 or later, the patch is applied automatically. Platforms with GCC 10 or 11 do not require or receive this patch.
-
-**Manual Application:**
-```sh
-cd .workspace/azure_storage_sdk_dir
-git apply ../../scripts/patches/azure-storage-sdk-base64-cstdint.patch
-```
-
-**Verification:**
-After patching, the SDK compiles successfully with GCC 13 without warnings or errors.
-
----
-
-### Building Delivery Optimization SDK
-
-**Repository:** [https://github.com/microsoft/do-client](https://github.com/microsoft/do-client)
-**LKG Version:** `main` branch (latest)
-**Build Location:** `.workspace/do`
-**Platforms:** Ubuntu 20.04, 22.04, Debian 11, 12
-
-The Delivery Optimization SDK provides robust, peer-to-peer content distribution for update downloads.
-
-**Availability:**
-- ✓ **Ubuntu 20.04:** Fully supported
-- ✓ **Ubuntu 22.04:** Fully supported
-- ✓ **Debian 11:** Fully supported
-- ✓ **Debian 12:** Fully supported
-- ✗ **Ubuntu 24.04:** **NOT AVAILABLE** - Package not maintained for this version
-- ✗ **Debian 13:** **NOT AVAILABLE** - Package not maintained for this version
-
-**Alternative on Ubuntu 24.04 and Debian 13:**
-The agent automatically uses the curl content downloader (`libcurl_content_downloader.so`) as a replacement. The build system detects Ubuntu 24.04 and Debian 13 and configures accordingly:
-- Sets `ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF`
-- Registers curl downloader as primary content downloader
-- Package dependencies exclude DO packages
-
-**Build Command (Ubuntu 20.04/22.04, Debian 11/12):**
-```sh
-./scripts/install-deps.sh --install-do
-```
-
-**Patches Required:** None
-
-**Known Limitations on Ubuntu 24.04:**
-- No peer-to-peer download optimization
-- All content downloads via direct HTTP/HTTPS using curl
-- Functionally equivalent but may use more bandwidth in fleet scenarios
-
----
-
-### Building Catch2
-
-**Repository:** [https://github.com/catchorg/Catch2](https://github.com/catchorg/Catch2)
-**LKG Version:** `v3.8.0` tag
-**Build Location:** `.workspace/catch2`
-**Platforms:** All supported (Ubuntu 20.04, 22.04, 24.04, Debian 11, 12)
-**Purpose:** Unit testing framework
-
-**Patches Required:** None
-
-**Note:** Only required for building and running unit tests. Not needed for production builds.
-
----
-
-### Building Parson
-
-**Repository:** [https://github.com/kgabis/parson](https://github.com/kgabis/parson)
-**LKG Version:** Latest from master
-**Build Location:** `.workspace/parson`
-**Platforms:** All supported (Ubuntu 20.04, 22.04, 24.04, Debian 11, 12)
-**Purpose:** Lightweight JSON parser
-
-**Patches Required:** None
-
-**Known Issues:** None
+| Scenario | Command | Purpose |
+|----------|---------|---------|
+| **Quick Start** | `./scripts/install-deps.sh -a` | Everything needed for development |
+| **Minimal Build** | `./scripts/install-deps.sh --install-packages-only` | System packages only |
+| **Production** | `./scripts/install-deps.sh --install-aduc-deps --install-do --install-packages` | Core runtime dependencies |
+| **Development** | `./scripts/install-deps.sh -a --keep-source-code` | Full setup with source preservation |
+| **CI/Testing** | `./scripts/install-deps.sh -a --install-githooks` | Complete with testing tools |
+| **Documentation** | `sudo apt install doxygen graphviz` | Documentation generation only |
 
 ## Building the Device Update Agent for Linux
 
+### Installing pkg-config (Required for SDK Usage)
+
+If you plan to use the ADU SDK in external applications, you'll need pkg-config installed first:
+
+#### Ubuntu/Debian
+```sh
+sudo apt update
+sudo apt install pkgconfig
+```
+
+#### RHEL/Fedora (Community Support)
+```sh
+# RHEL 7
+sudo yum install pkgconfig
+
+# RHEL 8+ / Fedora
+sudo dnf install pkgconfig
+```
+
+#### Yocto/Embedded Linux
+Add to your image recipe:
+```bitbake
+IMAGE_INSTALL_append = " pkgconfig"
+```
+
+### Platform Compatibility Matrix
+
+The Device Update agent has been tested and validated on the following platforms:
+
+| Distribution | Version | Architecture | Compiler | Status | Notes |
+|--------------|---------|--------------|----------|--------|-------|
+| **Ubuntu** | 18.04 LTS | x64, ARM32, ARM64 | GCC 7.4+ (8+ installed) | ✅ Supported | Minimum supported version |
+| **Ubuntu** | 20.04 LTS | x64, ARM32, ARM64 | GCC 9.4+ | ✅ Supported | Recommended |
+| **Ubuntu** | 22.04 LTS | x64, ARM32, ARM64 | GCC 11+ | ✅ Supported | Latest tested |
+| **Ubuntu** | 24.04 LTS | x64, ARM32, ARM64 | GCC 13 | ✅ Supported | curl downloader only (DO not available) |
+| **Debian** | 9 (Stretch) | x64, ARM32, ARM64 | GCC 6.3+ | ✅ Supported | Legacy support |
+| **Debian** | 10 (Buster) | x64, ARM32, ARM64 | GCC 8.3+ | ✅ Supported | Stable |
+| **Debian** | 11 (Bullseye) | x64, ARM32, ARM64 | GCC 10.2+ | ✅ Supported | Recommended |
+| **Debian** | 12 (Bookworm) | x64, ARM32, ARM64 | GCC 12+ | ✅ Supported | Latest tested |
+| **Debian** | 13 (Trixie) | x64, ARM32, ARM64 | GCC 12 (installed) | ✅ Supported | curl downloader only (DO not available) |
+| **RHEL** | 8+ | x64, ARM64 | GCC 8+ | 🟡 Community | Manual setup required |
+| **Fedora** | 33+ | x64, ARM64 | GCC 10+ | 🟡 Community | Manual setup required |
+
+**Status Legend:**
+- ✅ **Supported**: Fully tested with automated installation and official support
+- 🟡 **Community**: Community-supported, may work but requires manual setup
+- ❌ **Not Supported**: Known compatibility issues
+
+#### Platform-Specific Considerations
+
+##### Ubuntu/Debian (Officially Supported)
+- **Auto-detection**: Script automatically detects version and installs appropriate compiler
+- **Package Manager**: Full apt integration with dependency resolution
+- **Testing**: Primary CI/CD platform with extensive validation
+- **Support**: Official Microsoft support available
+
+##### RHEL/Fedora (Community Support)
+- **Manual Setup**: Requires manual installation of build tools and dependencies
+- **Package Differences**: Some package names differ from Debian-based distributions
+- **Compiler**: May need to install newer GCC versions manually
+- **Support**: Community-supported, not officially supported by Microsoft
+
+```sh
+# RHEL 8+
+sudo dnf groupinstall "Development Tools"
+sudo dnf install cmake openssl-devel libcurl-devel libuuid-devel
+```
+
+##### Yocto/OpenEmbedded
+- **Build Host**: Run dependency installation on build host, not target
+- **Target Integration**: Include required runtime libraries in target image
+- **Cross-compilation**: Ensure proper toolchain configuration
+
+```bitbake
+# Example Yocto recipe additions
+DEPENDS += "openssl curl util-linux cmake-native"
+IMAGE_INSTALL_append = " \
+    openssl \
+    curl \
+    util-linux-libuuid \
+    pkgconfig \
+"
+```
+
+#### Architecture-Specific Notes
+
+##### ARM32 (armhf)
+- **Memory**: Minimum 256MB RAM recommended (128MB minimum)
+- **Compiler**: Use GCC 6.3+ for compatibility, GCC 8+ recommended for optimal performance
+- **Testing**: Extensively tested on Raspberry Pi 3/4
+
+##### ARM64 (aarch64)
+- **Performance**: Recommended for production ARM deployments
+- **Compatibility**: Full feature parity with x64 builds
+- **Testing**: Validated on various ARM64 SBCs and cloud instances
+
+##### x64 (amd64)
+- **Standard**: Primary development and testing platform
+- **Performance**: Best performance for development and high-throughput scenarios
+
 ### Installing Dependencies
 
-Use the [scripts/install-deps.sh](../../scripts/install-deps.sh) Linux shell
-script for a convenient way to install the dependencies of the Device Update for IoT Hub agent for most use cases.
+The Device Update agent provides a comprehensive dependency installation script that handles all the complexity of installing dependencies across different platforms and scenarios.
 
-**Note**: You may be prompted for sudo password or GitHub username and password
-when running `install-deps.sh`. If your GitHub account has two factor auth
-enabled, use a personal access token (PAT) as the password.
+#### Quick Start - Install All Dependencies
 
-To install all dependencies run:
+For most users, this single command installs everything needed:
 
 ```sh
 ./scripts/install-deps.sh -a
 ```
 
-**Note:**: `--use-ssh` can be used to clone dependencies from the Git repo using SSH instead of https.
-
-To install only the dependencies necessary for the agent:
-
+This is equivalent to running:
 ```sh
-./scripts/install-deps.sh --install-aduc-deps --install-packages --install-do
+./scripts/install-deps.sh --install-aduc-deps --install-do --install-packages --install-cmake --install-shellcheck
 ```
 
-`install-deps.sh` also provides several options for installing individual
-dependencies. To see the usage info:
+#### Script Options and Customization
+
+The [`scripts/install-deps.sh`](../../scripts/install-deps.sh) script provides extensive customization options for different build scenarios.
+
+**Environment Caching**: The script automatically loads previous settings from `.adu-dev/build.env` if available, and caches current settings after successful installation. Command-line options always override cached defaults.
+
+##### Primary Installation Categories
+
+| Option | Purpose | Includes |
+|--------|---------|----------|
+| `-a, --install-all-deps` | **Complete installation** (recommended) | All categories below |
+| `--install-aduc-deps` | Agent core dependencies | Azure IoT SDK, Catch2, system packages |
+| `--install-do` | Delivery Optimization | DO SDK from source |
+| `-p, --install-packages` | System packages only | apt packages listed above |
+| `--install-packages-only` | System packages without source builds | Package dependencies only |
+
+##### Individual Component Options
+
+| Option | Purpose | Default Version | Customization |
+|--------|---------|-----------------|---------------|
+| `--install-azure-iot-sdk` | Azure IoT C SDK | `LTS_08_2023` | `--azure-iot-sdk-ref <branch>` |
+| `--install-do` | Delivery Optimization SDK | `develop` | `--do-ref <branch/tag>` |
+| `--install-azure-storage-sdk` | Azure SDK for C++ | Latest | For blob storage features |
+| `--install-catch2` | Testing framework | `v2.13.9` | `--catch2-ref <version>` |
+| `--install-cmake` | Build system | Platform-specific | `--cmake-version <version>` |
+| `--install-shellcheck` | Shell script linting | Latest | Auto-managed |
+| `--install-swupdate` | SWUpdate support | Latest | `--swupdate-ref <version>` |
+| `--install-githooks` | Repository git hooks | N/A | Development workflow |
+
+##### Configuration Options
+
+| Option | Purpose | Default | Example |
+|--------|---------|---------|---------|
+| `-f, --work-folder <path>` | Source code location | `/tmp` | `~/adu-deps` |
+| `-k, --keep-source-code` | Preserve source after build | Delete | Keep for debugging |
+| `--use-ssh` | Use SSH for git clones | HTTPS | For authenticated repos |
+| `--cmake-prefix <path>` | CMake install location | `/tmp` | `/usr/local` |
+| `--cmake-force-source` | Force CMake from source | Installer first | Override detection |
+| `--list-deps` | Show dependency status | N/A | Diagnostic tool |
+
+#### Common Build Scenarios
+
+##### Minimal Build (Packages Only)
+```sh
+# Install only system packages, use existing dependencies
+./scripts/install-deps.sh --install-packages-only
+```
+
+##### Development Environment
+```sh
+# Full installation with source preservation for debugging
+./scripts/install-deps.sh -a -f ~/adu-dev-deps --keep-source-code
+```
+
+##### Custom IoT SDK Version
+```sh
+# Use specific Azure IoT SDK branch
+./scripts/install-deps.sh --install-aduc-deps --azure-iot-sdk-ref v1.10.0
+```
+
+##### Testing Environment
+```sh
+# Install with SWUpdate support for handler testing
+./scripts/install-deps.sh -a --install-swupdate
+```
+
+##### Continuous Integration
+```sh
+# Install with githooks for automated builds
+./scripts/install-deps.sh -a --install-githooks
+```
+
+##### Corporate Environment (SSH)
+```sh
+# Use SSH for repositories requiring authentication
+./scripts/install-deps.sh -a --use-ssh
+```
+
+## Environment Caching and Configuration Sharing
+
+The ADU build system automatically caches environment variables and build configuration between `install-deps.sh` and `build.sh` to ensure consistent builds and simplify the development workflow.
+
+### How Environment Caching Works
+
+When you run `install-deps.sh`, it:
+
+1. **Loads previous settings** from `.adu-dev/build.env` if available (e.g., work folder, SDK versions, compiler paths)
+2. **Caches current configuration** after successful installation to `.adu-dev/build.env`
+3. **Shares environment variables** with `build.sh` for consistent builds
+
+When you run `build.sh`, it:
+
+1. **Automatically loads** cached environment from `.adu-dev/build.env` if available
+2. **Uses cached values as defaults** (work folder, cmake paths, compiler settings)
+3. **Allows command-line overrides** of any cached values
+
+### Cached Environment Variables
+
+The following variables are automatically shared between scripts:
+
+#### Build Directories and Paths
+- `ADUC_WORK_FOLDER` - Source code location for dependencies
+- `ADUC_CMAKE_DIR_PATH` - CMake installation directory
+- `CMAKE_PREFIX` - CMake install prefix
+
+#### Compiler and Tool Settings
+- `CC`, `CXX` - Primary compiler paths
+- `CATCH2_CC`, `CATCH2_CXX` - Catch2-specific compiler paths
+- `CMAKE_BIN` - CMake binary path
+- `CMAKE_VERSION` - Installed CMake version
+
+#### SDK and Library References
+- `AZURE_IOT_SDK_REF` - Azure IoT SDK version/branch
+- `CATCH2_REF` - Catch2 testing framework version
+- `SWUPDATE_REF` - SWUpdate version
+- `DO_REF` - Delivery Optimization version
+
+#### System Information
+- `ADUC_OS`, `ADUC_VERSION` - Operating system details
+- `ADUC_IS_AMD64`, `ADUC_IS_ARM64`, `ADUC_IS_ARM32` - Architecture flags
+
+### Benefits of Environment Caching
+
+1. **Consistency**: Ensures `build.sh` uses the same paths and versions as `install-deps.sh`
+2. **Convenience**: No need to repeatedly specify custom work folders or tool paths
+3. **Reliability**: Reduces configuration drift between dependency installation and building
+4. **Flexibility**: Command-line options always override cached values
+
+### Managing the Build Environment Cache
+
+#### View Current Cache
+```sh
+# Display cached environment variables
+cat .adu-dev/build.env
+```
+
+#### Reset Build Environment
+```sh
+# Method 1: Delete the entire cache directory
+rm -rf .adu-dev/
+
+# Method 2: Delete just the cache file
+rm -f .adu-dev/build.env
+
+# Method 3: Override with fresh installation
+./scripts/install-deps.sh -a --work-folder /tmp/fresh-build
+```
+
+#### Override Cached Values
+```sh
+# install-deps.sh: Command-line options override cached defaults
+./scripts/install-deps.sh -a --work-folder ~/custom-deps  # Overrides cached work folder
+
+# build.sh: Command-line options override cached defaults
+./scripts/build.sh -o ~/custom-output  # Overrides cached output directory
+```
+
+#### Troubleshooting Cache Issues
+
+##### Stale Cache After System Changes
+```sh
+# If you've moved directories or changed system configuration
+rm -f .adu-dev/build.env
+./scripts/install-deps.sh -a  # Recreates cache with current settings
+```
+
+##### Debugging Cache Loading
+```sh
+# Both scripts show cache loading messages:
+# "Loading cached build environment from .adu-dev/build.env..."
+# "Cached environment loaded successfully."
+
+# If cache loading fails, check file permissions
+ls -la .adu-dev/build.env
+```
+
+##### Cache Location and Portability
+- **Cache Location**: `.adu-dev/build.env` (relative to repository root)
+- **Git Ignore**: Cache directory is automatically ignored by git
+- **Portability**: Cache is machine-specific and should not be shared between systems
+
+#### Platform-Specific Instructions
+
+##### Ubuntu/Debian (Officially Supported)
+```sh
+# Standard installation
+sudo apt update
+./scripts/install-deps.sh -a
+```
+
+##### RHEL/Fedora (Community Support)
+```sh
+# Install pkg-config first (see platform compatibility section for details)
+sudo dnf install pkgconfig  # RHEL 8+/Fedora
+./scripts/install-deps.sh -a  # May require manual intervention
+```
+
+##### Yocto/Embedded Linux
+```sh
+# Install pkg-config in your image recipe
+IMAGE_INSTALL_append = " pkgconfig"
+# Then run script on target or build host
+```
+
+#### Troubleshooting Dependencies
+
+##### Authentication Issues
+- **GitHub 2FA**: Use personal access token (PAT) instead of password
+- **SSH Keys**: Use `--use-ssh` option for SSH-based authentication
+- **Corporate Proxy**: Configure git and curl proxy settings
+
+##### Permission Issues
+```sh
+# Script will prompt for sudo when needed
+# Ensure user has sudo privileges for package installation
+```
+
+##### Dependency Conflicts
+```sh
+# List current dependency status
+./scripts/install-deps.sh --list-deps
+
+# Clean rebuild with custom work folder
+./scripts/install-deps.sh -a -f ~/clean-build --work-folder ~/clean-build
+```
+
+##### Version Conflicts
+```sh
+# Force specific versions
+./scripts/install-deps.sh --install-aduc-deps \
+    --azure-iot-sdk-ref LTS_01_2024 \
+    --catch2-ref v2.13.9
+```
+
+### Keeping Documentation in Sync
+
+This documentation is designed to stay synchronized with the [`scripts/install-deps.sh`](../../scripts/install-deps.sh) implementation. To ensure accuracy:
+
+#### For Contributors
+When modifying `install-deps.sh`, please update this documentation:
+
+1. **Package Lists**: Update the [System Package Dependencies](#system-package-dependencies) tables
+2. **Script Options**: Update the [Script Options and Customization](#script-options-and-customization) section
+3. **Version Defaults**: Update default versions for external dependencies
+4. **Platform Support**: Update the [Platform Compatibility Matrix](#platform-compatibility-matrix)
+
+#### Validation Commands
+Use these commands to verify documentation accuracy:
 
 ```sh
+# Check current script help text
 ./scripts/install-deps.sh -h
+./scripts/build.sh -h
+
+# List dependency status
+./scripts/install-deps.sh --list-deps
+
+# Verify package list (compare with documentation)
+grep -n "aduc_packages=" scripts/install-deps.sh
+grep -n "static_analysis_packages=" scripts/install-deps.sh
+
+# Test environment caching functionality
+./scripts/install-deps.sh --install-packages-only --work-folder /tmp/test
+cat .adu-dev/build.env  # Verify cache contents
+rm -f .adu-dev/build.env  # Reset for testing
 ```
 
-#### Customizing Dependency Build Location
+#### Quick Reference
+Key locations in `install-deps.sh` that should match documentation:
 
-By default, dependencies are downloaded and built in `/tmp`. You can specify a custom location using the `--work-folder` option:
-
-```sh
-./scripts/install-deps.sh --install-all-deps --work-folder /path/to/your/workspace
-```
-
-This is useful when:
-- `/tmp` is mounted as `noexec` or has size constraints
-- You want to preserve downloaded source code using `--keep-source-code` option
-- Working in a containerized or restricted environment
-
-Example with preserved source code:
-
-```sh
-./scripts/install-deps.sh --install-all-deps --work-folder ~/adu-deps --keep-source-code
-```
+| Documentation Section | Script Location | Line(s) |
+|----------------------|-----------------|---------|
+| [System Package Dependencies](#system-package-dependencies) | `aduc_packages=` | ~91 |
+| [Static Analysis Tools](#development-and-testing-dependencies) | `static_analysis_packages=` | ~92 |
+| [Script Options](#script-options-and-customization) | `print_help()` function | ~102-145 |
+| [Default Versions](#external-source-dependencies) | Variable definitions | ~50-90 |
+| [Environment Caching](#environment-caching-and-configuration-sharing) | `cache_build_environment()` function | ~1217-1265 |
+| [Environment Loading](#environment-caching-and-configuration-sharing) | Cache loading at startup | ~53-58 |
 
 ### Install Optional Development Tools
 
@@ -335,11 +589,15 @@ The Device Update for IoT Hub reference agent code utilizes CMake for building. 
 
 #### Build Using build.sh
 
+The build script automatically integrates with the environment caching system. If you've run `install-deps.sh`, the build script will automatically use the cached environment settings.
+
 To build the reference agent with the default parameters:
 
 ```sh
 ./scripts/build.sh -c
 ```
+
+**Environment Integration**: The script automatically loads cached variables from `.adu-dev/build.env` if available, ensuring consistent compiler paths, work directories, and CMake settings from your dependency installation.
 
 To see additional build options with build.sh:
 
@@ -347,18 +605,30 @@ To see additional build options with build.sh:
 build.sh -h
 ```
 
-##### Customizing Build Artifact Location
+#### Build Script Environment Features
 
-By default, temporary build artifacts (CMake, shellcheck, test data) are stored in `/tmp`. You can specify a custom location using the `--work-folder` option:
+The build script provides several environment-aware features:
+
+- **Automatic Cache Loading**: Loads build environment from `.adu-dev/build.env` if available
+- **Cached CMake Path**: Uses CMake installed by `install-deps.sh` automatically
+- **Compiler Consistency**: Uses the same compiler settings as dependency installation
+- **Work Folder Integration**: Aligns with dependency installation work folder settings
+
+#### Common Build Patterns
 
 ```sh
-./scripts/build.sh --work-folder /path/to/your/workspace -c
-```
+# Standard build (uses cached environment if available)
+./scripts/build.sh -c
 
-This is useful when:
-- `/tmp` is mounted as `noexec` or has size constraints
-- You want to preserve build artifacts between system reboots
-- Working in a containerized or restricted environment
+# Build with unit tests (leverages cached Catch2 installation)
+./scripts/build.sh -c -u
+
+# Clean build with documentation
+./scripts/build.sh -c -d
+
+# Override cached output directory
+./scripts/build.sh -c -o ~/custom-output
+```
 
 ### Build and Run the unit tests
 
@@ -474,6 +744,156 @@ To build the debian package (will be output to the `out` directory):
 
 ```sh
 ./scripts/build.sh --build-packages
+```
+
+## Building the ADU SDK Library
+
+The ADU SDK provides a C API for external applications to query the Azure Device Update agent service status. This is particularly useful for IoT devices that need to:
+
+- Determine if the agent is actively processing updates
+- Safely power down during idle periods to conserve battery
+- Monitor update deployment workflow status
+
+### Build the SDK Library
+
+The SDK is built as part of the main build process and produces:
+- **Library**: `libaducsdk.a` (static library)
+- **Header**: `aducsdk.h` (C/C++ header file)
+- **pkg-config**: `aducsdk.pc` (package configuration for discovery)
+
+To build just the SDK:
+
+```sh
+./scripts/build.sh -c
+# or build only the SDK target
+cmake --build out --target aducsdk
+```
+
+### Install the SDK
+
+To install the SDK for system-wide use:
+
+```sh
+sudo cmake --build out --target install
+```
+
+This installs:
+- Library: `/usr/local/lib/libaducsdk.a`
+- Header: `/usr/local/include/aduc/aducsdk.h`
+- pkg-config: `/usr/local/lib/pkgconfig/aducsdk.pc`
+
+### Configuring SDK Build Options
+
+#### FIFO Path Configuration
+
+Configure the default FIFO path for communication with the agent:
+
+```sh
+# Custom FIFO path
+cmake -DADUC_API_DEFAULT_FIFO_PATH="/custom/path/to/api/apireq.fifo" ..
+./scripts/build.sh -c
+```
+
+### Using the SDK in External Applications
+
+#### Using pkg-config (Recommended)
+
+```sh
+# Check if SDK is installed
+pkg-config --exists aducsdk && echo "SDK found!"
+
+# Get compilation flags
+gcc myapp.c $(pkg-config --cflags --libs aducsdk) -o myapp
+
+# Check version
+pkg-config --modversion aducsdk
+```
+
+#### Example Application
+
+```c
+#include <stdio.h>
+#include <aduc/aducsdk.h>
+
+int main() {
+    printf("Checking ADU Agent status...\n");
+
+    ADUC_ServiceStatus status = GetAduServiceStatus();
+    const char* statusStr = ADUC_ServiceStatusToString(status);
+
+    printf("Status: %s (%d)\n", statusStr, status);
+
+    // Power management logic for IoT device
+    if (status == ADUC_ServiceStatus_Idle || status == ADUC_ServiceStatus_Paused) {
+        printf("Agent is idle/paused - safe to power down to conserve battery\n");
+        // system("poweroff");  // Uncomment for actual power management
+    } else if (status >= ADUC_ServiceStatus_ERROR_UnsupportedApiVersion) {
+        printf("Error communicating with agent: %s\n", statusStr);
+        return 1;
+    } else {
+        printf("Agent is active - staying online\n");
+    }
+
+    return 0;
+}
+```
+
+#### Using CMake
+
+In your `CMakeLists.txt`:
+
+```cmake
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(ADUCSDK REQUIRED aducsdk)
+
+target_include_directories(myapp PRIVATE ${ADUCSDK_INCLUDE_DIRS})
+target_link_libraries(myapp ${ADUCSDK_LIBRARIES})
+target_compile_options(myapp PRIVATE ${ADUCSDK_CFLAGS_OTHER})
+```
+
+### Yocto Integration
+
+#### In your Yocto recipe (e.g., `myapp_1.0.bb`):
+
+```bitbake
+DESCRIPTION = "IoT Power Management Application"
+LICENSE = "MIT"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=..."
+
+# Add dependency on the ADU SDK
+DEPENDS += "aducsdk"
+
+# Use pkg-config to get compilation flags
+inherit pkgconfig
+
+do_compile() {
+    # pkg-config automatically provides the right flags
+    ${CC} ${CFLAGS} $(pkg-config --cflags aducsdk) -o myapp main.c $(pkg-config --libs aducsdk)
+}
+
+do_install() {
+    install -d ${D}${bindir}
+    install -m 0755 myapp ${D}${bindir}/
+}
+```
+
+#### Overriding SDK Configuration in Yocto
+
+To customize SDK build parameters in Yocto, add to your recipe or `local.conf`:
+
+```bitbake
+# Set custom FIFO path
+EXTRA_OECMAKE_append = " -DADUC_API_DEFAULT_FIFO_PATH='/custom/adu/api/apireq.fifo'"
+
+# Both together
+EXTRA_OECMAKE_append = " -DADUC_API_DEFAULT_FIFO_PATH='/opt/adu/api/request.fifo'"
+```
+
+Or in your device-specific configuration:
+
+```bitbake
+# In your machine configuration (.conf file)
+ADUC_API_DEFAULT_FIFO_PATH = "/custom/path/apireq.fifo"
 ```
 
 ### Build the agent using CMake
@@ -631,148 +1051,167 @@ After building the Debian package using `build.sh --build-packages`, do:
 sudo apt install ./out/{PKG_NAME}.deb
 ```
 
-## Platform-Specific Build Notes
 
-This section contains important platform-specific information, limitations, and workarounds.
 
-### Ubuntu 20.04 LTS Specifics
+## Dependency Build Strategy and Cross-Platform Considerations
 
-**GCC Version:** 10.3.0 (default)
-**CMake Version:** 3.16.3 (system), can use newer from install-deps.sh
+This section explains the rationale behind the ADU project's approach to dependency management, particularly for CMake and other build-from-source dependencies.
 
-**Delivery Optimization:**
-- Fully supported
-- Installed as system packages
+### CMake Version Strategy
 
-**Content Downloader:**
-- Primary: Delivery Optimization
-- Fallback: curl
+The ADU project requires CMake 3.23.2 rather than relying on system package managers for several important reasons:
 
-**Known Issues:** None
+#### Version Requirements
+- **Project minimum**: Most ADU components require CMake 3.5+
+- **Tool requirements**: Some tools require CMake 3.22+ (`tools/download_file`)
+- **Azure SDK compatibility**: Azure Storage SDK requires CMake 3.13+
+- **Target version**: 3.23.2 ensures compatibility with all components and modern features
 
----
+#### Cross-Platform & Architecture Support
 
-### Ubuntu 22.04 LTS Specifics
+The install script uses a smart strategy for CMake installation:
 
-**GCC Version:** 11.x (default) or 10.x
-**CMake Version:** 3.22.1 (system)
+```bash
+# Supported architectures: Use pre-built installers (fast)
+if [[ $is_amd64 == "true" || $is_arm64 == "true" ]]; then
+    # Download official CMake installer from GitHub releases
+    # Faster installation, pre-tested binaries
+    download_cmake_installer_3.23.2
+else
+    # Unsupported architectures: Build from source
+    # Ensures compatibility with RISC-V, ARM32, etc.
+    build_cmake_from_source
+fi
+```
 
-**Delivery Optimization:**
-- Fully supported
-- Primary development and CI/CD platform
+**Architecture Coverage:**
+- ✅ **x86_64 (amd64)**: Pre-built installer (fastest)
+- ✅ **aarch64 (ARM64)**: Pre-built installer (Raspberry Pi 4, AWS Graviton)
+- ✅ **ARM32, RISC-V, others**: Built from source (IoT/embedded targets)
 
-**Content Downloader:**
-- Primary: Delivery Optimization
-- Fallback: curl
+#### Cross-Compilation Benefits
 
-**Known Issues:** None
+Building CMake from source enables:
 
----
+1. **Consistent Toolchain**: Same CMake version across all target platforms
+2. **Embedded Device Support**: IoT devices with custom architectures
+3. **Container Reproducibility**: Identical builds in Docker, CI/CD
+4. **Distro Independence**: Works across Ubuntu, Debian, Alpine, Yocto
 
-### Ubuntu 24.04 LTS Specifics
+#### CI/CD and Build Consistency
 
-**GCC Version:** 13.3.0 (system default)
-**CMake Version:** 3.28.3 (system)
+**Problem with system packages:**
+```bash
+# Inconsistent versions across distributions
+Ubuntu 20.04: cmake 3.16.3   # Too old for some tools
+Ubuntu 22.04: cmake 3.22.1   # Close but not identical
+Debian 11:    cmake 3.18.4   # Different feature set
+```
 
-**Key Changes from Previous Versions:**
-- GCC 8/9/10 installation automatically skipped
-- Uses system default GCC 13 compiler
-- Build system auto-detects Ubuntu 24.04
+**Solution with controlled installation:**
+```bash
+# Identical version everywhere
+All platforms: cmake 3.23.2  # Guaranteed compatibility
+```
 
-**Delivery Optimization:**
-- **NOT AVAILABLE** - Package not maintained for Ubuntu 24.04
-- Build automatically disables DO via `ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF`
-- `build.sh` detects Ubuntu 24.04 and configures accordingly
+### Built-from-Source Dependencies Strategy
 
-**Content Downloader:**
-- Primary: `libcurl_content_downloader.so`
-- Automatically registered during package installation
-- No Delivery Optimization fallback available
+The ADU project builds several key dependencies from source for similar cross-platform reliability:
 
-**Compiler Compatibility:**
-- GCC 13 requires Azure Storage SDK patch (applied automatically by install-deps.sh when GCC >= 12)
-- See [Building Azure Storage SDK for C++](#building-azure-storage-sdk-for-c) for details
+#### Azure IoT C SDK (LTS_08_2023)
+- **Reason**: Specific LTS branch with known stability
+- **Benefit**: Consistent Azure connectivity across all platforms
+- **Alternative**: System packages often have different versions/patches
 
-**Package Dependencies:**
-- Debian package depends on `curl` only
-- No `deliveryoptimization-agent` or `libdeliveryoptimization` dependencies
+#### Catch2 Testing Framework (v3.8.0)
+- **Reason**: Specific version ensures test compatibility
+- **Benefit**: Identical test behavior in CI and local development
+- **Alternative**: System packages may not have the exact version needed
 
-**Known Limitations:**
-- No peer-to-peer download optimization
-- All downloads are direct HTTP/HTTPS via curl
+#### Delivery Optimization (develop branch)
+- **Reason**: Latest features for Microsoft's DO client
+- **Benefit**: Cutting-edge download optimization
+- **Alternative**: Not available in most system package repositories
 
----
+#### Azure Storage SDK (azure-core_1.6.0)
+- **Reason**: Specific tag for blob storage features
+- **Benefit**: Known-good version for ADU's storage requirements
+- **Alternative**: System packages significantly behind latest releases
 
-### Debian 11 (Bullseye) Specifics
+### Architecture-Specific Considerations
 
-**GCC Version:** 10.2.1 (default)
-**CMake Version:** 3.18.4 (system)
+#### x86_64 / amd64 Systems
+- **Primary target**: Development machines, cloud VMs
+- **Strategy**: Pre-built binaries when available, source builds for consistency
+- **Performance**: Optimized for rapid development cycles
 
-**Delivery Optimization:**
-- Fully supported
-- Installed via install-deps.sh
+#### ARM64 / aarch64 Systems
+- **Primary target**: Raspberry Pi 4+, AWS Graviton, Apple Silicon
+- **Strategy**: Pre-built ARM64 binaries, native compilation
+- **Performance**: Excellent native performance on modern ARM
 
-**Content Downloader:**
-- Primary: Delivery Optimization
-- Fallback: curl
+#### ARM32 / armv7l Systems
+- **Primary target**: Raspberry Pi 3, older embedded systems
+- **Strategy**: Cross-compilation or native source builds
+- **Considerations**: Memory constraints, longer build times
 
-**Known Issues:** None
+#### RISC-V and Emerging Architectures
+- **Primary target**: Future IoT devices, research platforms
+- **Strategy**: Source builds ensure forward compatibility
+- **Benefit**: ADU ready for next-generation hardware
 
----
+### Recommendations for Different Use Cases
 
-### Debian 12 (Bookworm) Specifics
+#### Development Environment
+```bash
+# Fast setup for development
+./scripts/install-deps.sh --install-all-deps
+# Uses pre-built binaries where possible
+```
 
-**GCC Version:** 12.2.0 (default)
-**CMake Version:** 3.25.1 (system)
+#### Production/Embedded Build
+```bash
+# Explicit control for production
+./scripts/install-deps.sh --install-all-deps --cmake-force-source
+# Ensures exact same build environment as CI
+```
 
-**Delivery Optimization:**
-- Fully supported
-- Installed via install-deps.sh
+#### Cross-Compilation Setup
+```bash
+# Target-specific build
+./scripts/install-deps.sh --install-all-deps \
+  --work-folder ./target-deps \
+  --keep-source-code yes
+# Preserves source for cross-compilation investigation
+```
 
-**Content Downloader:**
-- Primary: Delivery Optimization
-- Fallback: curl
+#### Minimal CI Environment
+```bash
+# Container-optimized
+./scripts/install-deps.sh --install-packages-only
+# Use pre-installed CMake in container
+```
 
-**Compiler Compatibility:**
-- GCC 12 requires Azure Storage SDK patch (applied automatically by install-deps.sh when GCC >= 12)
-- See [Building Azure Storage SDK for C++](#building-azure-storage-sdk-for-c) for details
+### Performance and Storage Considerations
 
-**Known Issues:** None
+| Approach | Build Time | Disk Usage | Reproducibility | Cross-Platform |
+|----------|------------|------------|-----------------|----------------|
+| System packages | Fastest (minutes) | Minimal | Poor | Limited |
+| Pre-built binaries | Fast (minutes) | Moderate | Good | Good |
+| Source builds | Slow (30+ min) | High | Excellent | Excellent |
+| **ADU hybrid** | **Balanced** | **Reasonable** | **Excellent** | **Excellent** |
 
----
+### Future Considerations
 
-### Debian 13 (Trixie) Specifics
+As the ADU project evolves, the dependency strategy may be updated to:
 
-**GCC Version:** 14.x (system default), gcc-12 used for build
-**CMake Version:** 3.31.6 (system)
+1. **CMake 3.25+**: For improved C++20 support and performance
+2. **Conan integration**: For more sophisticated dependency management
+3. **Multi-stage containers**: For optimized production deployments
+4. **vcpkg improvements**: Leveraging Microsoft's package manager enhancements
 
-**Key Changes from Previous Versions:**
-- Uses gcc-12 for consistency with Debian 12
-- Build system auto-detects Debian 13
+This approach ensures ADU remains buildable and reliable across the diverse landscape of IoT devices and development environments.
 
-**Delivery Optimization:**
-- **NOT AVAILABLE** - Package not maintained for Debian 13
-- Build automatically disables DO via `ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF`
-- `build.sh` detects Debian 13 and configures accordingly
-
-**Content Downloader:**
-- Primary: `libcurl_content_downloader.so`
-- Automatically registered during package installation
-- No Delivery Optimization fallback available
-
-**Compiler Compatibility:**
-- GCC 12 requires Azure Storage SDK patch (applied automatically by install-deps.sh when GCC >= 12)
-- See [Building Azure Storage SDK for C++](#building-azure-storage-sdk-for-c) for details
-
-**Package Dependencies:**
-- Debian package depends on `curl` only
-- No `deliveryoptimization-agent` or `libdeliveryoptimization` dependencies
-
-**Known Limitations:**
-- No peer-to-peer download optimization
-- All downloads are direct HTTP/HTTPS via curl
-
----
 
 ## Troubleshooting
 

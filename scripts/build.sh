@@ -25,8 +25,16 @@ bullet() { echo -e "\e[1;34m*\e[0m $*"; }
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" > /dev/null 2>&1 && pwd)"
 root_dir=$script_dir/..
 
+# Determine the git root directory
+GITROOT="$(git rev-parse --show-toplevel 2> /dev/null)"
+if [ -z "$GITROOT" ]; then
+    # If not in a git repo, use root_dir
+    GITROOT="$root_dir"
+fi
+
 build_clean=false
 build_documentation=false
+build_delta_handler=false
 build_packages=false
 verbose_build=false
 platform_layer="linux"
@@ -68,6 +76,7 @@ Usage: build.sh [options...]
     -t, --type <build_type>               The type of build to produce. Passed to CMAKE_BUILD_TYPE. Default is Debug.
                                         Options: Release Debug RelWithDebInfo MinSizeRel
     -d, --build-docs                      Builds the documentation.
+    --delta-handler                       Builds the delta download handler.
     -u, --build-unit-tests                Builds unit tests.
     --enable-e2e-testing                  Enables settings for the E2E test pipelines.
     --build-packages                      Builds and packages the client in various package formats e.g debian.
@@ -227,6 +236,12 @@ determine_distro() {
 
 determine_distro
 
+# Ensure work folder exists
+if [[ ! -d $work_folder ]]; then
+    echo "Creating work folder: $work_folder"
+    mkdir -p "$work_folder" || $ret 1
+fi
+
 while [[ $1 != "" ]]; do
     case $1 in
     -c | --clean)
@@ -258,6 +273,9 @@ while [[ $1 != "" ]]; do
         ;;
     -d | --build-docs)
         build_documentation=true
+        ;;
+    --delta-handler)
+        build_delta_handler=true
         ;;
     -u | --build-unit-tests)
         build_unittests=true
@@ -529,6 +547,7 @@ CMAKE_OPTIONS=(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir"
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
     "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+    "-DADUC_BUILD_DELTA_HANDLER:BOOL=$build_delta_handler"
 )
 
 if [[ $major_version != "" ]]; then
@@ -634,12 +653,23 @@ mkdir -p "$output_directory"
 pushd "$output_directory" > /dev/null || $ret
 
 # Generate build using cmake with options
+# Only reconfigure if:
+# - Clean build requested
+# - CMakeCache.txt doesn't exist (first-time build)
 if [ ! -f "$cmake_bin" ]; then
     error "No '${cmake_bin}' file."
     ret_val=1
-else
+elif [[ $build_clean == "true" ]] || [[ ! -f "$output_directory/CMakeCache.txt" ]]; then
+    if [[ $build_clean == "true" ]]; then
+        echo "Configuring build (clean build requested)..."
+    else
+        echo "Configuring build (first-time configuration)..."
+    fi
     "$cmake_bin" -G Ninja "${CMAKE_OPTIONS[@]}" "$root_dir"
     ret_val=$?
+else
+    echo "Skipping CMake reconfiguration (build already configured, use -c to force)"
+    ret_val=0
 fi
 
 if [ $ret_val -ne 0 ]; then

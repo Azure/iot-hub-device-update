@@ -72,6 +72,7 @@ extern ExtensionManager_Download_Options Default_ExtensionManager_Download_Optio
 
 // forward decls
 const JSON_Object* _workflow_get_fileurls_map(ADUC_WorkflowHandle handle);
+ADUC_Result viewstatemgr_svcstatus_set(ViewStateMgrHandle h, ADUC_ServiceStatus status);
 
 //
 // Private functions - this is an adapter for the underlying ADUC_Workflow object.
@@ -4240,6 +4241,31 @@ bool workflow_set_update_action_object(ADUC_WorkflowHandle handle, JSON_Object* 
     }
 
     return false;
+}
+
+bool workflow_set_service_status(ADUC_WorkflowHandle handle, ADUC_ServiceStatus serviceStatus)
+{
+    if (handle == NULL)
+    {
+        return false;
+    }
+    ADUC_Workflow* wf = (ADUC_Workflow*)handle;
+    if (wf->vsm == NULL)
+    {
+        return false;
+    }
+    viewstatemgr_svcstatus_set(wf->vsm, serviceStatus);
+    return true;
+}
+
+void workflow_set_vsm(ADUC_WorkflowHandle handle, void* vsm)
+{
+    if (handle == NULL)
+    {
+        return;
+    }
+    ADUC_Workflow* wf = (ADUC_Workflow*)handle;
+    wf->vsm = vsm;
 }
 
 EXTERN_C_END
