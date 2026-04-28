@@ -33,8 +33,17 @@ if (NOT WIN32)
 endif ()
 
 if (MSVC)
-    # Warning level 4
-    add_compile_options (/W4 /guard:cf /Qspectre)
+    # Warning level 4, Control Flow Guard
+    add_compile_options (/W4 /guard:cf)
+
+    # Spectre mitigations are ON by default (SDL requirement).
+    # Use -DADUC_ENABLE_SPECTRE_MITIGATION=OFF for inner dev loop without Spectre-mitigated libs.
+    option (ADUC_ENABLE_SPECTRE_MITIGATION "Enable Spectre mitigation (/Qspectre)" ON)
+    if (ADUC_ENABLE_SPECTRE_MITIGATION)
+        add_compile_options (/Qspectre)
+    else ()
+        message (WARNING "Spectre mitigation is DISABLED. Do NOT use this for production builds.")
+    endif ()
 
     if (NOT ADUC_BUILD_UNIT_TESTS)
         # Treat Conversion Warnings as Errors
@@ -107,7 +116,9 @@ add_subdirectory (extensions)
 add_subdirectory (logging)
 add_subdirectory (platform_layers)
 add_subdirectory (rootkey_workflow)
-add_subdirectory (sdk)
+if (NOT WIN32)
+    add_subdirectory (sdk)
+endif ()
 add_subdirectory (utils)
 add_subdirectory (viewstatemgr)
 

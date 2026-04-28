@@ -29,12 +29,15 @@ target_link_libraries (
             aduc::parser_utils
             aduc::root_key_utils
             aduc::system_utils
-            aduc::timer_utils
             aduc::viewstatemgr
             aduc::workflow_data_utils
             aduc::workflow_utils)
 
 target_compile_definitions (${target_name} PRIVATE ADUC_CONF_FILE_PATH="${ADUC_CONF_FILE_PATH}")
+
+if (NOT WIN32)
+    target_link_libraries (${target_name} PRIVATE aduc::timer_utils)
+endif ()
 
 target_link_libraries (${target_name} PRIVATE libaducpal)
 target_link_aziotsharedutil (${target_name} PRIVATE)

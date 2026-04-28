@@ -9,7 +9,9 @@
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_types.h"
 #include "aduc/agent_workflow.h"
-#include "aduc/apisvc.h"
+#if !defined(WIN32)
+#    include "aduc/apisvc.h"
+#endif
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #if !defined(WIN32)
@@ -29,7 +31,9 @@
 #include "aduc/shutdown_service.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h" // ADUC_SystemUtils_MkDirRecursiveDefault
-#include "aduc/timer.h"
+#if !defined(WIN32)
+#    include "aduc/timer.h"
+#endif
 #include "aduc/viewstatemgr.h"
 #include "aducpal/stdlib.h" // setenv
 #include <azure_c_shared_utility/shared_util_options.h>
@@ -86,7 +90,9 @@ static const char g_deviceInfoPnPComponentName[] = "deviceInformation";
 // Name of the Diagnostics subcomponent that this device is using
 static const char g_diagnosticsPnPComponentName[] = "diagnosticInformation";
 
+#if !defined(WIN32)
 extern AducTimer g_idle_pause_timer;
+#endif // !defined(WIN32)
 
 // fwd decls
 int ADUC_Workflow_Init();
@@ -711,6 +717,7 @@ ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
 
 #endif // #ifdef ADUC_COMMAND_HELPER_H
 
+#if !defined(WIN32)
 static const char* get_api_request_fifo_path()
 {
     const char* path = ADUC_API_DEFAULT_FIFO_PATH;
@@ -726,6 +733,7 @@ static const char* get_api_request_fifo_path()
 
     return path;
 }
+#endif // !defined(WIN32)
 
 /**
  * @brief Handles the startup of the agent
@@ -759,6 +767,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
+#if !defined(WIN32)
     const char* req_fifo = get_api_request_fifo_path();
     char* basedir = RmvAfterLastChar(req_fifo, '/');
     if (basedir == NULL)
@@ -773,6 +782,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     {
         goto done;
     }
+#endif // !defined(WIN32)
 
     if (launchArgs->connectionString != NULL)
     {
@@ -888,7 +898,9 @@ void ShutdownAgent()
 {
     Log_Warn("Agent is shutting down.");
 
+#if !defined(WIN32)
     AducTimer_Stop(&g_idle_pause_timer);
+#endif // !defined(WIN32)
 
     if (g_vsm.initialized)
     {
@@ -896,10 +908,12 @@ void ShutdownAgent()
     }
     ADUC_Workflow_Uninit();
 
+#if !defined(WIN32)
     if (!uninit_api_svc())
     {
         Log_Warn("Failed uninit of API service\n");
     }
+#endif // !defined(WIN32)
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
     Log_Debug("Shutdown step: UninitializeCommandListenerThread");

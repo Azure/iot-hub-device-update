@@ -28,20 +28,30 @@
 #include "aduc/result.h"
 #include "aduc/string_c_utils.h"
 #include "aduc/system_utils.h"
-#include "aduc/timer.h"
+#if !defined(WIN32)
+#    include "aduc/timer.h"
+#endif
 #include "aduc/types/workflow.h"
 #include "aduc/viewstatemgr.h"
 #include "aduc/workflow_data_utils.h"
 #include "aduc/workflow_utils.h"
 #include "root_key_util.h" // RootKeyUtility_GetReportingErc
 
+#ifdef WIN32
+#    include <windows.h> // Sleep
+#    include <process.h> // _getpid
+#    define getpid _getpid
+#endif
+
 #include <pthread.h>
 #include <stdbool.h>
 
 // fwd decl
+#if !defined(WIN32)
 static void s_onPauseTimerStart();
 static void s_onPauseTimerStop();
 static void s_onPauseTimerTimeout();
+#endif // !defined(WIN32)
 void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_Result result, bool isAsync);
 
 // This lock is used for critical sections where main and worker thread could read/write to ADUC_workflowData
@@ -51,12 +61,14 @@ void ADUC_Workflow_WorkCompletionCallback(const void* workCompletionToken, ADUC_
 //         - when asynchronously called (worker thread) it takes the lock
 static pthread_mutex_t s_workflow_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+#if !defined(WIN32)
 static AducTimerSignals s_pause_timer_signals = {
     .onStart = s_onPauseTimerStart,
     .onStop = s_onPauseTimerStop,
     .onTimeout = s_onPauseTimerTimeout,
 };
 AducTimer g_idle_pause_timer = { 0 };
+#endif // !defined(WIN32)
 
 static inline void s_workflow_lock(void)
 {
@@ -355,19 +367,23 @@ const ADUC_WorkflowHandlerMapEntry* GetWorkflowHandlerMapEntryForAction(ADUCITF_
 
 int ADUC_Workflow_Init()
 {
+#if !defined(WIN32)
     int result = AducTimer_init(&g_idle_pause_timer, s_pause_timer_signals, 200 /* update_interval_ms */);
     if (result != 0)
     {
         Log_Error("AducTimer_init failed: %d", result);
         return result;
     }
+#endif // !defined(WIN32)
 
     return 0;
 }
 
 void ADUC_Workflow_Uninit()
 {
+#if !defined(WIN32)
     AducTimer_uninit(&g_idle_pause_timer);
+#endif // !defined(WIN32)
 }
 
 /**
@@ -1435,7 +1451,9 @@ void ADUC_Workflow_MethodCall_Idle(ADUC_WorkflowData* workflowData)
         if (config != NULL && config->idlePauseMilliseconds > 0)
         {
             Log_Info("Starting idle pause timer with %d ms timeout ...", config->idlePauseMilliseconds);
+#if !defined(WIN32)
             AducTimer_Start(&g_idle_pause_timer, config->idlePauseMilliseconds);
+#endif // !defined(WIN32)
 
             // Set view state manager to Paused when idle pause timer starts
             viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Paused);
@@ -1776,7 +1794,11 @@ void ADUC_Workflow_MethodCall_Apply_Complete(ADUC_MethodCall_Data* methodCallDat
             // Wait for SIGTERM from shutdown process
             // Timeout is handled by reboot wrapper (60 seconds default)
             // During this period, agent is idle and will be terminated by system
+#ifdef WIN32
+            Sleep(120 * 1000); // Windows: Sleep takes milliseconds
+#else
             sleep(120); // Sleep longer than wrapper timeout to ensure we're terminated by SIGTERM
+#endif
 
             // If we reach here, SIGTERM didn't arrive - log and continue
             Log_Warn("Reboot timeout expired without SIGTERM - system may not have rebooted");
@@ -1957,6 +1979,7 @@ ADUC_Result ADUC_Workflow_MethodCall_IsInstalled(const ADUC_WorkflowData* workfl
         updateActionCallbacks->PlatformLayerHandle, (ADUC_WorkflowDataToken)workflowData);
 }
 
+#if !defined(WIN32)
 static void s_onPauseTimerStart()
 {
     Log_Info("Idle pause timer START. Ignoring new workflow processing...");
@@ -1981,6 +2004,7 @@ static void s_onPauseTimerTimeout()
     }
     // If currently Reporting, leave it as is - the completion callback will handle the transition
 }
+#endif // !defined(WIN32)
 
 /**
  * @brief Called when D2C reporting message is completed to handle proper state transitions

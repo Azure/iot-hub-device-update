@@ -13,8 +13,15 @@ target_link_libraries (
     ${target_name}
     PRIVATE Catch2::Catch2WithMain
             aduc::auto_utils
-            aduc::sdk
             aduc::viewstatemgr)
+
+if (NOT WIN32)
+    target_link_libraries (${target_name} PRIVATE aduc::sdk)
+else ()
+    # On Windows, SDK library is not built (POSIX-only FIFO IPC).
+    # Only the header is needed for ADUC_ServiceStatus enum.
+    target_include_directories (${target_name} PRIVATE ${CMAKE_SOURCE_DIR}/src/sdk/inc)
+endif ()
 
 include (CTest)
 include (Catch)

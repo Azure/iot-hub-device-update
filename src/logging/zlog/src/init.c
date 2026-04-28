@@ -7,7 +7,22 @@
  */
 #include "aduc/logging.h"
 #include "aduc/system_utils.h"
-#include <stdatomic.h> // atomic_int, atomic_fetch_add, atomic_fetch_sub
+#ifdef _MSC_VER
+#    include <windows.h>
+// MSVC C99 does not support <stdatomic.h>; use Win32 Interlocked intrinsics instead.
+typedef volatile LONG atomic_int_compat;
+#    define ATOMIC_INIT_ZERO 0
+#    define atomic_fetch_add_compat(ptr, val) InterlockedExchangeAdd((ptr), (val))
+#    define atomic_fetch_sub_compat(ptr, val) InterlockedExchangeAdd((ptr), -(val))
+#    define atomic_load_compat(ptr) InterlockedCompareExchange((ptr), 0, 0)
+#else
+#    include <stdatomic.h> // atomic_int, atomic_fetch_add, atomic_fetch_sub
+typedef atomic_int atomic_int_compat;
+#    define ATOMIC_INIT_ZERO 0
+#    define atomic_fetch_add_compat(ptr, val) atomic_fetch_add((ptr), (val))
+#    define atomic_fetch_sub_compat(ptr, val) atomic_fetch_sub((ptr), (val))
+#    define atomic_load_compat(ptr) atomic_load((ptr))
+#endif
 #include <stdio.h> // printf
 #include <sys/stat.h> // stat
 
@@ -25,7 +40,7 @@
 
 // Thread-safe reference count for logging init/uninit calls.
 // Using atomic to prevent race conditions when multiple threads call init/uninit.
-static atomic_int ref_count = 0;
+static atomic_int_compat ref_count = ATOMIC_INIT_ZERO;
 
 /**
  * @brief Convert ADUC_LOG_SEVERITY to ZLOG_SEVERITY
@@ -82,7 +97,7 @@ ADUC_LOG_SEVERITY g_logLevel = ADUC_LOG_INFO;
 void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 {
     // atomic_fetch_add returns the previous value, so if it was > 0, logging is already initialized
-    if (atomic_fetch_add(&ref_count, 1) > 0)
+    if (atomic_fetch_add_compat(&ref_count, 1) > 0)
     {
         return;
     }
@@ -123,13 +138,13 @@ void ADUC_Logging_Init(ADUC_LOG_SEVERITY logLevel, const char* filePrefix)
 void ADUC_Logging_Uninit()
 {
     // Guard against double-uninit: if already at 0 or below, nothing to do.
-    if (atomic_load(&ref_count) <= 0)
+    if (atomic_load_compat(&ref_count) <= 0)
     {
         return;
     }
 
     // atomic_fetch_sub returns the previous value, so if it was > 1, there are still other users
-    if (atomic_fetch_sub(&ref_count, 1) > 1)
+    if (atomic_fetch_sub_compat(&ref_count, 1) > 1)
     {
         return;
     }

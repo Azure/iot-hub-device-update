@@ -30,7 +30,9 @@ Param(
     # TODO(JeffMill): Change this when folder structure determined.
     [string]$LogDir = '/var/log/adu',
     # Non-Interactive?
-    [switch]$NoPrompt
+    [switch]$NoPrompt,
+    # Disable Spectre mitigations (for inner dev loop without Spectre-mitigated libs installed)
+    [switch]$NoSpectre
 )
 
 function Show-Warning {
@@ -270,6 +272,7 @@ Show-Bullet "Log directory: $LogDir"
 Show-Bullet "Logging library: $LogLib"
 Show-Bullet "Output directory: $BuildOutputPath"
 Show-Bullet "Build unit tests: $BuildUnitTests"
+Show-Bullet "Spectre mitigations: $(-not $NoSpectre)"
 Show-Bullet "CMake: $cmake_bin"
 Show-Bullet ("CMake version: {0}" -f (& $cmake_bin --version | Select-String  '^cmake version (.*)$').Matches.Groups[1].Value)
 ''
@@ -288,6 +291,10 @@ $DU_CMAKE_OPTIONS = @(
     "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY:STRING=$library_dir",
     "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY:STRING=$runtime_dir"
 )
+
+if ($NoSpectre) {
+    $DU_CMAKE_OPTIONS += "-DADUC_ENABLE_SPECTRE_MITIGATION:BOOL=OFF"
+}
 
 if (-not $Clean) {
     # -ErrorAction SilentlyContinue doesn't work on Select-String

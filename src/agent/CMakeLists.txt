@@ -97,13 +97,13 @@ target_link_libraries (
             aduc::pnp_helper
             aduc::shutdown_service
             aduc::system_utils
-            aduc::timer_utils
             aduc::url_utils
             aduc::viewstatemgr
             diagnostics_component::diagnostics_interface
             diagnostics_component::diagnostics_devicename)
 
 if (NOT WIN32)
+    target_link_libraries (${target_name} PRIVATE aduc::timer_utils)
     target_link_libraries (${target_name} PRIVATE aduc::command_helper)
 endif ()
 
@@ -155,6 +155,10 @@ if (WIN32)
     target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
-target_link_libraries (${target_name} PRIVATE aduc::platform_layer aduc::apisvc)
+target_link_libraries (${target_name} PRIVATE aduc::platform_layer)
+
+if (NOT WIN32)
+    target_link_libraries (${target_name} PRIVATE aduc::apisvc)
+endif ()
 
 install (TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
