@@ -19,12 +19,14 @@ target_link_libraries (
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
-# Wrap external dependency functions for mocking
-target_link_options (
-    ${PROJECT_NAME}
-    PRIVATE
-    -Wl,--wrap=DiagnosticsWorkflow_DiscoverAndUploadLogs
-    -Wl,--wrap=OperationIdUtils_OperationIsComplete)
+# Wrap external dependency functions for mocking (GCC/ld only; not supported by MSVC)
+if (NOT WIN32)
+    target_link_options (
+        ${PROJECT_NAME}
+        PRIVATE
+        -Wl,--wrap=DiagnosticsWorkflow_DiscoverAndUploadLogs
+        -Wl,--wrap=OperationIdUtils_OperationIsComplete)
+endif ()
 
 include (CTest)
 include (Catch)

@@ -90,7 +90,10 @@ TEST_CASE("Command-not-found returns non-zero and captures stderr")
     const int exitCode = ADUC_LaunchChildProcess("adu_command_that_does_not_exist", args, output);
 
     CHECK(exitCode != EXIT_SUCCESS);
+#if !defined(WIN32)
+    // On POSIX, execvp prints a specific error message to stderr
     CHECK_THAT(output.c_str(), ContainsSubstring("execvp failed"));
+#endif
 }
 
 TEST_CASE("VerifyProcessEffectiveGroup")

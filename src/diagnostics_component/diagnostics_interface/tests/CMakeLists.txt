@@ -24,16 +24,18 @@ target_link_libraries (
 
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
-# Wrap external dependency functions for mocking
-target_link_options (
-    ${PROJECT_NAME}
-    PRIVATE
-    -Wl,--wrap=PnP_CreateReportedProperty
-    -Wl,--wrap=PnP_CreateReportedPropertyWithStatus
-    -Wl,--wrap=ADUC_D2C_Message_SendAsync
-    -Wl,--wrap=DiagnosticsConfigUtils_InitFromFile
-    -Wl,--wrap=DiagnosticsConfigUtils_UnInit
-    -Wl,--wrap=DiagnosticsWorkflow_DiscoverAndUploadLogsAsync)
+# Wrap external dependency functions for mocking (GCC/ld only; not supported by MSVC)
+if (NOT WIN32)
+    target_link_options (
+        ${PROJECT_NAME}
+        PRIVATE
+        -Wl,--wrap=PnP_CreateReportedProperty
+        -Wl,--wrap=PnP_CreateReportedPropertyWithStatus
+        -Wl,--wrap=ADUC_D2C_Message_SendAsync
+        -Wl,--wrap=DiagnosticsConfigUtils_InitFromFile
+        -Wl,--wrap=DiagnosticsConfigUtils_UnInit
+        -Wl,--wrap=DiagnosticsWorkflow_DiscoverAndUploadLogsAsync)
+endif ()
 
 include (CTest)
 include (Catch)

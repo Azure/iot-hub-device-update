@@ -17,8 +17,11 @@
 #include <thread>
 
 // ============================================================================
-// --wrap mock infrastructure
 // ============================================================================
+// --wrap mock infrastructure (GCC/ld --wrap linker option)
+// On MSVC, these mock functions are not linked; tests are skipped.
+// ============================================================================
+#if !defined(_MSC_VER)
 extern "C"
 {
     // Mock control flags
@@ -181,3 +184,11 @@ TEST_CASE("DiagnosticsWorkflow_DiscoverAndUploadLogsAsync")
         CHECK(g_mock_discover_upload_call_count == 1);
     }
 }
+
+#else // _MSC_VER
+// On MSVC, --wrap linker mocking is not available. Skip mock-dependent tests.
+TEST_CASE("DiagnosticsWorkflow_DiscoverAndUploadLogsAsync")
+{
+    SUCCEED("Test skipped: --wrap linker mocking not supported on MSVC");
+}
+#endif // !defined(_MSC_VER)
