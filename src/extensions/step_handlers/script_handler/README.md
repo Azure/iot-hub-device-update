@@ -8,7 +8,11 @@ For some update scenarios, you may want to run additional set of commands before
 
 By default, Device Update Agent workflow invokes **Script Handler** to process `microsoft/script:/1` steps.
 
-> For more information about **Inline Step**, see [Update Manifest V4 Schema](../../../docs/agent-reference/update-manifest-v4-schema.md)
+> **What is an Inline Step?** An Inline Step is a step whose handler and payload are declared directly in the parent Update Manifest (as opposed to a Reference Step, which delegates to a Child Update Manifest). For more details:
+>
+> * **Concept and authoring guidance:** [Multi-step Updates (Microsoft Learn)](https://learn.microsoft.com/en-us/azure/iot-hub-device-update/device-update-multi-step-updates)
+> * **Manifest JSON shape:** [Update Manifest v5 schema — Inline Step In Parent Update](../../../docs/agent-reference/update-manifest-v5-schema.md#inline-step-in-parent-update)
+> * **Agent-side implementation (how the Steps Handler dispatches inline steps to handlers like this one):** [Steps Handler reference](../../../docs/agent-reference/steps-handler.md)
 
 **Script Handler** key concepts include:
 
