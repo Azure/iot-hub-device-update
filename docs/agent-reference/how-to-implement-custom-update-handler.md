@@ -56,6 +56,59 @@ workflow_get_installed_criteria|Get the 'installed' criteria string|
 
 Usually, a step handler is designed to install an update content on a Host Device. An example of this is the [APT Update Handler](../../src/extensions/step_handlers/apt_handler/README.md) provided in this project, which installs one or more Debian packages on the host device.
 
+## Contract Enforced By The Steps Handler
+
+For multi-step manifests, the **Steps Handler** (the default Update Manifest Handler — see [steps-handler.md](steps-handler.md)) drives your step handler through the per-step phases. Custom step handlers that participate in MSOE must honor the following contract; failure to do so will produce surprising behavior in the parent workflow.
+
+### Cancel polling
+
+The Steps Handler only checks `workflow_is_cancel_requested` at phase boundaries (entry into Download / Install / Apply, and after the entire (component × step) loop completes). Once your step's `Install` returns control, the parent re-checks; **but while your step is executing, no parent-level preemption happens.** Long-running operations must poll cancel themselves:
+
+```c
+#include <aduc/workflow_utils.h>
+
+if (workflow_is_cancel_requested(workflowHandle)) {
+    return ADUC_Result{ ADUC_Result_Cancel_Success, 0 };
+}
+```
+
+If your handler cannot interrupt the in-flight operation, it must return `ADUC_Result_Cancel_UnableToCancel` from `Cancel`.
+
+### Reboot and agent-restart result codes
+
+When your step's `Install` or `Apply` returns one of the reboot / restart result codes, the Steps Handler interprets them as follows. Your handler must **not** itself call `reboot()` or restart the agent — that is the orchestrator's responsibility.
+
+| Result code | Steps Handler behavior |
+|---|---|
+| `ADUC_Result_Install_RequiredImmediateReboot` <br/> `ADUC_Result_Apply_RequiredImmediateReboot` | Aborts all remaining steps and components; the agent reboots after the Apply phase reports state. |
+| `ADUC_Result_Install_RequiredReboot` <br/> `ADUC_Result_Apply_RequiredReboot` | Marks the workflow as reboot-pending, **breaks the inner step loop for the current component**, and continues with the next component. The reboot is deferred until the workflow completes. |
+| `ADUC_Result_Install_RequiredImmediateAgentRestart` <br/> `ADUC_Result_Apply_RequiredImmediateAgentRestart` | Aborts all remaining steps; agent restart is requested after the Apply phase reports state. |
+| `ADUC_Result_Install_RequiredAgentRestart` <br/> `ADUC_Result_Apply_RequiredAgentRestart` | Deferred restart, same per-component break semantics as deferred reboot. |
+
+### "Already installed" semantics
+
+If your `Install` returns `ADUC_Result_Install_Skipped_UpdateAlreadyInstalled`, the Steps Handler treats it as success **for that step only** and continues with the next step. It does **not** short-circuit the rest of the workflow.
+
+Similarly, `ADUC_Result_Install_Skipped_NoMatchingComponents` (returned when the target component isn't present) is treated as success for that step.
+
+### Result-code propagation
+
+Result codes use the `ADUC_Result.ResultCode` enum from [adu_core.h](../../src/adu_types/inc/aduc/types/adu_core.h). **A `ResultCode` value of `0` is `ADUC_Result_Failure` — it does *not* mean success.** Each phase has its own success codes (e.g., `ADUC_Result_Install_Success = 600`); see the table earlier in this document for the per-phase set.
+
+If your handler fails, populate `ADUC_Result.ExtendedResultCode` with a meaningful ERC (4-byte facility/component/code) so failures can be triaged from the cloud. See [device-update-agent-extended-result-codes.md](device-update-agent-extended-result-codes.md).
+
+### Apply happens inside Install
+
+For the parent workflow, the Steps Handler's `Apply` is a no-op — Apply for each individual step is invoked **inside** the parent's `Install` phase, immediately after that step's `Install` succeeds. If you implement a custom Update Manifest Handler (rare), you must replicate this convention or steps will never be applied.
+
+### Per-component invocation
+
+When a step targets selected components, the Steps Handler invokes your handler **once per component** with `selectedComponents` containing a single component (not a list). Iterate through your work for that one component and return; the parent loops to the next component.
+
+If `selectedComponentsCount == 0` for an inline step at the parent level, the step is treated as **optional** and skipped (not failed).
+
+
+
 In some case, a Device Builder may want to install an update content on one or more component(s) that connected to the Host Device instead.
 
 In this case, if the Update has been authored and imported correctly, the DU Agent workflow will include a 'Selected Components' data in the ADUC_WorkflowHandle object that is passed to the handler's function.
