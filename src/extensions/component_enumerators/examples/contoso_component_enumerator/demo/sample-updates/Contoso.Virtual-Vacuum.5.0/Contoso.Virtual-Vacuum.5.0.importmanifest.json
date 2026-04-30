@@ -1,0 +1,47 @@
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "Virtual-Vacuum",
+    "version": "5.0"
+  },
+  "isDeployable": true,
+  "compatibility": [
+    {
+      "manufacturer": "contoso",
+      "model": "virtual-vacuum-v1"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "reference",
+        "description": "Motors Firmware Version 1.2",
+        "updateId": {
+          "provider": "contoso",
+          "name": "Virtual-Vacuum-virtual-motors",
+          "version": "3.0"
+        }
+      },
+      {
+        "type": "reference",
+        "description": "Cameras Firmware Version 2.1",
+        "updateId": {
+          "provider": "contoso",
+          "name": "Virtual-Vacuum-virtual-cameras",
+          "version": "3.0"
+        }
+      },
+      {
+        "type": "reference",
+        "description": "Steamers Firmware Version 2.0",
+        "updateId": {
+          "provider": "contoso",
+          "name": "Virtual-Vacuum-virtual-steamers",
+          "version": "2.0"
+        }
+      }
+    ]
+  },
+  "createdDateTime": "2026-04-30T23:33:51.1526626Z",
+  "manifestVersion": "4.0"
+}

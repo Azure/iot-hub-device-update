@@ -1,0 +1,62 @@
+{
+  "updateId": {
+    "provider": "contoso",
+    "name": "Virtual-Vacuum-virtual-cameras",
+    "version": "3.0"
+  },
+  "isDeployable": false,
+  "compatibility": [
+    {
+      "group": "cameras"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "description": "Cameras Update pre-install step",
+        "handler": "microsoft/script:1",
+        "files": [
+          "contoso-camera-installscript.sh"
+        ],
+        "handlerProperties": {
+          "arguments": "--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+          "installedCriteria": "2.1",
+          "scriptFileName": "contoso-camera-installscript.sh"
+        }
+      },
+      {
+        "type": "inline",
+        "description": "Cameras Update - firmware installation",
+        "handler": "microsoft/script:1",
+        "files": [
+          "contoso-camera-installscript.sh",
+          "camera-firmware-2.1.json"
+        ],
+        "handlerProperties": {
+          "arguments": "--firmware-file camera-firmware-2.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+          "installedCriteria": "2.1",
+          "scriptFileName": "contoso-camera-installscript.sh"
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "contoso-camera-installscript.sh",
+      "sizeInBytes": 26869,
+      "hashes": {
+        "sha256": "dzxR4DseG8Ckv/9NWXPWmTYyxs7a1PgKL0CMQh135Is="
+      }
+    },
+    {
+      "filename": "camera-firmware-2.1.json",
+      "sizeInBytes": 124,
+      "hashes": {
+        "sha256": "tDQDBaoesfks8To9N0w2HM/0jdw6mNpMPIFgradJNf4="
+      }
+    }
+  ],
+  "createdDateTime": "2026-04-30T23:33:51.1099453Z",
+  "manifestVersion": "4.0"
+}

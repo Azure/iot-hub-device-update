@@ -1,0 +1,40 @@
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "Virtual-Vacuum",
+    "version": "1.0"
+  },
+  "isDeployable": true,
+  "compatibility": [
+    {
+      "manufacturer": "contoso",
+      "model": "virtual-vacuum-v1"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "description": "APT update that installs libcurl4-doc package.",
+        "handler": "microsoft/apt:1",
+        "files": [
+          "apt-manifest-1.0.json"
+        ],
+        "handlerProperties": {
+          "installedCriteria": "apt-update-test-1.1"
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "apt-manifest-1.0.json",
+      "sizeInBytes": 132,
+      "hashes": {
+        "sha256": "nACI0Obg4Px/f2f85oOko3bHE0HJ8Vlq3CMafx9g2Bo="
+      }
+    }
+  ],
+  "createdDateTime": "2026-04-30T23:33:47.5817580Z",
+  "manifestVersion": "4.0"
+}

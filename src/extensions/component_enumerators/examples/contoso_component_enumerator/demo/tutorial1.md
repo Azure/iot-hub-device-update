@@ -43,7 +43,7 @@ At this time, this update is version 20 in their `update line of service`. The f
 
 ## Preparing Update Instructions (steps)
 
-> **Prerequisites** | Read [Import an update to Device Update for IoT Hub](https://learn.microsoft.com/azure/iot-hub-device-update/import-update) and the [import manifest schema](https://learn.microsoft.com/azure/iot-hub-device-update/import-schema) to understand how to create an ADU Import Manifest. The PowerShell helpers used by the sample scripts in this demo live next to them in [sample-updates/AduUpdate.psm1](./sample-updates/AduUpdate.psm1).
+> **Prerequisites** | Read [Import an update to Device Update for IoT Hub](https://learn.microsoft.com/azure/iot-hub-device-update/import-update) and the [import manifest schema](https://learn.microsoft.com/azure/iot-hub-device-update/import-schema) to understand the structure of an ADU import manifest. The pre-generated example manifests this tutorial walks through are committed under the [sample-updates](./sample-updates/) directory.
 
 To accomplish the goals, this update requires 2 `update instruction steps` in the Update Manifest:
 

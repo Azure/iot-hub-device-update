@@ -12,7 +12,7 @@ As described in [Multi Step Ordered Execution]() document, a step can be either 
 
 This example update (Contoso.Virtual-Vacuum.1.0) demonstrates how to create an update with a single `inline` step that will install an APT package ('tree 10.7.0-5') onto the target device.
 
-Follow this [instruction](#generate-example-updates) to generate the example update using `CreateSampleMSOEUpdate-1.x.ps1` PowerShell script.
+The pre-generated import manifest and its payload are available in [`sample-updates/Contoso.Virtual-Vacuum.1.0/`](./sample-updates/Contoso.Virtual-Vacuum.1.0/). See [Use the Example Updates](#use-the-example-updates) for upload instructions.
 
 ### Example Import Manifest - Contoso.Virtual-Vacuum.1.0
 
@@ -78,7 +78,7 @@ This example update (Contoso.Virtual-Vacuum.2.2) demonstrates how to create an u
 
 > NOTE | This demonstrates that you can use two steps to install two APT packages. Alternatively, you can install two packages in a single step by adding both packages' information in a single APT manifest.
 
-Follow this [instruction](#generate-example-updates) to generate the example update using `CreateSampleMSOEUpdate-2.x.ps1` PowerShell script.
+The pre-generated import manifest and its payloads are available in [`sample-updates/Contoso.Virtual-Vacuum.2.2/`](./sample-updates/Contoso.Virtual-Vacuum.2.2/). See [Use the Example Updates](#use-the-example-updates) for upload instructions.
 
 ### Example Import Manifest - Contoso.Virtual-Vacuum.2.2
 
@@ -157,7 +157,7 @@ A **Multi Component Update** is a Bundle Update intended for a device with a reg
 >
 > See [Steps Handler](../../../../../extensions/update_manifest_handlers/steps_handler/) for more information.
 
-Follow this [instruction](#generate-example-updates) to generate the example update using `CreateSampleMSOEUpdate-3.x.ps1` PowerShell script.
+The pre-generated parent and child import manifests with their payloads are available in [`sample-updates/Contoso.Virtual-Vacuum.3.3/`](./sample-updates/Contoso.Virtual-Vacuum.3.3/). See [Use the Example Updates](#use-the-example-updates) for upload instructions.
 
 **Important** - follow this [instruction](#register-contoso-components-enumerator-extension) to register the example Contoso Component Enumerator and Components Inventory file.
 
@@ -410,26 +410,25 @@ This components configuration depends on the implementation of an example Compon
 
 - Copy [components-inventory.json](./demo-devices/contoso-devices/components-inventory.json) to **/usr/local/contoso-devices** folder
 
-### Generate Example Updates
+### Use the Example Updates
 
-Open a PowerShell terminal, go to the [sample-updates](./sample-updates/) directory, then import the bundled AduUpdate.psm1 module:
+The [sample-updates](./sample-updates/) directory contains pre-generated import manifests and their associated payload files for every example referenced in this document. Each subfolder is named after the update's `provider.name.version` and contains:
 
-```powershell
-Import-Module ./AduUpdate.psm1
-```
+- `<provider>.<name>.<version>.importmanifest.json` — the import manifest, ready to upload.
+- The payload file(s) that the manifest's `files[]` array references.
+- For multi-component updates, the child reference manifest(s) the parent step points at.
 
-> The PowerShell helpers below are kept only for this contoso demo. For production import-manifest authoring, see the official guidance: [Import an update to Device Update for IoT Hub](https://learn.microsoft.com/azure/iot-hub-device-update/import-update) and the [import manifest schema](https://learn.microsoft.com/azure/iot-hub-device-update/import-schema).
+| Tutorial | Folder | Notes |
+| --- | --- | --- |
+| Tutorial 1 — Single Step Update | [`Contoso.Virtual-Vacuum.1.0`](./sample-updates/Contoso.Virtual-Vacuum.1.0/) | APT install of `tree` |
+| Tutorial 2 — Multi Step Update | [`Contoso.Virtual-Vacuum.2.2`](./sample-updates/Contoso.Virtual-Vacuum.2.2/) | Two inline APT steps |
+| Tutorial 3 — Bundle and Multi-Component Update | [`Contoso.Virtual-Vacuum.3.3`](./sample-updates/Contoso.Virtual-Vacuum.3.3/) | Parent + child reference update for the virtual camera |
 
-Next, from the same [sample-updates](./sample-updates/) directory, run following commands to generate **all** example updates:
+Additional examples (failure-injection, multi-component, mixed-update scenarios) are available under the other `Contoso.Virtual-Vacuum.*` folders.
 
-> NOTE | You can choose to generate only updates you want to try.
+To use any example, follow the official guidance for importing an update to Device Update for IoT Hub:
 
-```powershell
-./CreateSampleMSOEUpdate-1.x.ps1
-./CreateSampleMSOEUpdate-2.x.ps1
-./CreateSampleMSOEUpdate-3.x.ps1
-./CreateSampleMSOEUpdate-4.x.ps1
-./CreateSampleMSOEUpdate-5.x.ps1
-./CreateSampleMSOEUpdate-6.x.ps1
-./CreateSampleMSOEUpdate-7.x.ps1
-```
+- [Import an update to Device Update for IoT Hub](https://learn.microsoft.com/azure/iot-hub-device-update/import-update)
+- [Import manifest schema](https://learn.microsoft.com/azure/iot-hub-device-update/import-schema)
+
+> The manifests committed here were generated once from the static payloads under [`sample-updates/data-files/`](./sample-updates/data-files/) and [`sample-updates/scripts/`](./sample-updates/scripts/). If you change any payload file, regenerate the affected manifest(s) (the SHA-256 hash and `sizeInBytes` in the manifest must match the payload byte-for-byte) using the documented [Azure CLI](https://learn.microsoft.com/cli/azure/iot/du/update) or [REST API](https://learn.microsoft.com/azure/iot-hub-device-update/import-concepts) flow.

@@ -1,0 +1,29 @@
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "Virtual-Vacuum",
+    "version": "4.0"
+  },
+  "isDeployable": true,
+  "compatibility": [
+    {
+      "model": "virtual-vacuum-v1",
+      "manufacturer": "contoso"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "reference",
+        "description": "Steamer Firmware Update",
+        "updateId": {
+          "provider": "contoso",
+          "name": "Virtual-Vacuum-virtual-steamers",
+          "version": "1.0"
+        }
+      }
+    ]
+  },
+  "createdDateTime": "2026-04-30T23:33:50.2565594Z",
+  "manifestVersion": "4.0"
+}
