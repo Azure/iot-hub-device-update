@@ -412,13 +412,15 @@ This components configuration depends on the implementation of an example Compon
 
 ### Generate Example Updates
 
-Open PowerShell terminal, go [[project-root]/tools/AduCmdlets](../../../../../../tools/AduCmdlets/) directory, then import AduUpdate.psm1 module:
+Open a PowerShell terminal, go to the [sample-updates](./sample-updates/) directory, then import the bundled AduUpdate.psm1 module:
 
 ```powershell
 Import-Module ./AduUpdate.psm1
 ```
 
-Next, go to [sample-updates](./sample-updates/) directory, then run following commands to generate **all** example updates:
+> If you prefer Python over PowerShell for authoring import manifests, see [tools/AduCmdlets-py](../../../../../../tools/AduCmdlets-py/README.md). The PowerShell helpers below are kept only for this contoso demo.
+
+Next, from the same [sample-updates](./sample-updates/) directory, run following commands to generate **all** example updates:
 
 > NOTE | You can choose to generate only updates you want to try.
 

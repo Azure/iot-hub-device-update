@@ -43,7 +43,7 @@ At this time, this update is version 20 in their `update line of service`. The f
 
 ## Preparing Update Instructions (steps)
 
-> **Prerequisites** | Read [Device Update for IoT Hub - Scripts](../../../../../../tools/AduCmdlets/README.md) to understand how to create ADU Import Manifest, and ensure that all required scripts can be run properly.
+> **Prerequisites** | Read [Device Update for IoT Hub - Scripts](../../../../../../tools/AduCmdlets-py/README.md) to understand how to create an ADU Import Manifest. The PowerShell helpers used by the sample scripts in this demo live next to them in [sample-updates/AduUpdate.psm1](./sample-updates/AduUpdate.psm1).
 
 To accomplish the goals, this update requires 2 `update instruction steps` in the Update Manifest:
 
