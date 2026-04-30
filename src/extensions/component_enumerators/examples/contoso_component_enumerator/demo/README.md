@@ -418,7 +418,7 @@ Open a PowerShell terminal, go to the [sample-updates](./sample-updates/) direct
 Import-Module ./AduUpdate.psm1
 ```
 
-> If you prefer Python over PowerShell for authoring import manifests, see [tools/AduCmdlets-py](../../../../../../tools/AduCmdlets-py/README.md). The PowerShell helpers below are kept only for this contoso demo.
+> The PowerShell helpers below are kept only for this contoso demo. For production import-manifest authoring, see the official guidance: [Import an update to Device Update for IoT Hub](https://learn.microsoft.com/azure/iot-hub-device-update/import-update) and the [import manifest schema](https://learn.microsoft.com/azure/iot-hub-device-update/import-schema).
 
 Next, from the same [sample-updates](./sample-updates/) directory, run following commands to generate **all** example updates:
 
