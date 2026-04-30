@@ -112,10 +112,21 @@ function Get-AduFileHashes
     $FilePath = Resolve-Path $FilePath
 
     $fs = [System.IO.File]::OpenRead($FilePath)
-    $sha256 = New-Object System.Security.Cryptography.SHA256Managed
-    $bytes = $sha256.ComputeHash($fs)
-    $sha256.Dispose()
-    $fs.Close()
+    # Use the SHA256.Create() factory rather than the *Managed class. SDL
+    # forbids any class with "Managed" in its name; SHA256.Create() returns
+    # the platform-provided implementation (CNG on Windows, OpenSSL via
+    # System.Security.Cryptography on Linux/macOS). See
+    # docs/security/cryptography.md.
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try
+    {
+        $bytes = $sha256.ComputeHash($fs)
+    }
+    finally
+    {
+        $sha256.Dispose()
+        $fs.Close()
+    }
     $fileHash = [System.Convert]::ToBase64String($bytes)
 
     $hashes = [pscustomobject]@{
