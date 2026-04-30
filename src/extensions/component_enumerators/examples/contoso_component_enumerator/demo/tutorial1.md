@@ -1,218 +1,242 @@
-# TUTORIAL - OTA Multi Component Update Using APT Handler and Script Handler
+# TUTORIAL — OTA Multi-Component Update Using APT Handler and Script Handler
+
+This tutorial walks through the structure of an ADU import manifest for a
+two-step parent update that targets components attached to a host device
+through the `microsoft/contoso-component-enumerator` extension.
+
+> **How this tutorial works.** The JSON below explains the manifest layout
+> field-by-field. The `sha256` and `sizeInBytes` values are written as
+> placeholders (`"<sha256:…>"`, `"<size>"`) — when authoring your own
+> manifest, those must be the real digest and byte length of each payload
+> file. For a fully-formed, ready-to-import example that follows the same
+> two-step pattern (APT step on host + reference step targeting components),
+> see [`sample-updates/Contoso.Virtual-Vacuum.7.0/`](./sample-updates/Contoso.Virtual-Vacuum.7.0/).
 
 ## Scenario
 
-Contoso wants to update all Virtual Vacuum devices by delivering OTA update to accomplish following goals:
+Contoso wants to deliver an OTA update to all Virtual Vacuum devices that:
 
-- Install the latest `tree` Debian package on the `host` device
-- Install the `Virtual Motor` firmware version 1.1 to all Virtual Motors that currently connected to the `host` device
+- Installs the latest `tree` Debian package on the host device.
+- Installs Virtual Motor firmware version 1.1 on every motor component
+  currently connected to the host.
 
-## Device Information
+## Device information
 
-|Property|Value|
-|--|---|
-|Manufacturer|**contoso**|
-|Model|**virtual-vacuum-v1**|
+| Property      | Value                |
+|---------------|----------------------|
+| Manufacturer  | **contoso**          |
+| Model         | **virtual-vacuum-v1**|
 
-## Update Identifier
+## Update identifier
 
-At this time, this update is version 20 in their `update line of service`. The following are required values for import manifest creation.
+| Field    | Value             |
+|----------|-------------------|
+| Provider | **Contoso**       |
+| Name     | **Virtual-Vacuum**|
+| Version  | **20**            |
 
-|Field Name|Value|
-|--|---|
-|Provider|**Contoso**|
-|Name|**Virtual-Vacuum**|
-|Version| **20** |
+## Update types and artifacts
 
-## Update Types and Artifacts
+### Host update — APT handler (`microsoft/apt:1`)
 
-### For Host Update
+- APT manifest for installing `tree`:
+  [`apt-manifest-tree-1.0.json`](./sample-updates/data-files/APT/apt-manifest-tree-1.0.json)
 
-> **NOTE** | The update type for APT Update is **'microsoft/apt:1'**
+### Component (motors) update — Script handler (`microsoft/script:1`)
 
-- APT Manifest file for `tree` installation ([apt-manifest-tree-1.0.json](./sample-updates/data-files/APT/apt-manifest-tree-1.0.json))
+- Virtual Motor firmware payload:
+  [`motor-firmware-1.1.json`](./sample-updates/data-files/motor-firmware-1.1.json)
+- Virtual Motor install script:
+  [`contoso-motor-installscript.sh`](./sample-updates/scripts/contoso-motor-installscript.sh)
 
-### For Component (Motors) Update
+## Preparing the import manifest
 
-> **NOTE** | The update type for Virtual Motor firmware is **'microsoft/script:1'**
+> **Prerequisites** | Read [Import an update to Device Update for IoT
+> Hub](https://learn.microsoft.com/azure/iot-hub-device-update/import-update)
+> and the [import manifest
+> schema](https://learn.microsoft.com/azure/iot-hub-device-update/import-schema)
+> for the canonical reference. The walk-through below summarizes the schema
+> in the context of this tutorial's scenario.
 
-- Virtual Motor firmware file ([motor-firmware-1.1.json](./sample-updates/data-files/motor-firmware-1.1.json))
-- Virtual Motor firmware installation script ([contoso-motor-installscript.sh](./sample-updates/scripts/contoso-motor-installscript.sh))
+The parent update needs **two top-level steps**:
 
-> **NOTE** | Save all artifacts listed above to a local folder. E.g., './update-files'
+1. An **inline step** that installs `tree` on the host device (APT handler).
+2. A **reference step** that points at a *child update* targeting the motor
+   components (script handler).
 
-## Preparing Update Instructions (steps)
+### Step 1 — Inline APT step on the host
 
-> **Prerequisites** | Read [Import an update to Device Update for IoT Hub](https://learn.microsoft.com/azure/iot-hub-device-update/import-update) and the [import manifest schema](https://learn.microsoft.com/azure/iot-hub-device-update/import-schema) to understand the structure of an ADU import manifest. The pre-generated example manifests this tutorial walks through are committed under the [sample-updates](./sample-updates/) directory.
-
-To accomplish the goals, this update requires 2 `update instruction steps` in the Update Manifest:
-
-1. Install an update for the host device. This step must be a top-level `inline step`.
-2. install an update for components (motors) that connected to a host device. This step must be a top-level `reference step`, in order to target the update to certain group of components.
-
-### Top-Level Step #1 - Install `tree` Debian Package
-
-The following command is used to create step #1:
-
-```powershell
-# -------------------------------------------------
-# Create the first top-level step
-# -------------------------------------------------
-
-$topLevelStep1 = New-AduInstallationStep `
-                        -Handler 'microsoft/apt:1' `
-                        -Files "./update-files/apt-manifest-tree-1.0.json" `
-                        -HandlerProperties @{ 'installedCriteria'='apt-update-tree-1.0'} `
-                        -Description 'Install tree Debian package on host device.'
+```json
+{
+  "type": "inline",
+  "description": "Install tree Debian package on host device.",
+  "handler": "microsoft/apt:1",
+  "files": [ "apt-manifest-tree-1.0.json" ],
+  "handlerProperties": {
+    "installedCriteria": "apt-update-tree-1.0"
+  }
+}
 ```
 
-> **IMPORTANT** | Replace **"./update-files/apt-manifest-tree-1.0.json"** above with the actual file path.
+The file referenced in `files[]` must also appear in the manifest's
+top-level `files` array with its real SHA-256 hash and byte size:
 
-### Top-Level Step #2 - Install `Virtual Motors Firmware 1.0` on all `Motor` components
-
-Since this update is targeting a group of components on the host device, the `child update` and a top-level `reference step` must be created.
-The following script snippet is used to create both child update and reference step:
-
->**NOTE** | Child update identity is required. For this tutorial, we use **"contoso", "contoso-virtual-motors", "1.1"** for `Provider`, `Name`, and `Version` respectively.
-
-```powershell
-
-# -------------------------------------------------
-# Create a child update for all 'motor' components
-# -------------------------------------------------
-
-$RefUpdateManufacturer = "contoso"
-$RefUpdateName = "contoso-virtual-motors"
-$RefUpdateVersion = "1.1"
-
-$motorsFirmwareVersion = "1.1"
-
-Write-Host "Preparing child update ($RefUpdateManufacturer/$RefUpdateName/$RefUpdateVersion)..."
-
-$motorsUpdateId = New-AduUpdateId -Provider $RefUpdateManufacturer -Name $RefUpdateName -Version $RefUpdateVersion
-
-# This components update only apply to 'motors' group.
-$motorsSelector = @{ group = 'motors' }
-$motorsCompat = New-AduUpdateCompatibility  -Properties $motorsSelector
-
-$motorScriptFile = ".\update-files\contoso-motor-installscript.sh"
-$motorFirmwareFile = ".\update-files\motor-firmware-$motorsFirmwareVersion.json"
-
-#------------
-# ADD STEP(S)
-#
-
-# This update contains 1 steps.
-$motorsInstallSteps = @()
-
-# Step #1 - install a firmware version 1.1 onto motor component.
-$motorsInstallSteps += New-AduInstallationStep -Handler 'microsoft/script:1' `
-                        -Files $motorScriptFile, $motorFirmwareFile `
-                        -HandlerProperties @{  `
-                            'scriptFileName'='contoso-motor-installscript.sh';  `
-                            'installedCriteria'="$RefUpdateManufacturer-$RefUpdateName-$RefUpdateVersion-step-1"; `
-                            "arguments"="--firmware-file motor-firmware-$motorsFirmwareVersion.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path" `
-                        }   `
-                        `
-                        -Description 'Motors Update - firmware 1.1 installation'
-
-# ------------------------------
-# Create child update manifest
-# ------------------------------
-
-$childUpdateId = $motorsUpdateId
-$childUpdateIdStr = "$($childUpdateId.Provider).$($childUpdateId.Name).$($childUpdateId.Version)"
-$childPayloadFiles = $motorScriptFile, $motorFirmwareFile
-$childCompat = $motorsCompat
-$childSteps = $motorsInstallSteps
-
-Write-Host "    Preparing child update manifest $childUpdateIdStr ..."
-
-$childManifest = New-AduImportManifest -UpdateId $childUpdateId -IsDeployable $false `
-                                    -Compatibility $childCompat `
-                                    -InstallationSteps $childSteps `
-                                    -ErrorAction Stop
-
-# Create folder for manifest files and payload.
-$outputPath = ".\update-files"
-Write-Host "    Saving child manifest files and payload to $outputPath..."
-New-Item $outputPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-
-# Generate manifest files.
-$childManifest | Out-File "$outputPath\$childUpdateIdStr.importmanifest.json" -Encoding utf8
-
-
-#
-# Create a top-level reference step.
-#
-$topLevelStep2 = New-AduInstallationStep `
-                        -UpdateId $childUpdateId `
-                        -Description "Motor Firmware 1.1 Update"
+```json
+{
+  "filename": "apt-manifest-tree-1.0.json",
+  "sizeInBytes": "<size>",
+  "hashes": {
+    "sha256": "<sha256:apt-manifest-tree-1.0.json>"
+  }
+}
 ```
 
-## Create an Import Manifest
+### Step 2 — Child update targeting the `motors` component group
 
-Create a main import manifest by adding above 2 top-level steps in the main update instructions steps collection:
+The child update is a **separate, non-deployable** import manifest with
+its own update identifier. It is not deployed directly to a device; the
+parent update references it by ID, and the agent fans it out to every
+component in the targeted group.
 
-```powershell
-##############################################################
-# Update : 20.0
-##############################################################
+The child update identifier and compatibility for this tutorial are:
 
-# Update Identity
-$UpdateProvider = "Contoso"
-$UpdateName = "Virtual-Vacuum"
-$UpdateVersion = '20.0'
+| Field                      | Value                          |
+|----------------------------|--------------------------------|
+| Provider                   | **contoso**                    |
+| Name                       | **contoso-virtual-motors**     |
+| Version                    | **1.1**                        |
+| `compatibility[].group`    | **motors**                     |
 
-# Host Device Info
-$Manufacturer = "contoso"
-$Model = 'virtual-vacuum-v1'
+The child update has one inline script step that copies the firmware file
+onto each motor component:
 
-$parentCompat = New-AduUpdateCompatibility -Manufacturer $Manufacturer -Model $Model
-$parentUpdateId = New-AduUpdateId -Provider $UpdateProvider -Name $UpdateName -Version $UpdateVersion
-$parentUpdateIdStr = "$($parentUpdateId.Provider).$($parentUpdateId.Name).$($parentUpdateId.Version)"
-
-
-# ------------------------------------------------------
-# Create the parent update containing 1 inline step and 1 reference step.
-# ------------------------------------------------------
-Write-Host "    Preparing parent update $parentUpdateIdStr..."
-$payloadFiles =
-$parentSteps = @()
-
-    #------------
-    # ADD STEP(s)
-
-    # step #1 - Install 'tree' package
-    $parentSteps += $topLevelStep1
-
-    # step #2 - Install 'motors firmware'
-    $parentSteps += $topLevelStep2
-
-# ------------------------------
-# Create parent update manifest
-# ------------------------------
-
-Write-Host "    Generating an import manifest $parentUpdateIdStr..."
-
-$parentManifest = New-AduImportManifest -UpdateId $parentUpdateId `
-                                    -IsDeployable $true `
-                                    -Compatibility $parentCompat `
-                                    -InstallationSteps $parentSteps `
-                                    -ErrorAction Stop
-
-# Create folder for manifest files and payload.
-$outputPath = ".\update-files"
-Write-Host "    Saving parent manifest file and payload(s) to $outputPath..."
-New-Item $outputPath -ItemType Directory -ErrorAction SilentlyContinue | Out-Null
-
-# Generate manifest file.
-$parentManifest | Out-File "$outputPath\$parentUpdateIdStr.importmanifest.json" -Encoding utf8
-
+```json
+{
+  "updateId": {
+    "provider": "contoso",
+    "name": "contoso-virtual-motors",
+    "version": "1.1"
+  },
+  "isDeployable": false,
+  "compatibility": [
+    { "group": "motors" }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "description": "Motors Update - firmware 1.1 installation",
+        "handler": "microsoft/script:1",
+        "files": [
+          "contoso-motor-installscript.sh",
+          "motor-firmware-1.1.json"
+        ],
+        "handlerProperties": {
+          "scriptFileName": "contoso-motor-installscript.sh",
+          "installedCriteria": "contoso-contoso-virtual-motors-1.1-step-1",
+          "arguments": "--firmware-file motor-firmware-1.1.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path"
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "contoso-motor-installscript.sh",
+      "sizeInBytes": "<size>",
+      "hashes": { "sha256": "<sha256:contoso-motor-installscript.sh>" }
+    },
+    {
+      "filename": "motor-firmware-1.1.json",
+      "sizeInBytes": "<size>",
+      "hashes": { "sha256": "<sha256:motor-firmware-1.1.json>" }
+    }
+  ],
+  "manifestVersion": "4.0"
+}
 ```
 
-### Putting It All Together
+The parent update's reference step then points at this child by ID:
 
-You can find the script for above commands [here (tutorial1.ps1)](./tutorial1.ps1)
+```json
+{
+  "type": "reference",
+  "description": "Motor Firmware 1.1 Update",
+  "updateId": {
+    "provider": "contoso",
+    "name": "contoso-virtual-motors",
+    "version": "1.1"
+  }
+}
+```
 
-**Congratulations**! At this point, you should be ready to import the update into the Device Update service.
+## Putting it all together — the parent import manifest
+
+```json
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "Virtual-Vacuum",
+    "version": "20"
+  },
+  "isDeployable": true,
+  "compatibility": [
+    { "manufacturer": "contoso", "model": "virtual-vacuum-v1" }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "description": "Install tree Debian package on host device.",
+        "handler": "microsoft/apt:1",
+        "files": [ "apt-manifest-tree-1.0.json" ],
+        "handlerProperties": {
+          "installedCriteria": "apt-update-tree-1.0"
+        }
+      },
+      {
+        "type": "reference",
+        "description": "Motor Firmware 1.1 Update",
+        "updateId": {
+          "provider": "contoso",
+          "name": "contoso-virtual-motors",
+          "version": "1.1"
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "apt-manifest-tree-1.0.json",
+      "sizeInBytes": "<size>",
+      "hashes": { "sha256": "<sha256:apt-manifest-tree-1.0.json>" }
+    }
+  ],
+  "manifestVersion": "4.0"
+}
+```
+
+When importing, upload **both** import manifests and **all** payload files
+referenced in the `files[]` arrays into the Device Update import folder.
+
+## Working example checked into this repo
+
+A fully-formed manifest pair that follows the same parent + child reference
+pattern (and includes real `sha256` / `sizeInBytes` values) is available
+at [`sample-updates/Contoso.Virtual-Vacuum.7.0/`](./sample-updates/Contoso.Virtual-Vacuum.7.0/).
+That example uses APT for the host plus reference steps for `cameras` and
+`motors`; you can use it directly to exercise the agent end-to-end without
+authoring anything by hand.
+
+## Authoring tools
+
+This tutorial deliberately presents the manifest as plain JSON because
+that is the canonical format the import service consumes. To produce the
+`sha256` digests and `sizeInBytes` values for your own payloads, use any
+SDL-approved hashing tool — for example `sha256sum` on Linux/macOS or
+`Get-FileHash -Algorithm SHA256` in PowerShell — or use the official
+[Azure CLI Device Update
+extension](https://learn.microsoft.com/cli/azure/iot/du/update) which can
+generate import manifests for you.
+
+**Congratulations** — at this point you have everything needed to import
+the update into the Device Update service.
