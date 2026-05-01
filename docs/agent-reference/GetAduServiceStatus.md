@@ -16,7 +16,7 @@ Install pkg-config for library discovery:
 
 **Ubuntu/Debian:**
 ```sh
-sudo apt update && sudo apt install pkgconfig
+sudo apt update && sudo apt install pkg-config
 ```
 
 ### Build and Install
@@ -66,12 +66,14 @@ Key points in the code will call an internal API to set these "view state" statu
 
 ## Pause State
 
-The `ADUC_ServiceStatus_Paused` state will be returned from the `GetAduServiceStatus()` API before the agent enters `Idle` state.
+The `ADUC_ServiceStatus_Paused` state is returned from the `GetAduServiceStatus()` API after the agent has finished a deployment cycle and before it transitions to `Idle`.
 
 The pause period is controlled by the `IdlePauseMilliseconds` configuration in `du-config.json`.
-During this pause period, the agent will ignore any incoming C2D messages. Therefore, no cancel, replacement, or new update deployment can begin during this interval.
+During this pause period the agent will ignore any incoming C2D messages, so no cancel, replacement, or new update deployment can begin during this interval.
 
-Once the pause period timer has timed out and any queued reporting of results in C2D messaging have been sent, the API will then return `ADUC_ServiceStatus_Idle` and the agent would then be able to start processing any incoming push requests from IoTHub.
+Because new deployments cannot start while the agent is `Paused`, this is the state in which a caller may safely transition the device to a low-power mode without missing an update.
+
+Once the pause-period timer has expired and any queued reporting of results has been sent to IoT Hub, the API will return `ADUC_ServiceStatus_Idle` and the agent is again able to start processing incoming push requests from IoT Hub. While the agent is `Idle` it is actively eligible to receive new deployments, so a caller should NOT enter a low-power mode purely on the basis of an `Idle` reading — use `Paused` for that.
 
 ## The Cross-Proc wire protocol
 
@@ -79,12 +81,14 @@ The SDK libaducsdk.a static lib will write requests to the ADUC request FIFO and
 
 ### Request Format
 The request format is: `<ver><type><len><str>`
-where ver, type, len are 16-bit values and str is a non-null-terminated utf-8 encoded string of length len (can be 0)
-e.g. 00 01 00 01 00 13 '/data/resp1234.fifo' (note: the nibbles on the wire are in network order, i.e. big-endian).
-In the uint16_t local variables on a little-endian host, these will be 01 00 01 00 13 00
+where ver, type, len are 16-bit unsigned values in network byte order and str is a non-null-terminated UTF-8 encoded string of length `len` bytes (can be 0).
+e.g. on the wire: `00 01 00 01 00 13 '/data/resp1234.fifo'` — bytes are sent in network order (big-endian) for the three uint16 fields.
+On a little-endian host, the same fields read into local `uint16_t` variables would be stored as `01 00 01 00 13 00`.
 
 ### Response Format
-The Response consists of `<code><ret_val>`, both of which are a double word. e.g. 00 01 00 02 on the wire (01 00 02 00 on LE host) would indicate code 1 (response to query status) and ret_val 2 ([Downloading](../../src/sdk/inc/aduc/aducsdk.h))
+The response consists of `<code><ret_val>`, both of which are 16-bit unsigned values (uint16_t) sent in network byte order.
+e.g. `00 01 00 02` on the wire (`01 00 02 00` in memory on a little-endian host) indicates code 1 (response to GET_STATE) and ret_val 2 ([Downloading](../../src/sdk/inc/aduc/aducsdk.h)).
+The SDK validates that `code` matches the request type before returning `ret_val` to the caller; a mismatch is reported as `ADUC_ServiceStatus_ERROR_AgentServiceInternal`.
 
 ## Package Config
 
@@ -195,8 +199,8 @@ sequenceDiagram
     Note over ReqFIFO,ViewState: ADU Service Process
 
     Client->>SDK: GetAduServiceStatus()
-    SDK->>SDK: Create temp response FIFO
-    SDK->>ReqFIFO: Write "GET_STATE:/tmp/adu_status_12345"
+    SDK->>SDK: Create per-call response FIFO<br/>at /var/lib/adu/api/resp_<random>.fifo
+    SDK->>ReqFIFO: Write GET_STATE request<br/>(ver=1,type=1,len,&lt;respFifoPath&gt;)
 
     ReqFIFO->>ApiSvcReqHandler: Read request
     ApiSvcThread->>ApiSvcReqHandler: Process GET_STATE command
@@ -257,7 +261,7 @@ sequenceDiagram
 graph TB
     subgraph "Client Process"
         CA[Client Application]
-        IW[In-Proc Wrapper API<br/>libaducsdk.so]
+        IW[In-Proc Wrapper API<br/>libaducsdk.a]
         CA --> IW
     end
 
@@ -273,11 +277,11 @@ graph TB
     end
 
     subgraph "IPC Layer"
-        RF[Request FIFO<br/>/var/lib/adu/api/req.fifo]
+        RF[Request FIFO<br/>/var/lib/adu/api/apireq.fifo]
         RSF[Response FIFO<br/>/var/lib/adu/api/resp_XXXXX.fifo]
     end
 
-    IW -.->|"GET_STATE:/var/lib/adu/api/resp_XXXXX.fifo"| RF
+    IW -.->|"GET_STATE request, with respFifoPath=<br/>/var/lib/adu/api/resp_XXXXX.fifo"| RF
     RF --> CL
     CH -.->|"Status Code"| RSF
     RSF --> IW
