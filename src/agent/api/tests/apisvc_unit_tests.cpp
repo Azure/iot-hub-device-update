@@ -154,4 +154,26 @@ TEST_CASE("apisvc crossproc tests")
 
         CHECK(uninit_api_svc());
     }
+
+    SECTION("GetAduServiceStatus via SDK API")
+    {
+        REQUIRE(viewstatemgr_svcstatus_set(&g_vsm, ADUC_ServiceStatus_Idle));
+
+        // The SDK was compiled with ADUC_API_DEFAULT_FIFO_PATH pointing at
+        // <TEST_DATA_DIR>/test_req_fifo and ADUC_DATA_FOLDER at TEST_DATA_DIR
+        // (see CMakeLists.txt). Match those paths here so the SDK and the
+        // service rendezvous on the same FIFO. The SDK creates response
+        // FIFOs at <ADUC_DATA_FOLDER>/api/, so make sure that exists.
+        const std::string reqFifoPath = TEST_DATA_DIR + "/test_req_fifo";
+        std::filesystem::create_directories(TEST_DATA_DIR + "/api");
+
+        REQUIRE(init_api_svc(reqFifoPath.c_str()));
+        // Give the apisvc thread a moment to open the request FIFO for read.
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        ADUC_ServiceStatus status = GetAduServiceStatus();
+        CHECK(status == ADUC_ServiceStatus_Idle);
+
+        CHECK(uninit_api_svc());
+    }
 }

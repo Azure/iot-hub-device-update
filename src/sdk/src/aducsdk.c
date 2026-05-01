@@ -55,10 +55,15 @@ static void get_rnd_suffix(char* str, size_t length)
     }
 
     const char* charset = ALPHANUMERIC_CHARS;
+    // Bug fix: sizeof(ALPHANUMERIC_CHARS) includes the trailing '\0'. Using it
+    // directly as the modulus could pick the NUL byte and embed it in the
+    // generated suffix, which then truncates the response FIFO path. Use
+    // (sizeof - 1) so we only sample from the 62 alphanumeric characters.
+    const size_t charset_len = sizeof(ALPHANUMERIC_CHARS) - 1;
 
     for (size_t i = 0; i < length; ++i)
     {
-        str[i] = charset[rand() % (int)sizeof(ALPHANUMERIC_CHARS)];
+        str[i] = charset[(size_t)rand() % charset_len];
     }
     str[length] = '\0';
 }
@@ -107,10 +112,12 @@ static bool verify_fifo_security(const char* fifoPath)
 ADUC_ServiceStatus GetAduServiceStatus(void)
 {
     const char* reqFifoPath = ADUC_API_DEFAULT_FIFO_PATH;
+    const char* dataFolder = ADUC_DATA_FOLDER;
     char randomSuffix[13] = { 0 }; // 12 chars + null terminator
     char respFifoPath[512] = { 0 };
     int reqFifo = -1, respFifo = -1;
-    size_t respPathLen = -1;
+    bool respFifoCreated = false;  // tracks whether respFifoPath exists on disk
+    size_t respPathLen = 0;
     ssize_t n = -1;
     ApiWireRequestMsg req = { 0 };
     ApiWireResponseMsg resp = { 0 };
@@ -132,7 +139,7 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
 
     get_rnd_suffix(randomSuffix, 12);
 
-    snprintf(respFifoPath, sizeof(respFifoPath), ADUC_DATA_FOLDER "/api/resp_%s.fifo", randomSuffix);
+    snprintf(respFifoPath, sizeof(respFifoPath), "%s/api/resp_%s.fifo", dataFolder, randomSuffix);
 
     if (mkfifo(respFifoPath, FIFO_FILE_MODE) < 0)
     {
@@ -140,12 +147,20 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
         {
             return ADUC_ServiceStatus_ERROR_AgentServiceMkFifoFailed;
         }
+        // EEXIST: a stale file already exists at this path. Don't trust it.
+        // Remove it and recreate to ensure we own and control the FIFO.
+        if (unlink(respFifoPath) < 0 || mkfifo(respFifoPath, FIFO_FILE_MODE) < 0)
+        {
+            return ADUC_ServiceStatus_ERROR_AgentServiceMkFifoFailed;
+        }
     }
+    respFifoCreated = true;
 
     // mkfifo uses umask (typically 022) which creates a fifo with incorrect permissions, so fix it here
     if (fchmodat(AT_FDCWD, respFifoPath, 0660, 0) < 0)
     {
         unlink(respFifoPath);
+        respFifoCreated = false;
         return ADUC_ServiceStatus_ERROR_AgentServiceChmodFailed;
     }
 
@@ -260,6 +275,20 @@ ADUC_ServiceStatus GetAduServiceStatus(void)
         goto cleanup;
     }
 
+    // Validate response code matches the request type. Without this check, a
+    // malformed or spoofed response would be silently accepted and ret_val
+    // returned as a status enum.
+    if (resp.code != ApiRequestType_GETSTATE)
+    {
+        if (debug_enabled)
+        {
+            fprintf(stderr, "[ADUC SDK] Unexpected response code: %u (expected %u)\n",
+                    resp.code, (unsigned)ApiRequestType_GETSTATE);
+        }
+        result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
+        goto cleanup;
+    }
+
     result = (ADUC_ServiceStatus)(resp.ret_val);
 
     if (debug_enabled)
@@ -278,7 +307,14 @@ cleanup:
     {
         close(respFifo);
         respFifo = -1;
+    }
+    // Always unlink the response FIFO file we created, even if we never
+    // managed to open it (previously this leaked stale FIFO files on disk
+    // when the request-FIFO open failed after mkfifo had already created it).
+    if (respFifoCreated)
+    {
         unlink(respFifoPath);
+        respFifoCreated = false;
     }
 
     return result;

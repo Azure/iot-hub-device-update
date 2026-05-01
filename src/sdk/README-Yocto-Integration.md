@@ -13,7 +13,7 @@ https://github.com/Azure/iot-hub-device-update-yocto/blob/scarthgap/README.md#qu
 ### Build and Run the status_monitor example using the Yocto toolchain here by following these steps:
 https://github.com/Azure/iot-hub-device-update-yocto/blob/scarthgap/README.md#build-and-run-status-monitor-for-arm64-using-yocto-toolchain
 
-The status monitor exercises the GetServiceStatus API from the SDK.
+The status monitor exercises the GetAduServiceStatus API from the SDK.
 
 ## Yocto Recipe Integration
 
@@ -24,8 +24,8 @@ DESCRIPTION = "IoT Power Management Application"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=..."
 
-# Add dependency on the ADU SDK
-DEPENDS += "aducsdk"
+# Add dependency on the ADU SDK (built and installed by the iot-hub-device-update recipe)
+DEPENDS += "iot-hub-device-update"
 
 # Use pkg-config to get compilation flags
 inherit pkgconfig
@@ -56,12 +56,14 @@ int main() {
 
     printf("Status: %s (%d)\n", statusStr, status);
 
-    if (status == ADUC_ServiceStatus_Idle || status == ADUC_ServiceStatus_Paused) {
-        printf("Agent is idle/paused - safe to power down to conserve battery\n");
+    if (status == ADUC_ServiceStatus_Paused) {
+        printf("Agent is in the post-update quiet period - safe to power down to conserve battery\n");
         // TODO: Initiate power down sequence here
     } else if (status >= ADUC_ServiceStatus_ERROR_UnsupportedApiVersion) {
         printf("Error communicating with agent: %s\n", statusStr);
         return 1;
+    } else if (status == ADUC_ServiceStatus_Idle) {
+        printf("Agent is idle and eligible to receive new deployments - do NOT power down\n");
     } else {
         printf("Agent is busy working on update deployment processing\n");
     }
@@ -73,11 +75,11 @@ int main() {
 ## ADU SDK Integration in Yocto
 
 ### Installing the SDK Package
-In a Yocto build, the ADU SDK will be built and installed as part of the `iot-hub-device-update` recipe, providing:
+In a Yocto build, the ADU SDK is built and installed as part of the `iot-hub-device-update` recipe, providing:
 
-- **Library**: `/usr/lib/libaducsdk.a`
-- **Header**: `/usr/include/aduc/aducsdk.h`
-- **pkg-config**: `/usr/lib/pkgconfig/aducsdk.pc`
+- **Library**: `${libdir}/libaducsdk.a` (e.g. `/usr/lib/libaducsdk.a` on most Yocto layers; check your machine's `libdir` for multilib targets)
+- **Header**: `${includedir}/aduc/aducsdk.h` (e.g. `/usr/include/aduc/aducsdk.h`)
+- **pkg-config**: `${libdir}/pkgconfig/aducsdk.pc`
 
 ### Runtime Dependencies
 The app would communicate with:
