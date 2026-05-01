@@ -1,0 +1,75 @@
+{
+  "updateId": {
+    "provider": "contoso",
+    "name": "Virtual-Vacuum-virtual-steamers",
+    "version": "1.0"
+  },
+  "isDeployable": false,
+  "compatibility": [
+    {
+      "group": "steamers"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "description": "Steamers Update pre-install step",
+        "handler": "microsoft/script:1",
+        "files": [
+          "contoso-steamer-installscript.sh"
+        ],
+        "handlerProperties": {
+          "scriptFileName": "contoso-steamer-installscript.sh",
+          "arguments": "--pre-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+          "installedCriteria": "1.0"
+        }
+      },
+      {
+        "type": "inline",
+        "description": "Steamers Update - firmware installation",
+        "handler": "microsoft/script:1",
+        "files": [
+          "contoso-steamer-installscript.sh",
+          "steamer-firmware-1.0.json"
+        ],
+        "handlerProperties": {
+          "scriptFileName": "contoso-steamer-installscript.sh",
+          "arguments": "--firmware-file steamer-firmware-1.0.json --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+          "installedCriteria": "1.0"
+        }
+      },
+      {
+        "type": "inline",
+        "description": "Motors Update post-install step",
+        "handler": "microsoft/script:1",
+        "files": [
+          "contoso-steamer-installscript.sh"
+        ],
+        "handlerProperties": {
+          "scriptFileName": "contoso-steamer-installscript.sh",
+          "arguments": "--post-install-sim-success --component-name --component-name-val --component-group --component-group-val --component-prop path --component-prop-val path",
+          "installedCriteria": "1.0"
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "contoso-steamer-installscript.sh",
+      "sizeInBytes": 26869,
+      "hashes": {
+        "sha256": "dzxR4DseG8Ckv/9NWXPWmTYyxs7a1PgKL0CMQh135Is="
+      }
+    },
+    {
+      "filename": "steamer-firmware-1.0.json",
+      "sizeInBytes": 160,
+      "hashes": {
+        "sha256": "lkFoU4yx+/yZwzKh2ENO+jNUzPDc7zxBA/2u492+fKc="
+      }
+    }
+  ],
+  "createdDateTime": "2026-04-30T23:33:50.2111977Z",
+  "manifestVersion": "4.0"
+}

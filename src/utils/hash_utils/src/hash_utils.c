@@ -1,6 +1,10 @@
 /**
  * @file hash_utils.c
- * @brief Implements utilities for working with hashes
+ * @brief Implements utilities for working with hashes.
+ *
+ * Hashing is performed via the OpenSSL EVP message-digest API, which is on
+ * the SDL Approved Cryptographic Libraries list and is dynamically linked.
+ * See @c docs/security/cryptography.md for the policy and rationale.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -15,36 +19,100 @@
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
-#include <azure_c_shared_utility/sha.h>
+
+#include <openssl/err.h>
+#include <openssl/evp.h>
 
 #include <aduc/logging.h>
 
+// File-read buffer used while streaming content into the digest. EVP imposes
+// no chunk-size constraint, so a larger buffer reduces fread/EVP loop overhead
+// without affecting correctness.
+#define ADUC_HASH_FILE_READ_CHUNK_SIZE (64 * 1024)
+
 /**
- * @brief Helper function gets the calculated hash from the @p context, compares it to @p hashBase64, and returns the appropriate value
- * @param context Context in which the hash was calculated and stored
- * @param hashBase64 The expected hash from the context. If NULL, skip hashes comparison.
- * @param algorithm the algorithm used to calculate the hash
- * @param outputHash an optional output buffer for computed hash. Caller must call free() to deallocate the buffer when done.
- * @returns bool True if the hash is valid and equals @p hashBase64
+ * @brief Helper that logs every pending OpenSSL error from the thread-local
+ *        error queue. Mirrors the pattern used in @c crypto_lib.c.
+ *
+ * @param context Free-form string describing where the error occurred.
  */
-static bool GetResultAndCompareHashes(
-    USHAContext* context, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog, char** outputHash)
+static void LogOpenSSLErrors(const char* context)
+{
+    unsigned long err;
+    char buf[256];
+
+    Log_Error("OpenSSL error context: %s", context);
+    while ((err = ERR_get_error()) != 0)
+    {
+        ERR_error_string_n(err, buf, sizeof(buf));
+        Log_Error("  OpenSSL error: %s", buf);
+    }
+}
+
+/**
+ * @brief Map a SHAversion to the corresponding OpenSSL EVP_MD.
+ *
+ * @param algorithm The requested SHA algorithm.
+ * @return const EVP_MD* OpenSSL message-digest pointer, or NULL if unsupported.
+ */
+static const EVP_MD* GetEvpMdForSha(SHAversion algorithm)
+{
+    switch (algorithm)
+    {
+    case SHA1:
+        return EVP_sha1();
+    case SHA224:
+        return EVP_sha224();
+    case SHA256:
+        return EVP_sha256();
+    case SHA384:
+        return EVP_sha384();
+    case SHA512:
+        return EVP_sha512();
+    default:
+        return NULL;
+    }
+}
+
+/**
+ * @brief Helper function that finalizes the hash from @p ctx, compares it to
+ *        @p hashBase64, and optionally returns the computed hash to the caller.
+ *
+ * @param ctx Initialized digest context whose Update calls have completed.
+ * @param hashBase64 The expected hash. If NULL, hash comparison is skipped.
+ * @param algorithm The algorithm used (logged on errors).
+ * @param suppressErrorLog When true, errors are not logged at error level.
+ * @param outputHash Optional output. Caller must @c free() the returned buffer.
+ * @return bool True if the digest finalized cleanly and (when supplied) matches @p hashBase64.
+ */
+static bool FinalizeAndCompareHashes(
+    EVP_MD_CTX* ctx, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog, char** outputHash)
 {
     bool success = false;
-    // "USHAHashSize(algorithm)" is more precise, but requires a variable length array, or heap allocation.
-    uint8_t buffer_hash[USHAMaxHashSize];
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    unsigned int digestLen = 0;
     STRING_HANDLE encoded_file_hash = NULL;
 
-    if (USHAResult(context, (uint8_t*)buffer_hash) != 0)
+    if (EVP_DigestFinal_ex(ctx, digest, &digestLen) != 1)
     {
         if (!suppressErrorLog)
         {
-            Log_Error("Error in SHA Result, SHAversion: %d", algorithm);
+            LogOpenSSLErrors("EVP_DigestFinal_ex");
+            Log_Error("Error finalizing digest, SHAversion: %d", algorithm);
         }
         goto done;
     }
 
-    encoded_file_hash = Azure_Base64_Encode_Bytes((unsigned char*)buffer_hash, (size_t)USHAHashSize(algorithm));
+    if (digestLen == 0 || digestLen > EVP_MAX_MD_SIZE)
+    {
+        if (!suppressErrorLog)
+        {
+            Log_Error("Unexpected digest length %u for SHAversion: %d", digestLen, algorithm);
+        }
+        goto done;
+    }
+
+    encoded_file_hash = Azure_Base64_Encode_Bytes(digest, (size_t)digestLen);
     if (encoded_file_hash == NULL)
     {
         if (!suppressErrorLog)
@@ -90,7 +158,11 @@ done:
 
 bool ADUC_HashUtils_IsValidHashAlgorithm(SHAversion sha)
 {
-    return sha >= SHA256;
+    // SHA-1 and SHA-224 are not strong enough for payload integrity. Only
+    // accept SHA-256/384/512. Bound the upper end explicitly so out-of-range
+    // values produced by future enum additions are rejected here rather than
+    // silently passed to OpenSSL.
+    return sha >= SHA256 && sha <= SHA512;
 }
 
 bool ADUC_HashUtils_GetIndexStrongestValidHash(
@@ -171,17 +243,62 @@ bool ADUC_HashUtils_VerifyWithStrongestHash(const char* filePath, const ADUC_Has
 }
 
 /**
- * @brief Checks if the hash of the file at @p path matches @p hashBase64
+ * @brief Streams the contents of @p file through @p ctx using @c EVP_DigestUpdate.
  *
- * @param path The path to the file to check
+ * @param ctx Initialized digest context.
+ * @param file Open file positioned where streaming should begin.
+ * @param suppressErrorLog When true, errors are not logged at error level.
+ * @return true on success (including end-of-file), false on read or digest error.
+ */
+static bool DigestUpdateFromFile(EVP_MD_CTX* ctx, FILE* file, bool suppressErrorLog)
+{
+    uint8_t buffer[ADUC_HASH_FILE_READ_CHUNK_SIZE];
+
+    while (!feof(file))
+    {
+        const size_t readSize = fread(buffer, sizeof(buffer[0]), ARRAY_SIZE(buffer), file);
+        if (readSize == 0)
+        {
+            if (ferror(file))
+            {
+                if (!suppressErrorLog)
+                {
+                    Log_Error("Error reading file content.");
+                }
+                return false;
+            }
+
+            // At end of file. Done.
+            break;
+        }
+
+        if (EVP_DigestUpdate(ctx, buffer, readSize) != 1)
+        {
+            if (!suppressErrorLog)
+            {
+                LogOpenSSLErrors("EVP_DigestUpdate");
+            }
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * @brief Computes the hash of the file at @p path and returns the base64 string.
+ *
+ * @param path The path to the file to check.
  * @param algorithm The hashing algorithm to use to calculate the hash.
- * @param hash [out] The pointer to output buffer. Caller must call free() when done with the returned buffer.
+ * @param hash [out] Pointer to output buffer. Caller must @c free() when done.
  * @return bool True if the hash data is successfully generated.
  */
 bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** hash)
 {
     bool success = false;
     FILE* file = NULL;
+    EVP_MD_CTX* ctx = NULL;
+    const EVP_MD* evpMd = NULL;
 
     if (hash == NULL)
     {
@@ -190,6 +307,13 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
     }
 
     *hash = NULL;
+
+    evpMd = GetEvpMdForSha(algorithm);
+    if (evpMd == NULL)
+    {
+        Log_Error("Unsupported SHAversion: %d", algorithm);
+        goto done;
+    }
 
     file = fopen(path, "rb");
     if (file == NULL)
@@ -200,39 +324,26 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
         goto done;
     }
 
-    USHAContext context;
-
-    if (USHAReset(&context, algorithm) != 0)
+    ctx = EVP_MD_CTX_new();
+    if (ctx == NULL)
     {
-        Log_Error("Error in SHA Reset, SHAversion: %d", algorithm);
+        LogOpenSSLErrors("EVP_MD_CTX_new");
         goto done;
-    };
-
-    // Repeatedly read and hash chunks of the file
-    while (!feof(file))
-    {
-        uint8_t buffer[USHA_Max_Message_Block_Size];
-        const size_t readSize = fread(buffer, sizeof(buffer[0]), ARRAY_SIZE(buffer), file);
-        if (readSize == 0)
-        {
-            if (ferror(file))
-            {
-                Log_Error("Error reading file content.");
-                goto done;
-            }
-
-            // At the end of file. We're done here.
-            break;
-        }
-
-        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
-        {
-            Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
-            goto done;
-        };
     }
 
-    success = GetResultAndCompareHashes(&context, NULL, algorithm, true, hash);
+    if (EVP_DigestInit_ex(ctx, evpMd, NULL) != 1)
+    {
+        LogOpenSSLErrors("EVP_DigestInit_ex");
+        Log_Error("Error initializing digest, SHAversion: %d", algorithm);
+        goto done;
+    }
+
+    if (!DigestUpdateFromFile(ctx, file, true /* suppressErrorLog */))
+    {
+        goto done;
+    }
+
+    success = FinalizeAndCompareHashes(ctx, NULL, algorithm, true, hash);
 
     if (!success)
     {
@@ -240,6 +351,11 @@ bool ADUC_HashUtils_GetFileHash(const char* path, SHAversion algorithm, char** h
     }
 
 done:
+
+    if (ctx != NULL)
+    {
+        EVP_MD_CTX_free(ctx);
+    }
 
     if (file != NULL)
     {
@@ -300,8 +416,21 @@ bool ADUC_HashUtils_IsValidFileHash(
     const char* path, const char* hashBase64, SHAversion algorithm, bool suppressErrorLog)
 {
     bool success = false;
+    FILE* file = NULL;
+    EVP_MD_CTX* ctx = NULL;
+    const EVP_MD* evpMd = NULL;
 
-    FILE* file = fopen(path, "rb");
+    evpMd = GetEvpMdForSha(algorithm);
+    if (evpMd == NULL)
+    {
+        if (!suppressErrorLog)
+        {
+            Log_Error("Unsupported SHAversion: %d", algorithm);
+        }
+        goto done;
+    }
+
+    file = fopen(path, "rb");
     if (file == NULL)
     {
         if (!suppressErrorLog)
@@ -311,48 +440,32 @@ bool ADUC_HashUtils_IsValidFileHash(
         goto done;
     }
 
-    USHAContext context;
-
-    if (USHAReset(&context, algorithm) != 0)
+    ctx = EVP_MD_CTX_new();
+    if (ctx == NULL)
     {
         if (!suppressErrorLog)
         {
-            Log_Error("Error in SHA Reset, SHAversion: %d", algorithm);
+            LogOpenSSLErrors("EVP_MD_CTX_new");
         }
         goto done;
-    };
-
-    // Repeatedly read and hash chunks of the file
-    while (!feof(file))
-    {
-        uint8_t buffer[USHA_Max_Message_Block_Size];
-        const size_t readSize = fread(buffer, sizeof(buffer[0]), ARRAY_SIZE(buffer), file);
-        if (readSize == 0)
-        {
-            if (ferror(file))
-            {
-                if (!suppressErrorLog)
-                {
-                    Log_Error("Error reading file content.");
-                }
-                goto done;
-            }
-
-            // At the end of file. We're done here.
-            break;
-        }
-
-        if (USHAInput(&context, buffer, (unsigned int)readSize) != 0)
-        {
-            if (!suppressErrorLog)
-            {
-                Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
-            }
-            goto done;
-        };
     }
 
-    success = GetResultAndCompareHashes(&context, hashBase64, algorithm, suppressErrorLog, NULL /* outputHash */);
+    if (EVP_DigestInit_ex(ctx, evpMd, NULL) != 1)
+    {
+        if (!suppressErrorLog)
+        {
+            LogOpenSSLErrors("EVP_DigestInit_ex");
+            Log_Error("Error initializing digest, SHAversion: %d", algorithm);
+        }
+        goto done;
+    }
+
+    if (!DigestUpdateFromFile(ctx, file, suppressErrorLog))
+    {
+        goto done;
+    }
+
+    success = FinalizeAndCompareHashes(ctx, hashBase64, algorithm, suppressErrorLog, NULL /* outputHash */);
     if (!success && !suppressErrorLog)
     {
         Log_Debug("Hash compare failed on file '%s'", path);
@@ -360,6 +473,11 @@ bool ADUC_HashUtils_IsValidFileHash(
     }
 
 done:
+    if (ctx != NULL)
+    {
+        EVP_MD_CTX_free(ctx);
+    }
+
     if (file != NULL)
     {
         fclose(file);
@@ -379,21 +497,46 @@ done:
 bool ADUC_HashUtils_IsValidBufferHash(
     const uint8_t* buffer, size_t bufferLen, const char* hashBase64, SHAversion algorithm)
 {
-    USHAContext context;
+    bool success = false;
+    EVP_MD_CTX* ctx = NULL;
+    const EVP_MD* evpMd = GetEvpMdForSha(algorithm);
 
-    if (USHAReset(&context, algorithm) != 0)
+    if (evpMd == NULL)
     {
-        Log_Error("Error in SHA Reset, SHAversion: %d", algorithm);
-        return false;
+        Log_Error("Unsupported SHAversion: %d", algorithm);
+        goto done;
     }
 
-    if (USHAInput(&context, buffer, (unsigned int)bufferLen) != 0)
+    ctx = EVP_MD_CTX_new();
+    if (ctx == NULL)
     {
-        Log_Error("Error in SHA Input, SHAversion: %d", algorithm);
-        return false;
+        LogOpenSSLErrors("EVP_MD_CTX_new");
+        goto done;
     }
 
-    return GetResultAndCompareHashes(&context, hashBase64, algorithm, true, NULL);
+    if (EVP_DigestInit_ex(ctx, evpMd, NULL) != 1)
+    {
+        LogOpenSSLErrors("EVP_DigestInit_ex");
+        Log_Error("Error initializing digest, SHAversion: %d", algorithm);
+        goto done;
+    }
+
+    if (EVP_DigestUpdate(ctx, buffer, bufferLen) != 1)
+    {
+        LogOpenSSLErrors("EVP_DigestUpdate");
+        Log_Error("Error in digest update, SHAversion: %d", algorithm);
+        goto done;
+    }
+
+    success = FinalizeAndCompareHashes(ctx, hashBase64, algorithm, true, NULL);
+
+done:
+    if (ctx != NULL)
+    {
+        EVP_MD_CTX_free(ctx);
+    }
+
+    return success;
 }
 
 /**

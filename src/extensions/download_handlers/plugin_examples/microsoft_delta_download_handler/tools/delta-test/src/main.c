@@ -14,7 +14,9 @@
 #include <aduc/types/workflow.h>
 #include <aduc/workflow_utils.h>
 
-#include <azure_c_shared_utility/sha.h>
+// SHAversion is provided by aduc/hash_utils.h (OpenSSL-backed). The legacy
+// include of azure_c_shared_utility/sha.h was removed to comply with the SDL
+// Approved Cryptographic Libraries policy. See docs/security/cryptography.md.
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
