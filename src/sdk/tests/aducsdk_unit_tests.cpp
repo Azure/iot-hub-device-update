@@ -191,7 +191,8 @@ void fake_agent_thread(fake_agent_args* a)
         return;
     }
     uint16_t resp_net[2] = { htons(a->bogus_code), htons(a->bogus_ret_val) };
-    (void)write(wfd, resp_net, sizeof(resp_net));
+    ssize_t written = write(wfd, resp_net, sizeof(resp_net));
+    (void)written;
     close(wfd);
 }
 } // namespace
