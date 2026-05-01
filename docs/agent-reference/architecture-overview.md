@@ -86,7 +86,8 @@ flowchart LR
 ```
 
 1. **Receive deployment** — The IoT Hub service sets a desired property on the
-   device twin containing the update action and a signed update manifest (v4).
+   device twin containing the update action and a signed update manifest
+   (v4 or v5).
 2. **Download** — The agent's content downloader fetches payloads from Azure
    Blob Storage over HTTPS (optionally via the Delta Download Handler).
 3. **Install & Apply** — The appropriate Step Handler and adu-shell execute the
@@ -111,7 +112,7 @@ a `GetContractInfo` symbol for version negotiation. The Extension Manager
 | 1 | **Content Downloader** | Downloads a file entity from a URL to a local work folder. | `curl_downloader` (default in 1.3.0), `deliveryoptimization_downloader` |
 | 2 | **Download Handler** | Pre-processes downloaded content (e.g., applies a binary delta to reconstruct the full payload). Runs *before* the Content Downloader when metadata indicates a delta is available. | `microsoft_delta_download_handler` |
 | 3 | **Step Handler** | Performs the actual install/apply for a single update step (backup → install → apply → restore on failure). | `apt_handler`, `script_handler`, `swupdate_handler_v2`, `simulator_handler` |
-| 4 | **Update Manifest Handler** | Parses and validates the update manifest, then dispatches each step to the correct Step Handler. | `steps_handler` (built-in, handles manifest v4 "steps" type) |
+| 4 | **Update Manifest Handler** | Parses and validates the update manifest, then dispatches each step to the correct Step Handler. | `steps_handler` (built-in, registered for `microsoft/update-manifest`, `microsoft/update-manifest:4`, `microsoft/update-manifest:5` — see [steps-handler.md](steps-handler.md)) |
 | 5 | **Component Enumerator** | Enumerates device sub-components (e.g., sensors, MCUs) so the agent can target multi-component updates. | Custom implementations per device class |
 
 For a deep dive into writing custom extensions, see
@@ -238,7 +239,9 @@ flowchart LR
    fetches payloads; hashes are checked against the manifest.
 4. **Backup** — Current device state is saved so it can be restored on failure.
 5. **Install** — The matched Step Handler invokes adu-shell to apply packages or
-   run scripts.
+   run scripts. For multi-step manifests, the **Steps Handler** iterates over
+   each (component × step) pair and invokes the per-step Apply inline; see
+   [steps-handler.md](steps-handler.md) for the full per-phase contract.
 6. **Apply** — The update is activated. If a reboot is required, the agent uses
    a [lock-file synchronization protocol](#graceful-reboot-flow) to report
    state to the cloud and cache files before the system reboots.
@@ -351,5 +354,6 @@ agent crashes, the stale lock is removed immediately and the reboot proceeds.
 - [how-to-build-agent-code.md](how-to-build-agent-code.md) — Building the agent from source
 - [device-update-agent-extensibility-points.md](device-update-agent-extensibility-points.md) — Extension contracts and registration
 - [goal-state-support.md](goal-state-support.md) — Goal-state and multi-step processing
-- [update-manifest-v4-schema.md](update-manifest-v4-schema.md) — Update manifest format reference
+- [steps-handler.md](steps-handler.md) — Steps Handler (default Update Manifest Handler) phase-by-phase reference
+- [update-manifest-v5-schema.md](update-manifest-v5-schema.md) — Update manifest format reference
 - [device-update-agent-extended-result-codes.md](device-update-agent-extended-result-codes.md) — Error and result code reference
