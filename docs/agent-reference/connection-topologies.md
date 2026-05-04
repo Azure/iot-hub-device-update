@@ -44,6 +44,71 @@ AIS supports both **SAS** and **X.509** auth types, depending on how the IoT Edg
 - The `adu` user is a member of the `aziotid`, `aziotcs`, and `aziotks` groups.
 - The AIS principal `iotHubDeviceUpdate` is registered in the IoT Identity Service configuration.
 
+#### AIS Module Identity Registration (adu.toml)
+
+When the ADU agent Debian package is installed, the post-install script automatically registers a **module identity principal** with the Azure IoT Identity Service by creating `/etc/aziot/identityd/config.d/adu.toml`:
+
+```toml
+[[principal]]
+ name="IoTHubDeviceUpdate"
+ idtype=["module"]
+ uid= <adu-user-uid>
+```
+
+**What this does:**
+
+The AIS identity service uses UID-based access control. When the ADU agent process (running as `adu` user) makes a request to the identity service Unix Domain Socket (`/run/aziot/identityd.sock`), AIS looks up the calling process UID and returns the identity mapped to that principal.
+
+The `idtype=["module"]` declaration is critical — it tells AIS to provision a **Module identity** (e.g., `DeviceId=mydevice;ModuleId=IoTHubDeviceUpdate`) rather than returning the bare device identity.
+
+**Why Module Identity Matters:**
+
+| Scenario | Identity Type | Twin Used | Risk |
+|----------|--------------|-----------|------|
+| Without `adu.toml` | Device identity | Device Twin | ⚠️ Connection contention with other apps |
+| With `adu.toml` (default) | Module identity | Module Twin | ✅ Isolated, no contention |
+
+Without the module identity registration:
+- AIS may return a **Device connection string** to the ADU agent
+- The ADU agent would communicate via the **Device Twin**
+- Other applications on the same device (e.g., IoT Edge modules, custom apps) that also use the Device Twin will experience **connection contention** — only one active MQTT connection per identity is allowed by IoT Hub
+- This causes intermittent disconnections and missed twin updates
+
+With the module identity registration (default):
+- AIS returns a **Module connection string** (`ModuleId=IoTHubDeviceUpdate`)
+- The ADU agent communicates via its own dedicated **Module Twin**
+- The Device Twin remains available for other applications
+- Each module gets its own independent MQTT connection — no contention
+
+**Manual Setup (if not using the Debian package):**
+
+If you build and install the ADU agent from source, you must manually create the TOML registration:
+
+```bash
+# Create the TOML registration for AIS
+sudo bash -c 'printf "[[principal]]\n name=\"IoTHubDeviceUpdate\"\n idtype=[\"module\"]\n uid= $(id -u adu)\n" > /etc/aziot/identityd/config.d/adu.toml'
+
+# Set correct ownership and permissions
+sudo chown aziotid:aziotid /etc/aziot/identityd/config.d/adu.toml
+sudo chmod u=rw /etc/aziot/identityd/config.d/adu.toml
+
+# Restart the identity service to pick up the new principal
+sudo systemctl restart aziot-identityd
+```
+
+**Verifying the Registration:**
+
+After registration, the ADU agent will receive a module identity when it queries AIS. You can verify by checking the agent logs:
+
+```
+Info: Attempting to get connection info from Identity Service (EIS)
+Info: Attempting to create connection to IotHub using type: Module
+```
+
+If you see `type: Device` instead of `type: Module`, the TOML registration is missing or misconfigured.
+
+> **Note:** The `connectionData` field value (`"iotHubDeviceUpdate"`) in `du-config.json` corresponds to the principal `name` in the TOML file. While the current agent code does not pass this value to AIS directly (AIS uses UID-based lookup), it serves as documentation and may be used in future versions for multi-principal scenarios.
+
 ### X.509 Certificate
 
 | Field | Value |
