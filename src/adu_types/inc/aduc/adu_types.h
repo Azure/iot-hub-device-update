@@ -70,11 +70,13 @@ typedef struct tagConnectionInfo
     ADUC_AuthType authType; /**< Indicates the authentication type for connectionString */
     ADUC_ConnType connType; /**< Indicates whether this connection string is module-id or device-id based */
     char* connectionString; /**< Device or Module connection string. */
-    char* certificateString; /**< x509 certificate in PEM format for the IoTHubClient to be used for authentication*/
-    char* opensslEngine; /**< identifier for the OpenSSL Engine used for the certificate in certificateString*/
-    char* opensslPrivateKey; /**< x509 private key in PEM format for the IoTHubClient to be used for authentication */
+    char* certificateString; /**< Trust anchor certificate (PEM). For nested edge: gateway CA cert (OPTION_TRUSTED_CERT).
+                                  For direct X509: IoT Hub CA cert. NULL for SAS token without gateway. */
+    char* opensslEngine; /**< OpenSSL engine identifier for private key access (e.g., "pkcs11", "aziot_keys") */
+    char* opensslPrivateKey; /**< Private key (PEM path or PKCS#11 URI) for client certificate authentication */
     char*
-        clientCertificateString; /**< x509 certificate in PEM format for the IoTHubClient to be used for authentication*/
+        clientCertificateString; /**< Client identity certificate (PEM) presented during mTLS (SU_OPTION_X509_CERT).
+                                      Used by both X509 and SASCert (EIS x509) auth types. */
 } ADUC_ConnectionInfo;
 
 /**

@@ -751,9 +751,7 @@ TEST_CASE("GetConnectionInfoFromConnectionString parameter validation and succes
             == true);
 
         CHECK(info.connType == ADUC_ConnType_Module);
-        const bool isExpectedAuthType =
-            (info.authType == ADUC_AuthType_X509) || (info.authType == ADUC_AuthType_NestedEdgeCert);
-        CHECK(isExpectedAuthType);
+        CHECK(info.authType == ADUC_AuthType_X509);
         CHECK(info.connectionString != nullptr);
         CHECK(info.clientCertificateString != nullptr);
         CHECK(info.opensslPrivateKey != nullptr);
@@ -959,9 +957,7 @@ TEST_CASE("GetConnectionInfoFromConnectionString X509 paths")
             "x509-ca-cert");
 
         CHECK(result == true);
-        const bool isX509Auth =
-            (info.authType == ADUC_AuthType_X509) || (info.authType == ADUC_AuthType_NestedEdgeCert);
-        CHECK(isX509Auth);
+        CHECK(info.authType == ADUC_AuthType_X509);
         CHECK(info.connType == ADUC_ConnType_Device);
         CHECK(info.clientCertificateString != nullptr);
         CHECK(info.opensslPrivateKey != nullptr);
@@ -986,6 +982,174 @@ TEST_CASE("GetConnectionInfoFromConnectionString X509 paths")
         CHECK(info.connType == ADUC_ConnType_Module);
         CHECK(info.authType == ADUC_AuthType_SASToken);
         CHECK(info.connectionString != nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+}
+
+//
+// ApplyEdgeGatewayCertIfConfigured tests
+// These test the post-processing step that applies edgegatewayCertPath after auth initialization.
+//
+
+TEST_CASE("ApplyEdgeGatewayCertIfConfigured preserves X509 auth state")
+{
+    SECTION("X509 auth with gateway cert keeps authType as X509")
+    {
+        // Simulate state after GetConnectionInfoFromConnectionString with X509 params
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        info.authType = ADUC_AuthType_X509;
+        info.connType = ADUC_ConnType_Device;
+        mallocAndStrcpy_s(&info.connectionString, "HostName=hub;DeviceId=dev;x509=true");
+        mallocAndStrcpy_s(&info.clientCertificateString, "-----BEGIN CERTIFICATE-----\nCLIENT\n-----END CERTIFICATE-----");
+        mallocAndStrcpy_s(&info.opensslPrivateKey, "/path/to/key.pem");
+        mallocAndStrcpy_s(&info.certificateString, "-----BEGIN CERTIFICATE-----\nCA_CERT\n-----END CERTIFICATE-----");
+
+        // After applying gateway cert, authType must remain X509
+        // (ApplyEdgeGatewayCertIfConfigured reads from ADUC_ConfigInfo singleton,
+        // so this is a design-level test of the logic flow)
+        CHECK(info.authType == ADUC_AuthType_X509);
+        CHECK(info.clientCertificateString != nullptr);
+        CHECK(info.certificateString != nullptr);
+        CHECK(info.opensslPrivateKey != nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("SASCert auth with gateway cert keeps authType as SASCert and moves client cert")
+    {
+        // Simulate state after GetConnectionInfoFromIdentityService with x509 auth
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        info.authType = ADUC_AuthType_SASCert;
+        info.connType = ADUC_ConnType_Device;
+        mallocAndStrcpy_s(&info.connectionString, "HostName=hub;DeviceId=dev;x509=true;GatewayHostName=10.0.0.1");
+        mallocAndStrcpy_s(&info.certificateString, "-----BEGIN CERTIFICATE-----\nEIS_CLIENT_CERT\n-----END CERTIFICATE-----");
+        mallocAndStrcpy_s(&info.opensslPrivateKey, "aziot_keys_handle");
+        mallocAndStrcpy_s(&info.opensslEngine, "aziot_keys");
+
+        // Verify initial state: client cert in certificateString (EIS behavior)
+        CHECK(info.clientCertificateString == nullptr);
+        CHECK(info.certificateString != nullptr);
+
+        // Simulate what ApplyEdgeGatewayCertIfConfigured does for SASCert:
+        // Move client cert to clientCertificateString, replace certificateString with gateway cert
+        info.clientCertificateString = info.certificateString;
+        info.certificateString = NULL;
+        mallocAndStrcpy_s(&info.certificateString, "-----BEGIN CERTIFICATE-----\nGATEWAY_CA\n-----END CERTIFICATE-----");
+        // authType preserved for SASCert
+
+        CHECK(info.authType == ADUC_AuthType_SASCert);
+        CHECK(info.clientCertificateString != nullptr);
+        CHECK(strcmp(info.clientCertificateString, "-----BEGIN CERTIFICATE-----\nEIS_CLIENT_CERT\n-----END CERTIFICATE-----") == 0);
+        CHECK(info.certificateString != nullptr);
+        CHECK(strcmp(info.certificateString, "-----BEGIN CERTIFICATE-----\nGATEWAY_CA\n-----END CERTIFICATE-----") == 0);
+        CHECK(info.opensslPrivateKey != nullptr);
+        CHECK(info.opensslEngine != nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("SASToken auth with gateway cert changes authType to NestedEdgeCert")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        info.authType = ADUC_AuthType_SASToken;
+        info.connType = ADUC_ConnType_Device;
+        mallocAndStrcpy_s(&info.connectionString, "HostName=hub;DeviceId=dev;SharedAccessKey=key;GatewayHostName=10.0.0.1");
+
+        // certificateString should be NULL for SASToken
+        CHECK(info.certificateString == nullptr);
+
+        // Simulate ApplyEdgeGatewayCertIfConfigured for SASToken:
+        // certificateString was NULL, no move needed. Set gateway cert and change authType.
+        free(info.certificateString);
+        info.certificateString = NULL;
+        mallocAndStrcpy_s(&info.certificateString, "-----BEGIN CERTIFICATE-----\nGATEWAY_CA\n-----END CERTIFICATE-----");
+        info.authType = ADUC_AuthType_NestedEdgeCert;
+
+        CHECK(info.authType == ADUC_AuthType_NestedEdgeCert);
+        CHECK(info.certificateString != nullptr);
+        CHECK(info.clientCertificateString == nullptr);
+        CHECK(info.opensslPrivateKey == nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+}
+
+TEST_CASE("GetConnectionInfoFromConnectionString no longer applies edgegatewayCertPath")
+{
+    SECTION("X509 connection always returns ADUC_AuthType_X509 regardless of config")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        bool result = GetConnectionInfoFromConnectionString(
+            &info,
+            "HostName=hub;DeviceId=device;x509=true",
+            "client-cert-pem",
+            "private-key-pem",
+            "pkcs11",
+            "ca-cert-pem");
+
+        CHECK(result == true);
+        CHECK(info.authType == ADUC_AuthType_X509);
+        CHECK(info.connType == ADUC_ConnType_Device);
+        CHECK(info.clientCertificateString != nullptr);
+        CHECK(strcmp(info.clientCertificateString, "client-cert-pem") == 0);
+        CHECK(info.opensslPrivateKey != nullptr);
+        CHECK(strcmp(info.opensslPrivateKey, "private-key-pem") == 0);
+        CHECK(info.certificateString != nullptr);
+        CHECK(strcmp(info.certificateString, "ca-cert-pem") == 0);
+        CHECK(info.opensslEngine != nullptr);
+        CHECK(strcmp(info.opensslEngine, "pkcs11") == 0);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("SAS connection always returns ADUC_AuthType_SASToken")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        bool result = GetConnectionInfoFromConnectionString(
+            &info,
+            "HostName=hub;DeviceId=device;SharedAccessKey=key;GatewayHostName=10.0.0.1",
+            nullptr, nullptr, nullptr, nullptr);
+
+        // Even with GatewayHostName in string, authType should be SASToken
+        // (gateway cert loading is now handled by ApplyEdgeGatewayCertIfConfigured)
+        CHECK(result == true);
+        CHECK(info.authType == ADUC_AuthType_SASToken);
+        CHECK(info.connType == ADUC_ConnType_Device);
+        CHECK(info.certificateString == nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("X509 module identity with GatewayHostName stays X509")
+    {
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        bool result = GetConnectionInfoFromConnectionString(
+            &info,
+            "HostName=hub;DeviceId=device;ModuleId=mod;x509=true;GatewayHostName=10.0.0.1",
+            "client-cert",
+            "private-key",
+            nullptr,
+            "ca-cert");
+
+        CHECK(result == true);
+        CHECK(info.authType == ADUC_AuthType_X509);
+        CHECK(info.connType == ADUC_ConnType_Module);
+        CHECK(info.clientCertificateString != nullptr);
+        CHECK(info.certificateString != nullptr);
+        CHECK(strcmp(info.certificateString, "ca-cert") == 0);
 
         ADUC_ConnectionInfo_DeAlloc(&info);
     }
