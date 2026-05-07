@@ -20,7 +20,7 @@ include (agentRules)
 compileasc99 ()
 disablertti ()
 
-set (agent_c_files ./src/main.c ./src/health_management.c)
+set (agent_c_files ./src/main.c ./src/health_management.c ./src/localapi_status_provider.c)
 
 add_executable (${target_name} ${agent_c_files})
 
@@ -155,6 +155,6 @@ if (WIN32)
     target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
-target_link_libraries (${target_name} PRIVATE aduc::platform_layer aduc::apisvc)
+target_link_libraries (${target_name} PRIVATE aduc::platform_layer aduc::apisvc aduc::localapi)
 
 install (TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

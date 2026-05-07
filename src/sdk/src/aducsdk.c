@@ -6,280 +6,175 @@
  * Licensed under the MIT License.
  */
 
-// Define _GNU_SOURCE before any includes to get secure_getenv() on glibc systems
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
 #include <aduc/aducsdk.h>
-#include <aduc/apiproto.h>
+#include <aduc/ipc_transport.h>
 
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
 
-// Minimal API protocol definitions (copied from apiproto.h to avoid circular dependencies)
-#define PIPE_BUF 4096 // could properly use fcntl and F_GETPIPE_SZ and malloc, but this is simpler
-#define MAX_BUF_LEN (PIPE_BUF - 3 * sizeof(uint16_t))
-
-#define ApiRequestType_NONE 0x00
-#define ApiRequestType_GETSTATE 0x01
-
-#ifndef ADUC_API_DEFAULT_FIFO_PATH
-#    define ADUC_API_DEFAULT_FIFO_PATH "/var/lib/adu/api/apireq.fifo"
+#ifndef _WIN32
+#include <stdlib.h> // secure_getenv
 #endif
 
-#ifndef ADUC_DATA_FOLDER
-#    define ADUC_DATA_FOLDER "/var/lib/adu"
-#endif
+// Local API wire protocol (must match localapi_server.c)
+#define LOCALAPI_VERSION 1
+#define LOCALAPI_REQ_GET_STATUS 0x01
 
-#define FIFO_FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) // rw-rw----
-#define RESPONSE_FIFO_NAME_LEN 32
-static const char ALPHANUMERIC_CHARS[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-static void get_rnd_suffix(char* str, size_t length)
+#pragma pack(push, 1)
+typedef struct SdkRequestMsg
 {
-    static bool seeded = false;
-    if (!seeded)
-    {
-        srand((unsigned int)time(NULL) ^ (unsigned int)getpid());
-        seeded = true;
-    }
+    uint16_t ver;
+    uint16_t type;
+    uint16_t len;
+} SdkRequestMsg;
 
-    const char* charset = ALPHANUMERIC_CHARS;
-
-    for (size_t i = 0; i < length; ++i)
-    {
-        str[i] = charset[rand() % (int)sizeof(ALPHANUMERIC_CHARS)];
-    }
-    str[length] = '\0';
-}
-
-/**
- * @brief Check if a file exists and has the correct security properties for a FIFO
- * @param fifoPath Path to the FIFO file to check
- * @return true if the file exists and has correct security, false otherwise
- */
-static bool verify_fifo_security(const char* fifoPath)
+typedef struct SdkResponseMsg
 {
-    if (fifoPath == NULL || fifoPath[0] == '\0')
-    {
-        return false;
-    }
-
-    struct stat st = { 0 };
-    if (stat(fifoPath, &st) < 0)
-    {
-        return false;
-    }
-
-    if (!S_ISFIFO(st.st_mode))
-    {
-        return false;
-    }
-
-    if (st.st_uid != geteuid())
-    {
-        return false;
-    }
-
-    if (st.st_gid != getegid())
-    {
-        return false;
-    }
-
-    if ((st.st_mode & FIFO_FILE_MODE) != FIFO_FILE_MODE)
-    {
-        return false;
-    }
-
-    return true;
-}
+    uint16_t ver;
+    uint16_t status;
+    uint16_t len;
+} SdkResponseMsg;
+#pragma pack(pop)
 
 ADUC_ServiceStatus GetAduServiceStatus(void)
 {
-    const char* reqFifoPath = ADUC_API_DEFAULT_FIFO_PATH;
-    char randomSuffix[13] = { 0 }; // 12 chars + null terminator
-    char respFifoPath[512] = { 0 };
-    int reqFifo = -1, respFifo = -1;
-    size_t respPathLen = -1;
-    ssize_t n = -1;
-    ApiWireRequestMsg req = { 0 };
-    ApiWireResponseMsg resp = { 0 };
-
-    // Use secure_getenv() to prevent privilege escalation attacks when running with elevated privileges
-    // secure_getenv() returns NULL if the program is setuid/setgid, preventing environment tampering
-    const char* debug_env = secure_getenv("ADUC_SDK_DEBUG");
-    const bool debug_enabled = (debug_env != NULL && debug_env[0] != '\0');
-
-    if (!verify_fifo_security(reqFifoPath))
-    {
-        return ADUC_ServiceStatus_ERROR_AgentServiceNotRunning;
-    }
-
-    if (access(reqFifoPath, W_OK) != 0)
-    {
-        return ADUC_ServiceStatus_ERROR_AgentServicePermission;
-    }
-
-    get_rnd_suffix(randomSuffix, 12);
-
-    snprintf(respFifoPath, sizeof(respFifoPath), ADUC_DATA_FOLDER "/api/resp_%s.fifo", randomSuffix);
-
-    if (mkfifo(respFifoPath, FIFO_FILE_MODE) < 0)
-    {
-        if (errno != EEXIST)
-        {
-            return ADUC_ServiceStatus_ERROR_AgentServiceMkFifoFailed;
-        }
-    }
-
-    // mkfifo uses umask (typically 022) which creates a fifo with incorrect permissions, so fix it here
-    if (fchmodat(AT_FDCWD, respFifoPath, 0660, 0) < 0)
-    {
-        unlink(respFifoPath);
-        return ADUC_ServiceStatus_ERROR_AgentServiceChmodFailed;
-    }
-
+    IpcTransport* transport = NULL;
     ADUC_ServiceStatus result = ADUC_ServiceStatus_ERROR_Unknown;
 
-    reqFifo = open(reqFifoPath, O_WRONLY | O_NONBLOCK);
-    if (reqFifo == -1)
+#ifndef _WIN32
+    const char* debug_env = secure_getenv("ADUC_SDK_DEBUG");
+#else
+    char* debug_env = NULL;
+    size_t envLen = 0;
+    if (_dupenv_s(&debug_env, &envLen, "ADUC_SDK_DEBUG") != 0)
     {
-        if (errno == ENXIO)
+        debug_env = NULL;
+    }
+#endif
+    const bool debug_enabled = (debug_env != NULL && debug_env[0] != '\0');
+
+    const char* endpoint = ipc_get_default_endpoint();
+
+    // Connect to the Local API server
+    IpcTransportResult rc = ipc_client_connect(endpoint, 5000, &transport);
+    if (rc != IPC_OK)
+    {
+        if (debug_enabled)
         {
-            result = ADUC_ServiceStatus_ERROR_AgentServiceReqFifoSvcEndNotOpenedYet;
+            fprintf(stderr, "[ADUC SDK] Failed to connect to agent at '%s': %d\n", endpoint, rc);
         }
-        else if (errno == EACCES)
+
+        if (rc == IPC_ERR_CONNECT_FAILED)
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServiceNotRunning;
+        }
+        else if (rc == IPC_ERR_PERMISSION_DENIED)
         {
             result = ADUC_ServiceStatus_ERROR_AgentServicePermission;
         }
-        else
-        {
-            result = ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe;
-        }
-        goto cleanup;
-    }
-
-    respPathLen = strlen(respFifoPath);
-    if (respPathLen >= MAX_BUF_LEN)
-    {
-        result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
-        goto cleanup;
-    }
-
-    req = (ApiWireRequestMsg){ .ver = 1, .type = ApiRequestType_GETSTATE, .len = (uint16_t)respPathLen };
-    memcpy(req.data, respFifoPath, respPathLen);
-
-    // Open response FIFO for read first (before sending request)
-    // This must be done BEFORE sending the request to avoid deadlock and EOF issues
-    int open_retries = 0;
-    const int MAX_OPEN_RETRIES = 3;
-    while (respFifo == -1 && open_retries < MAX_OPEN_RETRIES)
-    {
-        respFifo = open(respFifoPath, O_RDONLY | O_NONBLOCK);
-        if (respFifo == -1)
-        {
-            if (debug_enabled)
-            {
-                fprintf(stderr, "[ADUC SDK] Failed to open response FIFO '%s' for read (attempt %d/%d): errno=%d (%s)\n",
-                        respFifoPath, open_retries + 1, MAX_OPEN_RETRIES, errno, strerror(errno));
-            }
-            open_retries++;
-            if (open_retries < MAX_OPEN_RETRIES)
-            {
-                usleep(50000); // 50ms retry delay
-            }
-        }
-    }
-
-    if (respFifo == -1)
-    {
-        // This is semi-catastrophic - we just created this FIFO and can't open it
-        if (debug_enabled)
-        {
-            fprintf(stderr, "[ADUC SDK] CRITICAL: Cannot open response FIFO after %d attempts\n", MAX_OPEN_RETRIES);
-        }
-        result = ADUC_ServiceStatus_ERROR_AgentServiceSdkOpenRespFifoFailed;
-        goto cleanup;
-    }
-
-    if (debug_enabled)
-    {
-        fprintf(stderr, "[ADUC SDK] Response FIFO opened successfully: fd=%d\n", respFifo);
-    }
-
-    // Send request to service
-    if (debug_enabled)
-    {
-        fprintf(stderr, "[ADUC SDK] Sending GETSTATE request to service...\n");
-    }
-
-    n = msg_send_req(reqFifo, &req);
-    if (n != (ssize_t)(3 * sizeof(uint16_t) + respPathLen))
-    {
-        if (debug_enabled)
-        {
-            fprintf(stderr, "[ADUC SDK] Failed to send request: sent %zd bytes, expected %zu\n",
-                    n, (size_t)(3 * sizeof(uint16_t) + respPathLen));
-        }
-        result = ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe;
-        goto cleanup;
-    }
-
-    if (debug_enabled)
-    {
-        fprintf(stderr, "[ADUC SDK] Request sent successfully (%zd bytes), waiting for response...\n", n);
-    }
-
-    // Wait for response from service
-    n = msg_recv_resp(respFifo, &resp);
-    if (n != sizeof(resp))
-    {
-        if (debug_enabled)
-        {
-            fprintf(stderr, "[ADUC SDK] Failed to receive response: got %zd bytes, expected %zu\n",
-                    n, sizeof(resp));
-        }
-        if (n == -1)
-        {
-            result = ADUC_ServiceStatus_ERROR_RecvMsgFailed;
-        }
-        else
+        else if (rc == IPC_ERR_TIMEOUT)
         {
             result = ADUC_ServiceStatus_ERROR_AgentServiceTimeout;
         }
         goto cleanup;
     }
 
-    result = (ADUC_ServiceStatus)(resp.ret_val);
+    // Send GET_STATUS request (header only, no payload)
+    SdkRequestMsg req = {
+        .ver = LOCALAPI_VERSION,
+        .type = LOCALAPI_REQ_GET_STATUS,
+        .len = 0,
+    };
 
     if (debug_enabled)
     {
-        fprintf(stderr, "[ADUC SDK] Response received successfully: code=%u, ret_val=%u (%s)\n",
-                resp.code, resp.ret_val, ADUC_ServiceStatusToString(result));
+        fprintf(stderr, "[ADUC SDK] Sending GET_STATUS request...\n");
+    }
+
+    rc = ipc_send(transport, &req, sizeof(req));
+    if (rc != IPC_OK)
+    {
+        if (debug_enabled)
+        {
+            fprintf(stderr, "[ADUC SDK] Failed to send request: %d\n", rc);
+        }
+        result = ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe;
+        goto cleanup;
+    }
+
+    // Receive response header
+    SdkResponseMsg resp = { 0 };
+    size_t bytesReceived = 0;
+    rc = ipc_recv(transport, &resp, sizeof(resp), &bytesReceived);
+    if (rc != IPC_OK || bytesReceived < sizeof(resp))
+    {
+        if (debug_enabled)
+        {
+            fprintf(stderr, "[ADUC SDK] Failed to receive response: rc=%d, bytes=%zu\n", rc, bytesReceived);
+        }
+        if (rc == IPC_ERR_TIMEOUT)
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServiceTimeout;
+        }
+        else if (rc == IPC_ERR_PEER_DISCONNECTED)
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe;
+        }
+        else
+        {
+            result = ADUC_ServiceStatus_ERROR_RecvMsgFailed;
+        }
+        goto cleanup;
+    }
+
+    if (debug_enabled)
+    {
+        fprintf(stderr, "[ADUC SDK] Response: ver=%u, status=%u, len=%u\n",
+                resp.ver, resp.status, resp.len);
+    }
+
+    // Check for error status codes from server (HTTP-style)
+    if (resp.status >= 400)
+    {
+        if (resp.status == 403)
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServicePermission;
+        }
+        else if (resp.status == 429)
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
+        }
+        else
+        {
+            result = ADUC_ServiceStatus_ERROR_AgentServiceInternal;
+        }
+        goto cleanup;
+    }
+
+    // Status field contains the ADUC_ServiceStatus value directly
+    result = (ADUC_ServiceStatus)(resp.status);
+
+    if (debug_enabled)
+    {
+        fprintf(stderr, "[ADUC SDK] Status: %s\n", ADUC_ServiceStatusToString(result));
     }
 
 cleanup:
-    if (reqFifo != -1)
+    if (transport != NULL)
     {
-        close(reqFifo);
-        reqFifo = -1;
+        ipc_transport_close(transport);
     }
-    if (respFifo != -1)
-    {
-        close(respFifo);
-        respFifo = -1;
-        unlink(respFifoPath);
-    }
+
+#ifdef _WIN32
+    free(debug_env);
+#endif
 
     return result;
 }

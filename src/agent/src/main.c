@@ -10,6 +10,7 @@
 #include "aduc/adu_types.h"
 #include "aduc/agent_workflow.h"
 #include "aduc/apisvc.h"
+#include "aduc/localapi.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
 #if !defined(WIN32)
@@ -774,6 +775,12 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
+    // Initialize the cross-platform Local API server (Unix domain sockets / Named Pipes)
+    if (!localapi_init(NULL))
+    {
+        Log_Warn("Failed to initialize Local API server (non-fatal)");
+    }
+
     if (launchArgs->connectionString != NULL)
     {
         ADUC_ConnType connType = GetConnTypeFromConnectionString(launchArgs->connectionString);
@@ -900,6 +907,8 @@ void ShutdownAgent()
     {
         Log_Warn("Failed uninit of API service\n");
     }
+
+    localapi_uninit();
     ADUC_D2C_Messaging_Uninit();
 #ifdef ADUC_COMMAND_HELPER_H
     Log_Debug("Shutdown step: UninitializeCommandListenerThread");
