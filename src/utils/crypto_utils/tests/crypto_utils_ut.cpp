@@ -74,6 +74,10 @@ TEST_CASE("RSA Keys")
         CHECK(key == nullptr);
     }
 }
+// Test data (signatures, blobs) was signed with production root keys (ADU.200702.R).
+// When EMBED_TEST_ROOT_KEYS is enabled, different keys are embedded (ADU.200702.R.T),
+// making signature verification impossible without matching test data.
+#if EMBED_TEST_ROOT_KEYS != 1
 TEST_CASE("Signature Verification")
 {
     SECTION("Validating a Valid Signature")
@@ -174,6 +178,7 @@ TEST_CASE("Signature Verification")
         CryptoUtils_FreeCryptoKeyHandle(key);
     }
 }
+#endif // EMBED_TEST_ROOT_KEYS != 1
 
 TEST_CASE("CryptoUtils_IsValidSignature input validation")
 {

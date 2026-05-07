@@ -134,6 +134,11 @@ done:
     return success;
 }
 
+// The TestCaseFixture, VerifySJWK, and VerifyJWSWithKey tests load a root key package
+// (testrootkeypkg.json) signed with production keys. When EMBED_TEST_ROOT_KEYS is enabled,
+// the hardcoded keys are test keys (with .T suffix), so package signature validation fails.
+#if EMBED_TEST_ROOT_KEYS != 1
+
 class TestCaseFixture
 {
 public:
@@ -590,6 +595,8 @@ TEST_CASE_METHOD(TestCaseFixture, "VerifyJWSWithKey")
         CryptoUtils_FreeCryptoKeyHandle(key);
     }
 }
+
+#endif // EMBED_TEST_ROOT_KEYS != 1
 
 const char* AllowedSigningKey =
     "ucKAJMkskVVKjtVLFdraMSd0cTa2Vcndkle540smg3a2v4hYXoHWBaA0tkZj5VM1fWR-XcjHJ9NRh74TzsHqPJODXn085tWGMwOzUEPhOSAzRaY-FCr23SIqM6AHCYPxziKbz9kEcD6e043UyCRMyLf8fQJ3SOvBXCNoVSkiQ8rwcDeHjFiSzk_BLy0JGRjfzJZF8l-q1N-Vqpq3VtOmQJphblSL6bC9AR1GNrvaJbHiSciaFvuiucneVBu3B6bY0wEin20x_CrjTNmiWEtuY_zoUxJGLGQVHkzJRRAQweHxw_FDSMd3UhiINRuN7Qb3r_S9HPoFNkZvaOUVOVe7WUY0jAFIzVUEcq2CTx43p0XvaLeYEz-DsG-RlPkkT2i-1ykEhwtJfsKGDTIP5mPDslZkTUScgZFRMToJdwOtGKkAzGXQPlvtf3IL49fUTM4r8dpIc7E1N2Djt94__kcdY1e8JxfgRH7RoiQCATHep6-mQW5UKq_onJW2bNo7i9Gb";

@@ -17,6 +17,8 @@ add_executable (${PROJECT_NAME} ${sources})
 target_link_libraries (${PROJECT_NAME} PRIVATE aduc::crypto_utils aduc::root_key_utils
                                                aduc::string_utils Catch2::Catch2WithMain OpenSSL::Crypto)
 
+target_compile_definitions (${PROJECT_NAME} PRIVATE EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
+
 include (CTest)
 include (Catch)
 if (NOT CMAKE_CROSSCOMPILING)

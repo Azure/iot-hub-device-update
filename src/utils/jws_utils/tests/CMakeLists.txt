@@ -17,7 +17,8 @@ add_executable (${PROJECT_NAME} ${sources})
 target_link_aziotsharedutil (${PROJECT_NAME} PRIVATE)
 
 target_compile_definitions (${PROJECT_NAME}
-                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
+                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}"
+                                    EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
 
 target_link_libraries (
     ${PROJECT_NAME}
