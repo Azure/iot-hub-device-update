@@ -21,7 +21,8 @@ if (WIN32)
         "src/sys_stat.c"
         "src/sys_time.c"
         "src/time.c"
-        "src/unistd.c")
+        "src/unistd.c"
+        "src/ipc_transport_win32.c")
 
     # Ensure that this project is built with secure and standard CRT APIs.
     remove_definitions (-D_CRT_SECURE_NO_WARNINGS)
@@ -36,8 +37,10 @@ if (WIN32)
 
 else ()
 
-    # Build as header-only library
-    add_library (${target_name} INTERFACE)
+    # Build as a static library (includes IPC transport)
+    add_library (${target_name} STATIC "src/ipc_transport_linux.c")
 
-    target_include_directories (${target_name} INTERFACE "inc")
+    target_include_directories (${target_name} PUBLIC "inc")
+
+    set_property (TARGET ${target_name} PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif ()

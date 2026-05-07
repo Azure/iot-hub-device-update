@@ -106,6 +106,7 @@ add_subdirectory (extensions)
 
 add_subdirectory (logging)
 add_subdirectory (platform_layers)
+add_subdirectory (localapi)
 add_subdirectory (rootkey_workflow)
 add_subdirectory (sdk)
 add_subdirectory (utils)
