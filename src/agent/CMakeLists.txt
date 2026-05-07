@@ -11,7 +11,6 @@ add_subdirectory (pnp_helper)
 add_subdirectory (shutdown_service)
 
 if (NOT WIN32)
-    add_subdirectory (api)
     add_subdirectory (command_helper)
 endif ()
 
@@ -147,14 +146,13 @@ target_compile_definitions (
             ADUC_PLATFORM_LAYER="${ADUC_PLATFORM_LAYER}"
             DO_FILE_GROUP="${DO_FILE_GROUP}"
             DO_FILE_USER="${DO_FILE_USER}"
-            SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}"
-            ADUC_API_DEFAULT_FIFO_PATH="${ADUC_API_DEFAULT_FIFO_PATH}")
+            SYSLOG_FILE_GROUP="${SYSLOG_FILE_GROUP}")
 
 if (WIN32)
     find_package (unofficial-getopt-win32 REQUIRED)
     target_link_libraries (${target_name} PRIVATE unofficial::getopt-win32::getopt)
 endif ()
 
-target_link_libraries (${target_name} PRIVATE aduc::platform_layer aduc::apisvc aduc::localapi)
+target_link_libraries (${target_name} PRIVATE aduc::platform_layer aduc::localapi)
 
 install (TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

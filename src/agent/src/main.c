@@ -9,7 +9,6 @@
 #include "aduc/adu_core_interface.h"
 #include "aduc/adu_types.h"
 #include "aduc/agent_workflow.h"
-#include "aduc/apisvc.h"
 #include "aduc/localapi.h"
 #include "aduc/c_utils.h"
 #include "aduc/client_handle_helper.h"
@@ -712,22 +711,6 @@ ADUC_Command redoUpdateCommand = { "retry-update", RetryUpdateCommandHandler };
 
 #endif // #ifdef ADUC_COMMAND_HELPER_H
 
-static const char* get_api_request_fifo_path()
-{
-    const char* path = ADUC_API_DEFAULT_FIFO_PATH;
-    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
-    if (config != NULL)
-    {
-        if (config->apiRequestFifoPath != NULL)
-        {
-            path = config->apiRequestFifoPath;
-        }
-    }
-    ADUC_ConfigInfo_ReleaseInstance(config);
-
-    return path;
-}
-
 /**
  * @brief Handles the startup of the agent
  * @details Provisions the connection string with the CLI or either
@@ -760,19 +743,10 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
         goto done;
     }
 
-    const char* req_fifo = get_api_request_fifo_path();
-    char* basedir = RmvAfterLastChar(req_fifo, '/');
-    if (basedir == NULL)
+    // Ensure the API directory exists for the Local API socket
+    if (ADUC_SystemUtils_MkDirRecursiveDefault(ADUC_DATA_FOLDER "/api") != 0)
     {
-        goto done;
-    }
-    if (ADUC_SystemUtils_MkDirRecursiveDefault(basedir) != 0)
-    {
-        goto done;
-    }
-    if (!init_api_svc(req_fifo))
-    {
-        goto done;
+        Log_Warn("Failed to create API directory (non-fatal)");
     }
 
     // Initialize the cross-platform Local API server (Unix domain sockets / Named Pipes)
@@ -902,11 +876,6 @@ void ShutdownAgent()
         viewstatemgr_destroy(&g_vsm);
     }
     ADUC_Workflow_Uninit();
-
-    if (!uninit_api_svc())
-    {
-        Log_Warn("Failed uninit of API service\n");
-    }
 
     localapi_uninit();
     ADUC_D2C_Messaging_Uninit();

@@ -114,3 +114,4 @@ add_subdirectory (viewstatemgr)
 
 # Tools
 add_subdirectory (${CMAKE_SOURCE_DIR}/tools/rootkey_validator ${CMAKE_BINARY_DIR}/tools/rootkey_validator)
+add_subdirectory (${CMAKE_SOURCE_DIR}/tools/adu_status_cli ${CMAKE_BINARY_DIR}/tools/adu_status_cli)

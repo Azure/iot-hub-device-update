@@ -62,6 +62,13 @@ typedef struct LocalApiResponseMsg
 // Forward declaration for status callback (to be provided by the agent)
 extern int localapi_get_current_status(void);
 
+// Forward declarations for control command handlers (to be provided by the agent)
+// Returns 0 on success, non-zero error code on failure.
+extern int localapi_handle_pause(void);
+extern int localapi_handle_resume(void);
+extern int localapi_handle_cancel(void);
+extern int localapi_handle_force_check(void);
+
 // Server state
 static IpcTransport* g_server = NULL;
 static LocalApiSecurityContext g_secCtx;
@@ -184,13 +191,36 @@ static void handle_client(IpcTransport* client)
     }
 
     case LOCALAPI_REQ_PAUSE:
-    case LOCALAPI_REQ_RESUME:
-    case LOCALAPI_REQ_CANCEL:
-    case LOCALAPI_REQ_FORCE_CHECK:
-        // TODO: Wire to agent orchestration
-        resp.status = 501; // Not Implemented
+    {
+        int rc2 = localapi_handle_pause();
+        resp.status = (rc2 == 0) ? 200 : 500;
         resp.len = 0;
         break;
+    }
+
+    case LOCALAPI_REQ_RESUME:
+    {
+        int rc2 = localapi_handle_resume();
+        resp.status = (rc2 == 0) ? 200 : 500;
+        resp.len = 0;
+        break;
+    }
+
+    case LOCALAPI_REQ_CANCEL:
+    {
+        int rc2 = localapi_handle_cancel();
+        resp.status = (rc2 == 0) ? 200 : 500;
+        resp.len = 0;
+        break;
+    }
+
+    case LOCALAPI_REQ_FORCE_CHECK:
+    {
+        int rc2 = localapi_handle_force_check();
+        resp.status = (rc2 == 0) ? 200 : 500;
+        resp.len = 0;
+        break;
+    }
 
     default:
         resp.status = 400; // Bad Request
@@ -379,4 +409,37 @@ __attribute__((weak))
 int localapi_get_current_status(void)
 {
     return 9; // ADUC_ServiceStatus_Idle
+}
+
+// Weak symbol defaults for control commands — agent overrides these
+#ifndef _WIN32
+__attribute__((weak))
+#endif
+int localapi_handle_pause(void)
+{
+    return -1; // Not implemented
+}
+
+#ifndef _WIN32
+__attribute__((weak))
+#endif
+int localapi_handle_resume(void)
+{
+    return -1; // Not implemented
+}
+
+#ifndef _WIN32
+__attribute__((weak))
+#endif
+int localapi_handle_cancel(void)
+{
+    return -1; // Not implemented
+}
+
+#ifndef _WIN32
+__attribute__((weak))
+#endif
+int localapi_handle_force_check(void)
+{
+    return -1; // Not implemented
 }
