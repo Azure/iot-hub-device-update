@@ -1,0 +1,103 @@
+{
+    "version": 1,
+    "description": "ADU Gen2 log format string manifest for offline log decoding.",
+    "components": {
+        "agent": {
+            "prefix": "ADUC_LOG_AGENT_",
+            "strings": {
+                "STARTING": { "format": "ADU agent starting, version=%s, profile=%d", "level": "INFO" },
+                "CONFIG_LOADED": { "format": "Configuration loaded from %s, %d extensions configured", "level": "INFO" },
+                "EXT_LOADED": { "format": "Extension loaded: type=%d, name=%s, caps=%s", "level": "INFO" },
+                "EXT_LOAD_FAIL": { "format": "Failed to load extension: path=%s, error=%s", "level": "ERROR" },
+                "POLL_START": { "format": "Poll cycle starting, interval=%ds", "level": "INFO" },
+                "POLL_NO_UPDATE": { "format": "No update available", "level": "INFO" },
+                "POLL_UPDATE": { "format": "Update available: workflowId=%s", "level": "INFO" },
+                "SHUTDOWN": { "format": "Agent shutting down, reason=%s", "level": "INFO" },
+                "DOWNLOAD_START": { "format": "Download starting: fileId=%s, url=%s", "level": "INFO" },
+                "DOWNLOAD_DONE": { "format": "Download complete: fileId=%s, size=%ld bytes", "level": "INFO" },
+                "DOWNLOAD_FAIL": { "format": "Download failed: fileId=%s, rc=0x%08X", "level": "ERROR" },
+                "REPORT_SUCCESS": { "format": "Reporting success: workflowId=%s", "level": "INFO" },
+                "REPORT_FAILURE": { "format": "Reporting failure: workflowId=%s, outcome=%s, origin=%s", "level": "ERROR" }
+            }
+        },
+        "workflow": {
+            "prefix": "ADUC_LOG_WF_",
+            "strings": {
+                "START": { "format": "Workflow starting: workflowId=%s, steps=%d", "level": "INFO" },
+                "STEP_BEGIN": { "format": "Step %d/%d starting: handler=%s, phase=%s", "level": "INFO" },
+                "STEP_DONE": { "format": "Step %d/%d completed: outcome=%s, duration=%lums", "level": "INFO" },
+                "STEP_FAIL": { "format": "Step %d/%d failed: rc=0x%08X, erc=%s", "level": "ERROR" },
+                "STEP_SKIP": { "format": "Step %d/%d skipped: reason=%s", "level": "WARN" },
+                "DAG_ORDER": { "format": "DAG execution order: %s", "level": "INFO" },
+                "DAG_CYCLE": { "format": "DAG cycle detected involving step %d", "level": "ERROR" },
+                "COMPLETE": { "format": "Workflow complete: workflowId=%s, outcome=%s, duration=%lums", "level": "INFO" },
+                "MANIFEST_VERIFY": { "format": "Manifest signature verification: %s", "level": "INFO" },
+                "HASH_VERIFY": { "format": "File hash verification: fileId=%s, algorithm=%s, result=%s", "level": "INFO" },
+                "REBOOT_NEEDED": { "format": "Reboot required after step %d", "level": "WARN" },
+                "RESUME": { "format": "Resuming workflow from step %d after restart", "level": "INFO" }
+            }
+        },
+        "download": {
+            "prefix": "ADUC_LOG_DL_",
+            "strings": {
+                "SERVICE_INIT": { "format": "Download service initialized with %d downloaders", "level": "INFO" },
+                "SELECT": { "format": "Selected downloader '%s' for URI scheme '%s'", "level": "INFO" },
+                "START": { "format": "Downloading: uri=%s, dest=%s, offset=%ld", "level": "INFO" },
+                "PROGRESS": { "format": "Download progress: %ld/%ld bytes (%.1f%%)", "level": "DEBUG" },
+                "RETRY": { "format": "Download retry %d/%d after %dms: uri=%s", "level": "WARN" },
+                "HASH_OK": { "format": "Hash validation passed: algorithm=%s", "level": "INFO" },
+                "HASH_FAIL": { "format": "Hash validation FAILED: expected=%s, actual=%s", "level": "ERROR" },
+                "RESUME": { "format": "Resuming download from offset %ld", "level": "INFO" },
+                "CANCEL": { "format": "Download cancelled: uri=%s", "level": "WARN" },
+                "COMPLETE": { "format": "Download complete: %ld bytes, %lums elapsed", "level": "INFO" },
+                "SIDELOAD": { "format": "Side-loading from local path: %s", "level": "INFO" },
+                "CURL_ERROR": { "format": "cURL error: code=%d, msg=%s", "level": "ERROR" }
+            }
+        },
+        "extension": {
+            "prefix": "ADUC_LOG_EXT_",
+            "strings": {
+                "SCAN_DIR": { "format": "Scanning extension directory: %s", "level": "INFO" },
+                "FOUND": { "format": "Found extension: %s (type=%d, version=%s)", "level": "INFO" },
+                "DLOPEN": { "format": "Loading shared library: %s", "level": "INFO" },
+                "DLOPEN_FAIL": { "format": "Failed to load shared library: %s, error=%s", "level": "ERROR" },
+                "NO_DESCRIPTOR": { "format": "No ADUC_GetExtensionDescriptor symbol in: %s", "level": "ERROR" },
+                "REGISTERED": { "format": "Extension registered: name=%s, type=%d, caps=[%s]", "level": "INFO" },
+                "UNLOADED": { "format": "Extension unloaded: %s", "level": "INFO" },
+                "VTABLE_INVALID": { "format": "Extension vtable validation failed: %s, missing=%s", "level": "ERROR" }
+            }
+        },
+        "comm": {
+            "prefix": "ADUC_LOG_COMM_",
+            "strings": {
+                "CONNECT": { "format": "Connecting to service: endpoint=%s", "level": "INFO" },
+                "CONNECTED": { "format": "Connected to service successfully", "level": "INFO" },
+                "DISCONNECT": { "format": "Disconnected from service: reason=%s", "level": "WARN" },
+                "POLL": { "format": "Polling for updates...", "level": "DEBUG" },
+                "SYNC_CONFIG": { "format": "Syncing configuration: agentInfoETag=%s", "level": "INFO" },
+                "SYNC_DONE": { "format": "Configuration synced: serviceConfigETag=%s", "level": "INFO" },
+                "REPORT": { "format": "Reporting status: workflowId=%s, outcome=%s", "level": "INFO" },
+                "REPORT_DONE": { "format": "Status reported successfully", "level": "INFO" },
+                "REPORT_FAIL": { "format": "Status report failed: httpStatus=%d, error=%s", "level": "ERROR" },
+                "THROTTLED": { "format": "Request throttled: retryAfter=%ds", "level": "WARN" },
+                "TLS_ERROR": { "format": "TLS error: %s", "level": "ERROR" },
+                "SIM_MANIFEST": { "format": "Simulator: reading manifest from %s", "level": "INFO" },
+                "SIM_RESULT": { "format": "Simulator: writing result to %s", "level": "INFO" }
+            }
+        },
+        "security": {
+            "prefix": "ADUC_LOG_SEC_",
+            "strings": {
+                "ROOTKEY_LOAD": { "format": "Loading root key package from %s", "level": "INFO" },
+                "ROOTKEY_OK": { "format": "Root key package validated: %d keys loaded", "level": "INFO" },
+                "ROOTKEY_FAIL": { "format": "Root key package validation FAILED: %s", "level": "ERROR" },
+                "JWS_VERIFY": { "format": "Verifying JWS signature: kid=%s", "level": "INFO" },
+                "JWS_OK": { "format": "JWS signature verified successfully", "level": "INFO" },
+                "JWS_FAIL": { "format": "JWS signature verification FAILED: %s", "level": "ERROR" },
+                "CERT_LOAD": { "format": "Loading client certificate: %s", "level": "INFO" },
+                "CERT_EXPIRY": { "format": "Certificate expires: %s (days remaining: %d)", "level": "WARN" },
+                "HASH_COMPUTE": { "format": "Computing %s hash for file: %s", "level": "INFO" }
+            }
+        }
+    }
+}
