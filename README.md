@@ -49,6 +49,15 @@ sudo apt install ./out/deviceupdate-agent_*.deb
 
 ## Documentation
 
+### Gen2 SDK
+
+* **[Gen2 Architecture](./docs/gen2-architecture.md)** - Agent architecture, EDK, DAG workflow engine, extension model
+* **[Getting Started (Gen2)](./docs/getting-started-gen2.md)** - Build, run, configure, and extend the Gen2 agent
+* **[Diagnostics & Troubleshooting](./docs/diagnostics.md)** - Result codes, log viewer, rc_decoder, event IDs
+* **[Demo Walkthrough](./tools/demo/README.md)** - Full E2E demo with mock server and DAG manifests
+
+### General
+
 * **[Device Update for IoT Hub Documentation](https://aka.ms/iot-hub-device-update-docs)** - Official service documentation
 * **[Getting Started with the Agent](./docs/agent-reference)** - Agent overview and reference
 * **[Building the Agent](./docs/agent-reference/how-to-build-agent-code.md)** - Detailed build instructions
