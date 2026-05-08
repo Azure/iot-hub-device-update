@@ -62,3 +62,7 @@ status_monitor
 out_test_cache/
 **/.result_h_generation_cache
 *.gcov
+
+### Test packages (generated)
+tools/test_packages/output/
+tools/test_packages/repo/

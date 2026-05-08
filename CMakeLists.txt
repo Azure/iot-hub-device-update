@@ -99,6 +99,8 @@ set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 include (GNUInstallDirs)
 
 include (aduc_helpers)
+include (code-coverage)
+include (debug-symbols)
 
 #
 # Version information
