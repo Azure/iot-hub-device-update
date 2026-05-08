@@ -1,0 +1,30 @@
+{
+    "workflowId": "wf-simple-001",
+    "updateId": {
+        "provider": "Contoso",
+        "name": "QuickFix",
+        "version": "1.0.1"
+    },
+    "instructions": {
+        "steps": [
+            {
+                "type": "inline",
+                "handler": "microsoft/script:2",
+                "handlerProperties": {
+                    "scriptFileName": "hotfix.sh",
+                    "arguments": "--apply",
+                    "timeout": 60
+                },
+                "files": ["f1"],
+                "installedCriteria": "hotfix-1.0.1"
+            }
+        ]
+    },
+    "files": {
+        "f1": {
+            "fileName": "hotfix.sh",
+            "sizeInBytes": 128,
+            "hashes": {"sha256": "demo-hash-hotfix"}
+        }
+    }
+}

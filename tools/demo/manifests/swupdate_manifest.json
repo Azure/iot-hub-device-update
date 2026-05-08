@@ -1,0 +1,32 @@
+{
+    "workflowId": "wf-swu-001",
+    "updateId": {
+        "provider": "Contoso",
+        "name": "FirmwareImage",
+        "version": "2.5.0"
+    },
+    "instructions": {
+        "steps": [
+            {
+                "type": "inline",
+                "handler": "microsoft/swupdate:2",
+                "handlerProperties": {
+                    "swuFileName": "firmware-v2.5.swu",
+                    "hwRevision": "rev1.0",
+                    "rebootRequired": true,
+                    "verifyCommand": "/usr/bin/fw_printenv image_version",
+                    "expectedVersion": "2.5.0"
+                },
+                "files": ["f1"],
+                "installedCriteria": "fw-2.5.0"
+            }
+        ]
+    },
+    "files": {
+        "f1": {
+            "fileName": "firmware-v2.5.swu",
+            "sizeInBytes": 10485760,
+            "hashes": {"sha256": "demo-hash-swu"}
+        }
+    }
+}

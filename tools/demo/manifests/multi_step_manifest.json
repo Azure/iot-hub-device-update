@@ -1,0 +1,118 @@
+{
+    "workflowId": "wf-ignite-demo-001",
+    "updateId": {
+        "provider": "Contoso",
+        "name": "SmartVacuum-FullUpdate",
+        "version": "3.0.0"
+    },
+    "instructions": {
+        "steps": [
+            {
+                "type": "inline",
+                "handler": "microsoft/script:2",
+                "handlerProperties": {
+                    "id": "pre-check",
+                    "scriptFileName": "pre_check.sh",
+                    "timeout": 30
+                },
+                "files": ["f_precheck"],
+                "installedCriteria": "3.0.0-precheck"
+            },
+            {
+                "type": "inline",
+                "handler": "microsoft/script:2",
+                "handlerProperties": {
+                    "id": "firmware",
+                    "requires": "pre-check",
+                    "scriptFileName": "install_firmware.sh",
+                    "arguments": "--target /dev/mmcblk0",
+                    "rollbackScript": "rollback_firmware.sh",
+                    "timeout": 300
+                },
+                "files": ["f_firmware", "f_rollback"],
+                "installedCriteria": "fw-3.0.0"
+            },
+            {
+                "type": "inline",
+                "handler": "microsoft/apt:2",
+                "handlerProperties": {
+                    "id": "packages",
+                    "requires": "pre-check",
+                    "packages": ["contoso-agent=3.0.0", "contoso-libs=3.0.0"],
+                    "action": "install"
+                },
+                "files": [],
+                "installedCriteria": "pkg-3.0.0"
+            },
+            {
+                "type": "inline",
+                "handler": "microsoft/script:2",
+                "handlerProperties": {
+                    "id": "config",
+                    "requires": "firmware,packages",
+                    "scriptFileName": "apply_config.sh",
+                    "timeout": 60
+                },
+                "files": ["f_config"],
+                "installedCriteria": "cfg-3.0.0"
+            },
+            {
+                "type": "inline",
+                "handler": "microsoft/script:2",
+                "handlerProperties": {
+                    "id": "verify",
+                    "requires": "firmware,packages,config",
+                    "skipOnFailed": "firmware,packages",
+                    "scriptFileName": "health_check.sh",
+                    "timeout": 30
+                },
+                "files": ["f_verify"],
+                "installedCriteria": "verify-3.0.0"
+            },
+            {
+                "type": "inline",
+                "handler": "microsoft/script:2",
+                "handlerProperties": {
+                    "id": "rollback",
+                    "runOnFailed": "firmware,config",
+                    "scriptFileName": "full_rollback.sh",
+                    "timeout": 120
+                },
+                "files": ["f_fullrollback"],
+                "installedCriteria": "rollback"
+            }
+        ]
+    },
+    "files": {
+        "f_precheck": {
+            "fileName": "pre_check.sh",
+            "sizeInBytes": 256,
+            "hashes": {"sha256": "demo-hash-precheck"}
+        },
+        "f_firmware": {
+            "fileName": "install_firmware.sh",
+            "sizeInBytes": 512,
+            "hashes": {"sha256": "demo-hash-firmware"}
+        },
+        "f_rollback": {
+            "fileName": "rollback_firmware.sh",
+            "sizeInBytes": 128,
+            "hashes": {"sha256": "demo-hash-rollback"}
+        },
+        "f_config": {
+            "fileName": "apply_config.sh",
+            "sizeInBytes": 384,
+            "hashes": {"sha256": "demo-hash-config"}
+        },
+        "f_verify": {
+            "fileName": "health_check.sh",
+            "sizeInBytes": 192,
+            "hashes": {"sha256": "demo-hash-verify"}
+        },
+        "f_fullrollback": {
+            "fileName": "full_rollback.sh",
+            "sizeInBytes": 256,
+            "hashes": {"sha256": "demo-hash-fullrollback"}
+        }
+    }
+}
