@@ -17,10 +17,11 @@ exclude_patterns=(
     ".*/tests?/.*"
     ".*/Testing/.*"
     ".*/CMakeFiles/.*"
-    # These extension paths contain code examples, so they do not need coverage reporting.
-    ".*/src/extensions/component_enumerators/.*"
+    # Exclude legacy/example extensions that do not need coverage reporting.
     ".*/src/extensions/content_downloaders/deliveryoptimization_downloader/.*"
     ".*/src/extensions/step_handlers/simulator_handler/.*"
+    ".*/src/extensions/step_handlers/apt_handler/.*"
+    ".*/src/extensions/step_handlers/script_handler/.*"
 )
 
 while [[ $# -gt 0 ]]; do

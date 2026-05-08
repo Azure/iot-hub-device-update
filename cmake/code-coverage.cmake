@@ -54,6 +54,9 @@ if(ADUC_ENABLE_COVERAGE)
                 '${CMAKE_SOURCE_DIR}/src/extensions/step_handlers/swupdate_handler_v2/src/*'
                 '${CMAKE_SOURCE_DIR}/src/extensions/communication_providers/adu_direct/src/*'
                 '${CMAKE_SOURCE_DIR}/src/extensions/component_enumerators/static_file/src/*'
+                '${CMAKE_SOURCE_DIR}/src/extensions/content_downloaders/curl_downloader_v2/*'
+                '${CMAKE_SOURCE_DIR}/src/extensions/content_downloaders/file_sideloader/*'
+                '${CMAKE_SOURCE_DIR}/src/extensions/communication_providers/simulator_comm/*'
                 --output-file ${CMAKE_BINARY_DIR}/coverage_filtered.info
 
         # Remove test files from coverage
