@@ -1196,7 +1196,7 @@ TEST_CASE("StepResult: Failure helper sets error fields", "[step_result]")
     CHECK(r.phase == ADUC_STEP_PHASE_EXECUTE);
     CHECK(ADUC_StepResult_ShouldStop(&r));
     CHECK(r.outcome == ADUC_Outcome_Failed);
-    CHECK(r.origin == ADUC_Origin_AgentCore);
+    CHECK(r.failureOrigin == ADUC_FailureOrigin_AgentCore);
     CHECK(std::string(r.resultDetails) == "Execute failed");
     CHECK(std::string(r.errorSource) == "test_handler");
     ADUC_StepResult_Free(&r);

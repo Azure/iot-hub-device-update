@@ -426,8 +426,8 @@ ADUC_Result2 ADUC_Agent_Run(const ADUC_AgentConfig* config)
         depResult.workflowId = manifest->workflowId;
         depResult.outcome = ADUC_RESULT2_IS_SUCCESS(result)
             ? ADUC_Outcome_Succeeded : ADUC_Outcome_Failed;
-        depResult.origin = ADUC_RESULT2_IS_SUCCESS(result)
-            ? ADUC_Origin_AgentCore : ADUC_Origin_AgentCore;
+        depResult.failureOrigin = ADUC_RESULT2_IS_SUCCESS(result)
+            ? ADUC_FailureOrigin_NotApplicable : ADUC_FailureOrigin_AgentCore;
         depResult.resultCode = (int64_t)result.code;
 
         /* Format extendedResultCode as hex string */

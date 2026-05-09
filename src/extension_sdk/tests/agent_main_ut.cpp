@@ -357,14 +357,20 @@ TEST_CASE("Agent: Outcome enum values and string conversion", "[agent][config]")
 {
     CHECK(std::string(ADUC_Outcome_ToString(ADUC_Outcome_Succeeded)) == "SUCCEEDED");
     CHECK(std::string(ADUC_Outcome_ToString(ADUC_Outcome_Failed)) == "FAILED");
-    CHECK(std::string(ADUC_Outcome_ToString(ADUC_Outcome_Cancelled)) == "CANCELLED");
+    CHECK(std::string(ADUC_Outcome_ToString(ADUC_Outcome_Canceled)) == "CANCELED");
     CHECK(std::string(ADUC_Outcome_ToString(ADUC_Outcome_Skipped)) == "SKIPPED");
 }
 
-TEST_CASE("Agent: Origin enum values and string conversion", "[agent][config]")
+TEST_CASE("Agent: FailureOrigin enum values and string conversion", "[agent][config]")
 {
-    CHECK(std::string(ADUC_Origin_ToString(ADUC_Origin_AduService)) == "ADU_SERVICE");
+    CHECK(std::string(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_NotApplicable)) == "NOT_APPLICABLE");
+    CHECK(std::string(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AduCloudService)) == "ADU_CLOUD_SERVICE");
+    CHECK(std::string(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AduManagedResource)) == "ADU_MANAGED_RESOURCE");
+    CHECK(std::string(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentCore)) == "AGENT_CORE");
+    CHECK(std::string(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentExtension)) == "AGENT_EXTENSION");
+    CHECK(std::string(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentDependency)) == "AGENT_DEPENDENCY");
+    CHECK(std::string(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_Device)) == "DEVICE");
+    // Backward compat aliases still produce correct v3 strings
+    CHECK(std::string(ADUC_Origin_ToString(ADUC_Origin_AduService)) == "ADU_CLOUD_SERVICE");
     CHECK(std::string(ADUC_Origin_ToString(ADUC_Origin_AgentCore)) == "AGENT_CORE");
-    CHECK(std::string(ADUC_Origin_ToString(ADUC_Origin_AgentExtension)) == "AGENT_EXTENSION");
-    CHECK(std::string(ADUC_Origin_ToString(ADUC_Origin_Device)) == "DEVICE");
 }

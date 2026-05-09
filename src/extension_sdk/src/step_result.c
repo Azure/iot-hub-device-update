@@ -61,7 +61,7 @@ ADUC_StepResultDetail ADUC_StepResult_Failure(
     result.phase = phase;
     result.signal = ADUC_SIGNAL_ABORT_DEPLOYMENT;
     result.outcome = ADUC_Outcome_Failed;
-    result.origin = ADUC_Origin_AgentCore;
+    result.failureOrigin = ADUC_FailureOrigin_AgentCore;
     result.resultDetails = safe_strdup(resultDetails);
     result.errorSource = safe_strdup(errorSource);
     result.startTimeMs = now;

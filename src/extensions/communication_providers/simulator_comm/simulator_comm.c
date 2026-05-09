@@ -267,7 +267,7 @@ static ADUC_Result2 SimComm_ReportResult(const ADUC_DeploymentResult2* result)
              "  \"workflowId\": \"%s\",\n"
              "  \"lastInstallResult\": {\n"
              "    \"outcome\": \"%s\",\n"
-             "    \"origin\": \"%s\",\n"
+             "    \"failureOrigin\": \"%s\",\n"
              "    \"resultCode\": %lld,\n"
              "    \"extendedResultCodes\": \"%s\",\n"
              "    \"resultDetails\": \"%s\"\n"
@@ -275,7 +275,7 @@ static ADUC_Result2 SimComm_ReportResult(const ADUC_DeploymentResult2* result)
              "}\n",
              result->workflowId,
              ADUC_Outcome_ToString(result->outcome),
-             ADUC_Origin_ToString(result->origin),
+             ADUC_FailureOrigin_ToString(result->failureOrigin),
              (long long)result->resultCode,
              result->extendedResultCodes ? result->extendedResultCodes : "",
              result->resultDetails ? result->resultDetails : "");

@@ -74,9 +74,9 @@ typedef struct ADUC_StepResultDetail
     ADUC_StepPhase phase;           /**< Which phase produced this result */
     ADUC_OrchestratorSignal signal; /**< What the orchestrator should do */
 
-    /* Outcome and origin for v2 protocol reporting */
-    ADUC_Outcome outcome;           /**< Terminal outcome (v2 protocol) */
-    ADUC_Origin origin;             /**< Advisory failure source hint (v2 protocol) */
+    /* Outcome and failureOrigin for v3 protocol reporting */
+    ADUC_Outcome outcome;           /**< Terminal outcome (v3 protocol) */
+    ADUC_FailureOrigin failureOrigin; /**< Advisory failure source hint (v3 protocol) */
 
     /* Error details (NULL if success) */
     const char* resultDetails;      /**< Human-readable error (owned by result, freed on destroy) */

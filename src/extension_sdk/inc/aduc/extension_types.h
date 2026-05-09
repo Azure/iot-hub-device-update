@@ -106,18 +106,21 @@ typedef struct ADUC_Version
 } ADUC_Version;
 
 /**
- * @brief Authoritative terminal outcome of a deployment (v2 protocol).
+ * @brief Authoritative terminal outcome of a deployment (v3 protocol).
  */
 typedef enum ADUC_Outcome
 {
     ADUC_Outcome_Succeeded = 0,
     ADUC_Outcome_Failed = 1,
-    ADUC_Outcome_Cancelled = 2,
+    ADUC_Outcome_Canceled = 2,
     ADUC_Outcome_Skipped = 3
 } ADUC_Outcome;
 
+/* Backward compat alias for Gen1 code that uses British spelling */
+#define ADUC_Outcome_Cancelled ADUC_Outcome_Canceled
+
 /**
- * @brief Convert ADUC_Outcome to string.
+ * @brief Convert ADUC_Outcome to v3 wire-format string.
  */
 static inline const char* ADUC_Outcome_ToString(ADUC_Outcome o)
 {
@@ -125,39 +128,57 @@ static inline const char* ADUC_Outcome_ToString(ADUC_Outcome o)
     {
         case ADUC_Outcome_Succeeded: return "SUCCEEDED";
         case ADUC_Outcome_Failed:    return "FAILED";
-        case ADUC_Outcome_Cancelled: return "CANCELLED";
+        case ADUC_Outcome_Canceled:  return "CANCELED";
         case ADUC_Outcome_Skipped:   return "SKIPPED";
         default:                     return "FAILED";
     }
 }
 
 /**
- * @brief Advisory hint for failure source (v2 protocol).
+ * @brief Advisory hint identifying which subsystem produced a failure (v3 protocol).
+ *
+ * Required on every reportStatus. Advisory only — the service MUST NOT use
+ * this for state decisions. On success/cancel/skip, set to NOT_APPLICABLE.
  */
-typedef enum ADUC_Origin
+typedef enum ADUC_FailureOrigin
 {
-    ADUC_Origin_AduService = 0,
-    ADUC_Origin_AduResource = 1,
-    ADUC_Origin_AgentCore = 2,
-    ADUC_Origin_AgentExtension = 3,
-    ADUC_Origin_Device = 4
-} ADUC_Origin;
+    ADUC_FailureOrigin_NotApplicable = 0,
+    ADUC_FailureOrigin_AduCloudService = 1,
+    ADUC_FailureOrigin_AduManagedResource = 2,
+    ADUC_FailureOrigin_AgentCore = 3,
+    ADUC_FailureOrigin_AgentExtension = 4,
+    ADUC_FailureOrigin_AgentDependency = 5,
+    ADUC_FailureOrigin_Device = 6
+} ADUC_FailureOrigin;
+
+/* Backward compat aliases for code using the old ADUC_Origin names */
+typedef ADUC_FailureOrigin ADUC_Origin;
+#define ADUC_Origin_AduService      ADUC_FailureOrigin_AduCloudService
+#define ADUC_Origin_AduResource     ADUC_FailureOrigin_AduManagedResource
+#define ADUC_Origin_AgentCore       ADUC_FailureOrigin_AgentCore
+#define ADUC_Origin_AgentExtension  ADUC_FailureOrigin_AgentExtension
+#define ADUC_Origin_Device          ADUC_FailureOrigin_Device
 
 /**
- * @brief Convert ADUC_Origin to string.
+ * @brief Convert ADUC_FailureOrigin to v3 wire-format string.
  */
-static inline const char* ADUC_Origin_ToString(ADUC_Origin o)
+static inline const char* ADUC_FailureOrigin_ToString(ADUC_FailureOrigin o)
 {
     switch (o)
     {
-        case ADUC_Origin_AduService:     return "ADU_SERVICE";
-        case ADUC_Origin_AduResource:    return "ADU_RESOURCE";
-        case ADUC_Origin_AgentCore:      return "AGENT_CORE";
-        case ADUC_Origin_AgentExtension: return "AGENT_EXTENSION";
-        case ADUC_Origin_Device:         return "DEVICE";
-        default:                         return "AGENT_CORE";
+        case ADUC_FailureOrigin_NotApplicable:      return "NOT_APPLICABLE";
+        case ADUC_FailureOrigin_AduCloudService:    return "ADU_CLOUD_SERVICE";
+        case ADUC_FailureOrigin_AduManagedResource: return "ADU_MANAGED_RESOURCE";
+        case ADUC_FailureOrigin_AgentCore:          return "AGENT_CORE";
+        case ADUC_FailureOrigin_AgentExtension:     return "AGENT_EXTENSION";
+        case ADUC_FailureOrigin_AgentDependency:    return "AGENT_DEPENDENCY";
+        case ADUC_FailureOrigin_Device:             return "DEVICE";
+        default:                                    return "AGENT_CORE";
     }
 }
+
+/* Backward compat alias */
+#define ADUC_Origin_ToString ADUC_FailureOrigin_ToString
 
 #ifdef __cplusplus
 }

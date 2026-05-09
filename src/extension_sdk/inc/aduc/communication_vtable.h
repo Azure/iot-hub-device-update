@@ -87,14 +87,14 @@ typedef struct ADUC_AgentState
 } ADUC_AgentState;
 
 /**
- * @brief Deployment result reported to service (v2 wire format).
+ * @brief Deployment result reported to service (v3 wire format).
  */
 typedef struct ADUC_DeploymentResult2
 {
     const char* workflowId;
     ADUC_Outcome outcome;              /**< Authoritative terminal outcome */
-    ADUC_Origin origin;                /**< Advisory failure source hint */
-    int64_t resultCode;                /**< Legacy result code (0=failed, -1=cancelled, positive=success) */
+    ADUC_FailureOrigin failureOrigin;  /**< Advisory failure source hint (v3: "failureOrigin" on wire) */
+    int64_t resultCode;                /**< Legacy result code (0=failed, -1=canceled, positive=success) */
     const char* extendedResultCodes;   /**< Comma-separated hex ERCs e.g. "3000001C,80004005" */
     const char* resultDetails;         /**< Human-readable diagnostic */
     const char* installedUpdateId;     /**< Opaque string (serialized JSON by convention) */

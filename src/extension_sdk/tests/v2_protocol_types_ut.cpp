@@ -1,6 +1,6 @@
 /**
  * @file v2_protocol_types_ut.cpp
- * @brief Unit tests for v2 protocol types: Outcome, Origin, DeploymentResult2, StepResultDetail.
+ * @brief Unit tests for v3 protocol types: Outcome, FailureOrigin, DeploymentResult2, StepResultDetail.
  *
  * @copyright Copyright (c) Microsoft Corporation.
  * Licensed under the MIT License.
@@ -16,65 +16,103 @@ extern "C"
 #include "aduc/step_result.h"
 }
 
-TEST_CASE("ADUC_Outcome enum values", "[v2protocol]")
+TEST_CASE("ADUC_Outcome enum values", "[v3protocol]")
 {
     CHECK(ADUC_Outcome_Succeeded == 0);
     CHECK(ADUC_Outcome_Failed == 1);
-    CHECK(ADUC_Outcome_Cancelled == 2);
+    CHECK(ADUC_Outcome_Canceled == 2);
     CHECK(ADUC_Outcome_Skipped == 3);
+    // Backward compat alias
+    CHECK(ADUC_Outcome_Cancelled == ADUC_Outcome_Canceled);
 }
 
-TEST_CASE("ADUC_Outcome_ToString", "[v2protocol]")
+TEST_CASE("ADUC_Outcome_ToString uses v3 spelling", "[v3protocol]")
 {
     CHECK(std::strcmp(ADUC_Outcome_ToString(ADUC_Outcome_Succeeded), "SUCCEEDED") == 0);
     CHECK(std::strcmp(ADUC_Outcome_ToString(ADUC_Outcome_Failed), "FAILED") == 0);
-    CHECK(std::strcmp(ADUC_Outcome_ToString(ADUC_Outcome_Cancelled), "CANCELLED") == 0);
+    CHECK(std::strcmp(ADUC_Outcome_ToString(ADUC_Outcome_Canceled), "CANCELED") == 0);
     CHECK(std::strcmp(ADUC_Outcome_ToString(ADUC_Outcome_Skipped), "SKIPPED") == 0);
     CHECK(std::strcmp(ADUC_Outcome_ToString(static_cast<ADUC_Outcome>(99)), "FAILED") == 0);
 }
 
-TEST_CASE("ADUC_Origin enum values", "[v2protocol]")
+TEST_CASE("ADUC_FailureOrigin enum values", "[v3protocol]")
 {
-    CHECK(ADUC_Origin_AduService == 0);
-    CHECK(ADUC_Origin_AduResource == 1);
-    CHECK(ADUC_Origin_AgentCore == 2);
-    CHECK(ADUC_Origin_AgentExtension == 3);
-    CHECK(ADUC_Origin_Device == 4);
+    CHECK(ADUC_FailureOrigin_NotApplicable == 0);
+    CHECK(ADUC_FailureOrigin_AduCloudService == 1);
+    CHECK(ADUC_FailureOrigin_AduManagedResource == 2);
+    CHECK(ADUC_FailureOrigin_AgentCore == 3);
+    CHECK(ADUC_FailureOrigin_AgentExtension == 4);
+    CHECK(ADUC_FailureOrigin_AgentDependency == 5);
+    CHECK(ADUC_FailureOrigin_Device == 6);
 }
 
-TEST_CASE("ADUC_Origin_ToString", "[v2protocol]")
+TEST_CASE("ADUC_FailureOrigin_ToString v3 wire strings", "[v3protocol]")
 {
-    CHECK(std::strcmp(ADUC_Origin_ToString(ADUC_Origin_AduService), "ADU_SERVICE") == 0);
-    CHECK(std::strcmp(ADUC_Origin_ToString(ADUC_Origin_AduResource), "ADU_RESOURCE") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_NotApplicable), "NOT_APPLICABLE") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AduCloudService), "ADU_CLOUD_SERVICE") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AduManagedResource), "ADU_MANAGED_RESOURCE") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentCore), "AGENT_CORE") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentExtension), "AGENT_EXTENSION") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentDependency), "AGENT_DEPENDENCY") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_Device), "DEVICE") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(static_cast<ADUC_FailureOrigin>(99)), "AGENT_CORE") == 0);
+}
+
+TEST_CASE("Backward compat aliases for ADUC_Origin", "[v3protocol]")
+{
+    // Old ADUC_Origin names still work via #define aliases
+    CHECK(ADUC_Origin_AduService == ADUC_FailureOrigin_AduCloudService);
+    CHECK(ADUC_Origin_AduResource == ADUC_FailureOrigin_AduManagedResource);
+    CHECK(ADUC_Origin_AgentCore == ADUC_FailureOrigin_AgentCore);
+    CHECK(ADUC_Origin_AgentExtension == ADUC_FailureOrigin_AgentExtension);
+    CHECK(ADUC_Origin_Device == ADUC_FailureOrigin_Device);
+
+    // ADUC_Origin_ToString is aliased to ADUC_FailureOrigin_ToString
     CHECK(std::strcmp(ADUC_Origin_ToString(ADUC_Origin_AgentCore), "AGENT_CORE") == 0);
-    CHECK(std::strcmp(ADUC_Origin_ToString(ADUC_Origin_AgentExtension), "AGENT_EXTENSION") == 0);
-    CHECK(std::strcmp(ADUC_Origin_ToString(ADUC_Origin_Device), "DEVICE") == 0);
-    CHECK(std::strcmp(ADUC_Origin_ToString(static_cast<ADUC_Origin>(99)), "AGENT_CORE") == 0);
 }
 
-TEST_CASE("ADUC_DeploymentResult2 can be populated", "[v2protocol]")
+TEST_CASE("ADUC_DeploymentResult2 can be populated with v3 fields", "[v3protocol]")
 {
     ADUC_DeploymentResult2 dr;
     std::memset(&dr, 0, sizeof(dr));
 
     dr.workflowId = "wf-123";
     dr.outcome = ADUC_Outcome_Succeeded;
-    dr.origin = ADUC_Origin_AgentCore;
-    dr.resultCode = 1;
-    dr.extendedResultCodes = "3000001C,80004005";
+    dr.failureOrigin = ADUC_FailureOrigin_NotApplicable;
+    dr.resultCode = 700;
+    dr.extendedResultCodes = "00000000";
     dr.resultDetails = "Install succeeded";
     dr.installedUpdateId = "{\"provider\":\"Contoso\",\"name\":\"Toaster\",\"version\":\"1.0\"}";
-    dr.stepResultsJson = "[{\"stepIndex\":0,\"outcome\":\"SUCCEEDED\"}]";
+    dr.stepResultsJson = "{\"step_0\":{\"outcome\":\"SUCCEEDED\",\"failureOrigin\":\"NOT_APPLICABLE\"}}";
 
     CHECK(std::strcmp(dr.workflowId, "wf-123") == 0);
     CHECK(dr.outcome == ADUC_Outcome_Succeeded);
-    CHECK(dr.origin == ADUC_Origin_AgentCore);
-    CHECK(dr.resultCode == 1);
-    CHECK(std::strcmp(dr.extendedResultCodes, "3000001C,80004005") == 0);
+    CHECK(dr.failureOrigin == ADUC_FailureOrigin_NotApplicable);
+    CHECK(dr.resultCode == 700);
+    CHECK(std::strcmp(dr.extendedResultCodes, "00000000") == 0);
     CHECK(std::strcmp(dr.installedUpdateId, "{\"provider\":\"Contoso\",\"name\":\"Toaster\",\"version\":\"1.0\"}") == 0);
 }
 
-TEST_CASE("StepResultDetail failure includes outcome and origin", "[v2protocol]")
+TEST_CASE("ADUC_DeploymentResult2 failure with v3 fields", "[v3protocol]")
+{
+    ADUC_DeploymentResult2 dr;
+    std::memset(&dr, 0, sizeof(dr));
+
+    dr.workflowId = "wf-fail-456";
+    dr.outcome = ADUC_Outcome_Failed;
+    dr.failureOrigin = ADUC_FailureOrigin_Device;
+    dr.resultCode = 0;
+    dr.extendedResultCodes = "3000001C";
+    dr.resultDetails = "Not enough space to extract payload";
+    dr.installedUpdateId = nullptr;
+
+    CHECK(dr.outcome == ADUC_Outcome_Failed);
+    CHECK(dr.failureOrigin == ADUC_FailureOrigin_Device);
+    CHECK(dr.resultCode == 0);
+    CHECK(dr.installedUpdateId == nullptr);
+}
+
+TEST_CASE("StepResultDetail failure includes outcome and failureOrigin", "[v3protocol]")
 {
     ADUC_StepResultDetail detail = ADUC_StepResult_Failure(
         ADUC_STEP_PHASE_EXECUTE,
@@ -83,7 +121,7 @@ TEST_CASE("StepResultDetail failure includes outcome and origin", "[v2protocol]"
         "curl");
 
     CHECK(detail.outcome == ADUC_Outcome_Failed);
-    CHECK(detail.origin == ADUC_Origin_AgentCore);
+    CHECK(detail.failureOrigin == ADUC_FailureOrigin_AgentCore);
     CHECK(std::strcmp(detail.resultDetails, "download failed") == 0);
     CHECK(std::strcmp(detail.errorSource, "curl") == 0);
     CHECK(detail.signal == ADUC_SIGNAL_ABORT_DEPLOYMENT);
@@ -91,21 +129,22 @@ TEST_CASE("StepResultDetail failure includes outcome and origin", "[v2protocol]"
     ADUC_StepResult_Free(&detail);
 }
 
-TEST_CASE("StepResultDetail success has default outcome", "[v2protocol]")
+TEST_CASE("StepResultDetail success has default outcome", "[v3protocol]")
 {
     ADUC_StepResultDetail detail = ADUC_StepResult_Success(ADUC_STEP_PHASE_VALIDATE);
 
-    // Success: outcome is zeroed (ADUC_Outcome_Succeeded == 0)
     CHECK(detail.outcome == ADUC_Outcome_Succeeded);
+    // failureOrigin should be 0 (NOT_APPLICABLE) from memset
+    CHECK(detail.failureOrigin == ADUC_FailureOrigin_NotApplicable);
     CHECK(detail.resultDetails == nullptr);
     CHECK(ADUC_StepResult_IsSuccess(&detail));
 
     ADUC_StepResult_Free(&detail);
 }
 
-TEST_CASE("extendedResultCodes hex formatting", "[v2protocol]")
+TEST_CASE("extendedResultCodes hex formatting - no 0x prefix", "[v3protocol]")
 {
-    // Verify the hex formatting pattern used in agent_main.c
+    // v3 spec: unsigned hex representation with NO 0x prefix
     char buf[32];
     uint32_t code = 0x3000001C;
     std::snprintf(buf, sizeof(buf), "%08X", code);
@@ -117,4 +156,8 @@ TEST_CASE("extendedResultCodes hex formatting", "[v2protocol]")
     uint32_t code2 = 0x80004005;
     std::snprintf(multiBuf, sizeof(multiBuf), "%08X,%08X", code1, code2);
     CHECK(std::strcmp(multiBuf, "3000001C,80004005") == 0);
+
+    // Zero ERC (success)
+    std::snprintf(buf, sizeof(buf), "%08X", 0u);
+    CHECK(std::strcmp(buf, "00000000") == 0);
 }
