@@ -180,6 +180,32 @@ static inline const char* ADUC_FailureOrigin_ToString(ADUC_FailureOrigin o)
 /* Backward compat alias */
 #define ADUC_Origin_ToString ADUC_FailureOrigin_ToString
 
+/**
+ * @brief Agent protocol states (v3 protocol §7.1).
+ * The agent maintains exactly one of these states at any time.
+ */
+typedef enum ADUC_AgentState_v3
+{
+    ADUC_AGENT_STATE_IDLE = 0,
+    ADUC_AGENT_STATE_CONTENT_DOWNLOADING = 1,
+    ADUC_AGENT_STATE_INSTALLING = 2,
+    ADUC_AGENT_STATE_REBOOTING = 3,
+    ADUC_AGENT_STATE_REPORTING = 4
+} ADUC_AgentState_v3;
+
+static inline const char* ADUC_AgentState_ToString(ADUC_AgentState_v3 s)
+{
+    switch (s)
+    {
+        case ADUC_AGENT_STATE_IDLE:                 return "IDLE";
+        case ADUC_AGENT_STATE_CONTENT_DOWNLOADING:  return "CONTENT_DOWNLOADING";
+        case ADUC_AGENT_STATE_INSTALLING:            return "INSTALLING";
+        case ADUC_AGENT_STATE_REBOOTING:             return "REBOOTING";
+        case ADUC_AGENT_STATE_REPORTING:             return "REPORTING";
+        default:                                    return "IDLE";
+    }
+}
+
 #ifdef __cplusplus
 }
 #endif

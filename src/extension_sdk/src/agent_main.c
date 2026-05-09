@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #define ADUC_DEFAULT_CONFIG_PATH "/etc/adu/adu-agent.conf"
@@ -32,6 +33,57 @@
 #define ADUC_DOWNLOAD_DIR "/tmp/adu-downloads"
 
 static volatile sig_atomic_t g_shutdownRequested = 0;
+static ADUC_AgentState_v3 g_agentState = ADUC_AGENT_STATE_IDLE;
+
+/* -------------------------------------------------------------------------- */
+/*  Durable report persistence (v3 §7.6)                                      */
+/* -------------------------------------------------------------------------- */
+
+#define ADUC_PENDING_REPORT_PATH "/var/lib/adu/pending-report.json"
+
+static bool persist_pending_report(const ADUC_DeploymentResult2* result)
+{
+    char tmpPath[256];
+    snprintf(tmpPath, sizeof(tmpPath), "%s.tmp", ADUC_PENDING_REPORT_PATH);
+
+    FILE* f = fopen(tmpPath, "w");
+    if (!f) return false;
+
+    fprintf(f, "{\n"
+        "  \"workflowId\": \"%s\",\n"
+        "  \"outcome\": \"%s\",\n"
+        "  \"failureOrigin\": \"%s\",\n"
+        "  \"resultCode\": %lld,\n"
+        "  \"extendedResultCodes\": \"%s\",\n"
+        "  \"resultDetails\": \"%s\",\n"
+        "  \"installedUpdateId\": %s%s%s\n"
+        "}\n",
+        result->workflowId ? result->workflowId : "",
+        ADUC_Outcome_ToString(result->outcome),
+        ADUC_FailureOrigin_ToString(result->failureOrigin),
+        (long long)result->resultCode,
+        result->extendedResultCodes ? result->extendedResultCodes : "",
+        result->resultDetails ? result->resultDetails : "",
+        result->installedUpdateId ? "\"" : "",
+        result->installedUpdateId ? result->installedUpdateId : "null",
+        result->installedUpdateId ? "\"" : "");
+
+    fflush(f);
+    fsync(fileno(f));
+    fclose(f);
+
+    return rename(tmpPath, ADUC_PENDING_REPORT_PATH) == 0;
+}
+
+static void clear_pending_report(void)
+{
+    unlink(ADUC_PENDING_REPORT_PATH);
+}
+
+static bool has_pending_report(void)
+{
+    return access(ADUC_PENDING_REPORT_PATH, F_OK) == 0;
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Download helper — uses Download Service + extension downloaders            */
@@ -369,11 +421,33 @@ ADUC_Result2 ADUC_Agent_Run(const ADUC_AgentConfig* config)
     ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "Connected, entering poll loop (interval=%us)",
         effectivePollSec);
 
+    /* Check for pending report from previous run (v3 §7.6) */
+    if (has_pending_report())
+    {
+        ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "Found pending report, will re-send on next poll");
+    }
+
     /* 8. Main loop */
     uint32_t pollIntervalMs = effectivePollSec * ADUC_MS_PER_SEC;
 
+    /* Cold-start jitter (v3 §12.3): random delay before first requestUpdates */
+    {
+        unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)getpid();
+        uint32_t jitterMs = (rand_r(&seed) % (effectivePollSec * 1000));
+        ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "Cold-start jitter: %u ms", jitterMs);
+        usleep(jitterMs * 1000);
+    }
+
     while (!g_shutdownRequested)
     {
+        /* No-poll-while-installing guard (v3 §12.1) */
+        if (g_agentState != ADUC_AGENT_STATE_IDLE)
+        {
+            ADUC_Log_WriteText(ADUC_LOG_WARN, "agent",
+                "Skipping poll: agent in %s state", ADUC_AgentState_ToString(g_agentState));
+            continue;
+        }
+
         ADUC_CommMessage msg;
         memset(&msg, 0, sizeof(msg));
 
@@ -391,17 +465,34 @@ ADUC_Result2 ADUC_Agent_Run(const ADUC_AgentConfig* config)
 
         ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "Deployment received (%zu bytes)", msg.payloadLen);
 
+        /* State: IDLE -> CONTENT_DOWNLOADING */
+        {
+            ADUC_AgentState_v3 oldState = g_agentState;
+            g_agentState = ADUC_AGENT_STATE_CONTENT_DOWNLOADING;
+            ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "State: %s -> %s",
+                ADUC_AgentState_ToString(oldState), ADUC_AgentState_ToString(g_agentState));
+        }
+
         /* Parse manifest */
         ADUC_ParsedManifest* manifest = NULL;
         result = ADUC_Manifest_Parse(msg.payload, msg.payloadLen, &manifest);
         if (ADUC_RESULT2_IS_FAILURE(result))
         {
             ADUC_Log_WriteText(ADUC_LOG_ERROR, "agent", "Manifest parse failed (code=0x%08x)", result.code);
+            g_agentState = ADUC_AGENT_STATE_IDLE;
             continue;
         }
 
         /* Download files via Download Service + extension downloaders */
         download_manifest_files(dlService, commVtable, manifest);
+
+        /* State: CONTENT_DOWNLOADING -> INSTALLING */
+        {
+            ADUC_AgentState_v3 oldState = g_agentState;
+            g_agentState = ADUC_AGENT_STATE_INSTALLING;
+            ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "State: %s -> %s",
+                ADUC_AgentState_ToString(oldState), ADUC_AgentState_ToString(g_agentState));
+        }
 
         /* Build deployment from manifest */
         ADUC_Deployment deployment;
@@ -420,6 +511,14 @@ ADUC_Result2 ADUC_Agent_Run(const ADUC_AgentConfig* config)
 
         ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "Workflow finished (code=0x%08x)", result.code);
 
+        /* State: INSTALLING -> REPORTING */
+        {
+            ADUC_AgentState_v3 oldState = g_agentState;
+            g_agentState = ADUC_AGENT_STATE_REPORTING;
+            ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "State: %s -> %s",
+                ADUC_AgentState_ToString(oldState), ADUC_AgentState_ToString(g_agentState));
+        }
+
         /* Report result (v2 wire format) */
         ADUC_DeploymentResult2 depResult;
         memset(&depResult, 0, sizeof(depResult));
@@ -435,7 +534,21 @@ ADUC_Result2 ADUC_Agent_Run(const ADUC_AgentConfig* config)
         snprintf(ercBuf, sizeof(ercBuf), "%08X", result.code);
         depResult.extendedResultCodes = ercBuf;
 
+        /* Persist report before sending (v3 §7.6) */
+        persist_pending_report(&depResult);
+
         commVtable->ReportResult(&depResult);
+
+        /* Clear persisted report after successful send */
+        clear_pending_report();
+
+        /* State: REPORTING -> IDLE */
+        {
+            ADUC_AgentState_v3 oldState = g_agentState;
+            g_agentState = ADUC_AGENT_STATE_IDLE;
+            ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "State: %s -> %s",
+                ADUC_AgentState_ToString(oldState), ADUC_AgentState_ToString(g_agentState));
+        }
 
         if (wfHandle != NULL)
         {
