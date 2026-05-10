@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure --buildsystem=cmake -- \
+		-G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=OFF \
+		-DADUC_BUILD_UNIT_TESTS=OFF
+
+override_dh_auto_build:
+	dh_auto_build --buildsystem=cmake
+
+override_dh_auto_install:
+	dh_auto_install --buildsystem=cmake
+
+override_dh_installsystemd:
+	dh_installsystemd --name=adu-agent --no-start

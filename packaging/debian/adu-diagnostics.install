@@ -1,0 +1,4 @@
+usr/bin/adu_status_cli
+usr/share/man/man1/adu_status_cli.1
+usr/share/man/man1/adu_rc_decoder.1
+usr/bin/adu_rc_decoder

@@ -1,0 +1,3 @@
+usr/bin/adu_agent
+usr/lib/systemd/system/adu-agent.service
+etc/adu/agent.toml

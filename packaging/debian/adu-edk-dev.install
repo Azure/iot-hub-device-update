@@ -1,0 +1,4 @@
+usr/include/aduc/
+usr/lib/cmake/ADUCEDK/
+usr/lib/pkgconfig/aducedk.pc
+usr/share/adu-edk/templates/

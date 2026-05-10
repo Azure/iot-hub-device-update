@@ -1,0 +1,8 @@
+adu-agent (2.0.0-1) unstable; urgency=medium
+
+  * Initial release of ADU Gen2 agent.
+  * Modular extension architecture with communication providers, content
+    downloaders, step handlers, and content processors.
+  * Separate packages for each extension and development kit.
+
+ -- Microsoft Corporation <aduagent@microsoft.com>  Mon, 01 Jan 2024 00:00:00 +0000

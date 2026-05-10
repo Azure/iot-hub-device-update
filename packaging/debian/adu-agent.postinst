@@ -1,0 +1,43 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Create adu group if it does not exist
+        if ! getent group adu > /dev/null 2>&1; then
+            addgroup --system adu
+        fi
+
+        # Create adu user if it does not exist
+        if ! getent passwd adu > /dev/null 2>&1; then
+            adduser --system --ingroup adu --no-create-home \
+                    --home /var/lib/adu --shell /usr/sbin/nologin adu
+        fi
+
+        # Create required directories with proper ownership
+        install -d -m 0750 -o adu -g adu /var/lib/adu
+        install -d -m 0750 -o adu -g adu /var/lib/adu/downloads
+        install -d -m 0750 -o adu -g adu /var/log/adu
+        install -d -m 0750 -o adu -g adu /etc/adu
+        install -d -m 0750 -o adu -g adu /etc/adu/extensions.d
+        install -d -m 0750 -o adu -g adu /usr/lib/adu/extensions
+
+        # Reload systemd and enable the service
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload || true
+            systemctl enable adu-agent.service || true
+        fi
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

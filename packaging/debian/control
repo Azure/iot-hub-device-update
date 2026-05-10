@@ -1,0 +1,108 @@
+Source: adu-agent
+Section: admin
+Priority: optional
+Maintainer: Microsoft Corporation <aduagent@microsoft.com>
+Build-Depends: debhelper (>= 13),
+               cmake (>= 3.14),
+               ninja-build,
+               pkg-config,
+               libcurl4-openssl-dev,
+               libssl-dev
+Standards-Version: 4.6.2
+Homepage: https://github.com/Azure/adu-agent
+Rules-Requires-Root: no
+
+Package: adu-agent
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         libcurl4,
+         libssl3 | libssl1.1,
+         libc6
+Description: Azure Device Update agent
+ The ADU Gen2 agent provides over-the-air update capabilities for
+ Linux-based IoT devices via the Azure Device Update service. It
+ supports modular extensions for communication providers, content
+ downloaders, step handlers, and content processors.
+
+Package: adu-ext-adu-direct
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0)
+Description: ADU Direct communication provider extension
+ Provides the ADU Direct communication provider for the Azure Device
+ Update agent, enabling direct communication with the ADU service.
+
+Package: adu-ext-simulator
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0)
+Description: Simulator communication provider extension
+ Provides a simulator communication provider for the Azure Device
+ Update agent, useful for testing and development.
+
+Package: adu-ext-curl-downloader
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0),
+         libcurl4
+Description: cURL content downloader extension
+ Provides the cURL-based content downloader for the Azure Device
+ Update agent.
+
+Package: adu-ext-sideload-downloader
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0)
+Description: Sideload content downloader extension
+ Provides a local file sideload downloader for the Azure Device
+ Update agent, enabling updates from local storage.
+
+Package: adu-ext-script-handler
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0)
+Description: Script step handler extension
+ Provides the script-based step handler for the Azure Device
+ Update agent, enabling custom update logic via shell scripts.
+
+Package: adu-ext-swupdate-handler
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0)
+Description: SWUpdate step handler extension
+ Provides the SWUpdate-based step handler for the Azure Device
+ Update agent, enabling integration with the SWUpdate framework.
+
+Package: adu-ext-delta-processor
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0)
+Description: Delta content processor extension
+ Provides the delta content processor for the Azure Device
+ Update agent, enabling differential/delta updates.
+
+Package: adu-diagnostics
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         adu-agent (>= 2.0.0)
+Description: ADU agent diagnostic tools
+ Provides diagnostic and troubleshooting tools for the Azure Device
+ Update agent, including the status CLI and log decoder utilities.
+
+Package: adu-edk-dev
+Architecture: any
+Depends: ${misc:Depends},
+         adu-agent (= ${binary:Version})
+Description: ADU Extension Development Kit (EDK)
+ Provides headers, CMake config files, pkg-config metadata, and
+ starter templates for developing custom extensions for the Azure
+ Device Update agent.

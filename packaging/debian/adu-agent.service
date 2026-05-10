@@ -1,0 +1,26 @@
+[Unit]
+Description=Azure Device Update Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/adu_agent
+Restart=on-failure
+RestartSec=10
+User=adu
+Group=adu
+
+# Hardening
+ProtectSystem=full
+ProtectHome=yes
+NoNewPrivileges=true
+PrivateTmp=true
+
+# State, log, and config directories
+StateDirectory=adu
+LogsDirectory=adu
+ConfigurationDirectory=adu
+
+[Install]
+WantedBy=multi-user.target
