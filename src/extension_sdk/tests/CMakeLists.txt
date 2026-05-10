@@ -12,12 +12,14 @@ find_package(OpenSSL REQUIRED)
 
 set(test_sources
     comm_dispatcher_ut.cpp
+    component_ut.cpp
     component_registry_ut.cpp
     config_reader_ut.cpp
     content_pipeline_ut.cpp
     dag_engine_ut.cpp
     download_tests_ut.cpp
     extension_loader_ut.cpp
+    extension_signing_ut.cpp
     log_writer_ut.cpp
     manifest_parser_ut.cpp
     process_supervisor_ut.cpp

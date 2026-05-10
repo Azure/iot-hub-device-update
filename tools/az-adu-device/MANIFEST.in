@@ -1,0 +1,3 @@
+include README.md
+include azext_adu_device/azext_metadata.json
+recursive-include azext_adu_device *.py
