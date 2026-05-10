@@ -714,6 +714,10 @@ endif ()
 
 add_subdirectory (src)
 
+if (NOT WIN32)
+    add_subdirectory (tools/adu-extension-sign)
+endif ()
+
 if (ADUC_BUILD_PACKAGES)
     add_subdirectory (packages)
 endif ()
