@@ -61,6 +61,9 @@ static struct
     char deviceId[128];
     char certPath[512];
     char keyPath[512];
+    char manufacturer[128];
+    char model[128];
+    char installedUpdateId[256];
     uint32_t pollIntervalSec;
     ADUC_CommConnectionState connState;
 
@@ -608,12 +611,14 @@ static ADUC_Result2 SyncConfiguration(bool sendFullAgentInfo)
             "\"agentInfo\":{"
             "\"agentSdkVersion\":\"%s\","
             "\"agentProfile\":%d,"
-            "\"compatibilityProperties\":{\"manufacturer\":\"contoso\",\"model\":\"toaster\"}"
+            "\"compatibilityProperties\":{\"manufacturer\":\"%s\",\"model\":\"%s\"}"
             "}"
             "}",
             s_state.agentInfoETag,
             ADU_SDK_VERSION,
-            ADU_AGENT_PROFILE);
+            ADU_AGENT_PROFILE,
+            s_state.manufacturer,
+            s_state.model);
     }
     else
     {
@@ -764,6 +769,31 @@ ADUC_Result2 AduDirect_Connect(const ADUC_CommConfig* config)
     snprintf(s_state.endpoint, sizeof(s_state.endpoint), "%s", config->endpoint);
     snprintf(s_state.deviceId, sizeof(s_state.deviceId), "%s", config->deviceId);
 
+    if (config->manufacturer != NULL)
+    {
+        snprintf(s_state.manufacturer, sizeof(s_state.manufacturer), "%s", config->manufacturer);
+    }
+    else
+    {
+        snprintf(s_state.manufacturer, sizeof(s_state.manufacturer), "unknown");
+    }
+    if (config->model != NULL)
+    {
+        snprintf(s_state.model, sizeof(s_state.model), "%s", config->model);
+    }
+    else
+    {
+        snprintf(s_state.model, sizeof(s_state.model), "unknown");
+    }
+    if (config->installedUpdateId != NULL)
+    {
+        snprintf(s_state.installedUpdateId, sizeof(s_state.installedUpdateId), "%s", config->installedUpdateId);
+    }
+    else
+    {
+        s_state.installedUpdateId[0] = '\0';
+    }
+
     if (config->certPath != NULL)
     {
         snprintf(s_state.certPath, sizeof(s_state.certPath), "%s", config->certPath);
@@ -810,6 +840,9 @@ void AduDirect_Disconnect(void)
     memset(s_state.deviceId, 0, sizeof(s_state.deviceId));
     memset(s_state.certPath, 0, sizeof(s_state.certPath));
     memset(s_state.keyPath, 0, sizeof(s_state.keyPath));
+    memset(s_state.manufacturer, 0, sizeof(s_state.manufacturer));
+    memset(s_state.model, 0, sizeof(s_state.model));
+    memset(s_state.installedUpdateId, 0, sizeof(s_state.installedUpdateId));
     memset(s_state.agentInfoETag, 0, sizeof(s_state.agentInfoETag));
     memset(s_state.serviceConfigETag, 0, sizeof(s_state.serviceConfigETag));
     memset(s_state.rootKeyDownloadUrl, 0, sizeof(s_state.rootKeyDownloadUrl));
@@ -856,16 +889,27 @@ ADUC_Result2 AduDirect_Poll(ADUC_CommMessage* outMsg, uint32_t timeoutMs)
     }
 
     /* Build requestUpdates body */
+    char installedIdField[512];
+    if (s_state.installedUpdateId[0] != '\0')
+    {
+        snprintf(installedIdField, sizeof(installedIdField), "\"%s\"", s_state.installedUpdateId);
+    }
+    else
+    {
+        snprintf(installedIdField, sizeof(installedIdField), "null");
+    }
+
     char body[1024];
     snprintf(
         body, sizeof(body),
         "{"
         "\"agentInfoETag\":\"%s\","
         "\"serviceConfigETag\":\"%s\","
-        "\"installedUpdateId\":null"
+        "\"installedUpdateId\":%s"
         "}",
         s_state.agentInfoETag,
-        s_state.serviceConfigETag);
+        s_state.serviceConfigETag,
+        installedIdField);
 
     char url[1024];
     snprintf(
@@ -922,10 +966,11 @@ ADUC_Result2 AduDirect_Poll(ADUC_CommMessage* outMsg, uint32_t timeoutMs)
                 "{"
                 "\"agentInfoETag\":\"%s\","
                 "\"serviceConfigETag\":\"%s\","
-                "\"installedUpdateId\":null"
+                "\"installedUpdateId\":%s"
                 "}",
                 s_state.agentInfoETag,
-                s_state.serviceConfigETag);
+                s_state.serviceConfigETag,
+                installedIdField);
 
             ResponseBuffer retryResp = { NULL, 0 };
             HttpResult retryHttp = { 0, 0 };
@@ -970,10 +1015,11 @@ ADUC_Result2 AduDirect_Poll(ADUC_CommMessage* outMsg, uint32_t timeoutMs)
                 "{"
                 "\"agentInfoETag\":\"%s\","
                 "\"serviceConfigETag\":\"%s\","
-                "\"installedUpdateId\":null"
+                "\"installedUpdateId\":%s"
                 "}",
                 s_state.agentInfoETag,
-                s_state.serviceConfigETag);
+                s_state.serviceConfigETag,
+                installedIdField);
 
             ResponseBuffer retryResp = { NULL, 0 };
             HttpResult retryHttp = { 0, 0 };

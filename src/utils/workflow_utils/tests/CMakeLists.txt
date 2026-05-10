@@ -32,7 +32,8 @@ endif ()
 target_link_libraries (${PROJECT_NAME} PRIVATE libaducpal)
 
 target_compile_definitions (${PROJECT_NAME}
-                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
+                            PRIVATE ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}"
+                            EMBED_TEST_ROOT_KEYS=${EMBED_TEST_ROOT_KEYS})
 
 include (CTest)
 include (Catch)

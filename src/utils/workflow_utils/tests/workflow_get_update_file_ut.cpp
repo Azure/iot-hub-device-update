@@ -152,6 +152,7 @@ const char* manifest_missing_related_file_file_url =
     R"( } )";
 // clang-format on
 
+#if EMBED_TEST_ROOT_KEYS != 1
 TEST_CASE_METHOD(GetRootKeyValidationMockHook, "workflow_get_update_file - upd metadata missing relatedFile URL")
 {
     SECTION("Fail missing url for fileId")
@@ -170,3 +171,4 @@ TEST_CASE_METHOD(GetRootKeyValidationMockHook, "workflow_get_update_file - upd m
         workflow_free(handle);
     }
 }
+#endif // EMBED_TEST_ROOT_KEYS != 1

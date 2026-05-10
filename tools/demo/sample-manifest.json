@@ -1,0 +1,32 @@
+{
+  "workflowId": "ignite-demo-wf-001",
+  "updateId": {
+    "provider": "Contoso",
+    "name": "SmartVacuum",
+    "version": "2.0.0"
+  },
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "handler": "microsoft/simulator:1",
+        "handlerProperties": {
+          "simulateFailure": false,
+          "delayMs": 500,
+          "simulateReboot": false
+        },
+        "files": ["f1"],
+        "installedCriteria": "2.0.0"
+      }
+    ]
+  },
+  "files": {
+    "f1": {
+      "fileName": "firmware-v2.0.0.bin",
+      "sizeInBytes": 4096,
+      "hashes": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  }
+}

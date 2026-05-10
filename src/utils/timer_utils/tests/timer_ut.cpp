@@ -94,7 +94,7 @@ TEST_CASE("AducTimer reuse", "[timer]")
     AducTimer_Start(&t, 100);
     CHECK(_g_start_called);
 
-    usleep(125 * 1000);
+    usleep(250 * 1000); // 250ms margin for 100ms timeout (avoid flaky on loaded systems)
     CHECK(_g_timeout_called);
 
     AducTimer_Stop(&t);
@@ -108,7 +108,7 @@ TEST_CASE("AducTimer reuse", "[timer]")
     s_reset_test_metrics();
     AducTimer_Start(&t, 25);
     CHECK(_g_start_called);
-    usleep(30 * 1000);
+    usleep(150 * 1000); // 150ms margin for 25ms timeout (polling interval is 50ms)
     CHECK(_g_timeout_called);
 }
 

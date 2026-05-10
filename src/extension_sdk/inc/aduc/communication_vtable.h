@@ -61,6 +61,9 @@ typedef struct ADUC_CommConfig
     const char* moduleId;
     const char* certPath;
     const char* keyPath;
+    const char* manufacturer;
+    const char* model;
+    const char* installedUpdateId;
     uint32_t pollIntervalSec;
     uint32_t reconnectDelaySec;
     uint32_t maxReconnectDelaySec;
