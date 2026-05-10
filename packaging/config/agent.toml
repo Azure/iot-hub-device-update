@@ -1,0 +1,21 @@
+# ADU Agent configuration file
+# See documentation for all available options.
+
+[agent]
+# manufacturer = "Contoso"
+# model = "MyDevice"
+
+[communication]
+# provider = "adu_direct"
+
+[logging]
+level = "info"
+directory = "/var/log/adu"
+
+[storage]
+state_dir = "/var/lib/adu"
+downloads_dir = "/var/lib/adu/downloads"
+
+[extensions]
+search_path = "/usr/lib/adu/extensions"
+config_dir = "/etc/adu/extensions.d"

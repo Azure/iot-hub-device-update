@@ -1,0 +1,27 @@
+.TH ADU_RC_DECODER 1 "2024-01-01" "ADU Agent 2.0.0" "ADU Agent Manual"
+.SH NAME
+adu_rc_decoder \- decode ADU agent result codes
+.SH SYNOPSIS
+.B adu_rc_decoder
+\fIRESULT_CODE\fR
+.SH DESCRIPTION
+.B adu_rc_decoder
+translates numeric ADU agent result codes into human-readable
+descriptions. This is useful for interpreting error codes found in
+agent logs or reported via the Azure Device Update service.
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Display usage information and exit.
+.SH EXAMPLES
+.TP
+Decode result code 0x80040200:
+.B adu_rc_decoder 0x80040200
+.SH FILES
+.TP
+.I /var/log/adu/
+Agent log directory where result codes may appear.
+.SH SEE ALSO
+.BR adu_status_cli (1)
+.SH AUTHORS
+Microsoft Corporation

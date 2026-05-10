@@ -1,0 +1,27 @@
+#!/bin/sh
+# adu_rc_decoder — Decode ADU agent result codes.
+# Wrapper around the Python rc_decoder utility.
+
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+
+if command -v python3 > /dev/null 2>&1; then
+    PYTHON=python3
+elif command -v python > /dev/null 2>&1; then
+    PYTHON=python
+else
+    echo "Error: Python is required but not found." >&2
+    exit 1
+fi
+
+# Look for rc_decoder.py in standard locations
+for candidate in \
+    /usr/share/adu-diagnostics/rc_decoder.py \
+    "$SCRIPT_DIR/../share/adu-diagnostics/rc_decoder.py" \
+    "$SCRIPT_DIR/rc_decoder.py"; do
+    if [ -f "$candidate" ]; then
+        exec "$PYTHON" "$candidate" "$@"
+    fi
+done
+
+echo "Error: rc_decoder.py not found." >&2
+exit 1

@@ -1,0 +1,35 @@
+.TH ADU_STATUS_CLI 1 "2024-01-01" "ADU Agent 2.0.0" "ADU Agent Manual"
+.SH NAME
+adu_status_cli \- display the status of the Azure Device Update agent
+.SH SYNOPSIS
+.B adu_status_cli
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B adu_status_cli
+queries the running ADU agent and displays its current status, including
+the active deployment state, installed update version, and extension
+information.
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Display usage information and exit.
+.TP
+.B \-j, \-\-json
+Output status in JSON format.
+.TP
+.B \-v, \-\-verbose
+Enable verbose output with additional detail.
+.SH FILES
+.TP
+.I /etc/adu/agent.toml
+Agent configuration file.
+.TP
+.I /var/lib/adu/
+Agent state directory.
+.TP
+.I /var/log/adu/
+Agent log directory.
+.SH SEE ALSO
+.BR adu_rc_decoder (1)
+.SH AUTHORS
+Microsoft Corporation
