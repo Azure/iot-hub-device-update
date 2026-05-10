@@ -16,16 +16,26 @@
 #include "aduc/manifest_parser.h"
 #include "aduc/workflow_engine.h"
 
-#include <getopt.h>
-#include <signal.h>
+#include "aduc/platform.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <time.h>
+
+#ifdef _WIN32
+#include <io.h>
+#include <direct.h>
+#include <signal.h>
+#include <sys/stat.h>
+#else
+#include <getopt.h>
+#include <signal.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#endif
 
 #define ADUC_DEFAULT_CONFIG_PATH "/etc/adu/adu-agent.conf"
 #define ADUC_DEFAULT_POLL_INTERVAL_SEC 30
@@ -69,7 +79,11 @@ static bool persist_pending_report(const ADUC_DeploymentResult2* result)
         result->installedUpdateId ? "\"" : "");
 
     fflush(f);
+#ifdef _WIN32
+    _commit(_fileno(f));
+#else
     fsync(fileno(f));
+#endif
     fclose(f);
 
     return rename(tmpPath, ADUC_PENDING_REPORT_PATH) == 0;
@@ -77,12 +91,20 @@ static bool persist_pending_report(const ADUC_DeploymentResult2* result)
 
 static void clear_pending_report(void)
 {
+#ifdef _WIN32
+    _unlink(ADUC_PENDING_REPORT_PATH);
+#else
     unlink(ADUC_PENDING_REPORT_PATH);
+#endif
 }
 
 static bool has_pending_report(void)
 {
+#ifdef _WIN32
+    return _access(ADUC_PENDING_REPORT_PATH, 0) == 0;
+#else
     return access(ADUC_PENDING_REPORT_PATH, F_OK) == 0;
+#endif
 }
 
 /* -------------------------------------------------------------------------- */
@@ -106,8 +128,8 @@ static void download_manifest_files(
     /* Create download directory */
     char dlDir[256];
     snprintf(dlDir, sizeof(dlDir), "%s/%s", ADUC_DOWNLOAD_DIR, manifest->workflowId);
-    mkdir(ADUC_DOWNLOAD_DIR, 0755);
-    mkdir(dlDir, 0755);
+    adu_mkdir(ADUC_DOWNLOAD_DIR, 0755);
+    adu_mkdir(dlDir, 0755);
 
     for (size_t i = 0; i < manifest->fileCount; i++)
     {
@@ -164,6 +186,10 @@ static void signal_handler(int signum)
 
 static void install_signal_handlers(void)
 {
+#ifdef _WIN32
+    signal(SIGTERM, signal_handler);
+    signal(SIGINT, signal_handler);
+#else
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = signal_handler;
@@ -171,6 +197,7 @@ static void install_signal_handlers(void)
     sa.sa_flags = 0;
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
+#endif
 }
 
 static void print_usage(const char* progname)
@@ -198,6 +225,44 @@ ADUC_Result2 ADUC_Agent_ParseArgs(int argc, char** argv, ADUC_AgentConfig* confi
     config->runOnce = false;
     config->pollIntervalSec = ADUC_DEFAULT_POLL_INTERVAL_SEC;
 
+#ifdef _WIN32
+    /* Simple argument parsing for Windows (no getopt_long) */
+    for (int i = 1; i < argc; i++)
+    {
+        if ((strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--config") == 0) && i + 1 < argc)
+        {
+            config->configPath = argv[++i];
+        }
+        else if ((strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--log-level") == 0) && i + 1 < argc)
+        {
+            int level = atoi(argv[++i]);
+            if (level < (int)ADUC_LOG_FATAL || level > (int)ADUC_LOG_TRACE)
+            {
+                fprintf(stderr, "Error: invalid log level '%s'\n", argv[i]);
+                return ADUC_RESULT2_MAKE(ADUC_FACILITY_AGENT, ADUC_CATEGORY_CONFIG, 2);
+            }
+            config->logLevel = (ADUC_LogLevel)level;
+        }
+        else if ((strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--log-file") == 0) && i + 1 < argc)
+        {
+            config->logFilePath = argv[++i];
+        }
+        else if (strcmp(argv[i], "-1") == 0 || strcmp(argv[i], "--once") == 0)
+        {
+            config->runOnce = true;
+        }
+        else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+        {
+            print_usage(argv[0]);
+            return ADUC_RESULT2_MAKE(ADUC_FACILITY_AGENT, ADUC_CATEGORY_CONFIG, 0);
+        }
+        else
+        {
+            print_usage(argv[0]);
+            return ADUC_RESULT2_MAKE(ADUC_FACILITY_AGENT, ADUC_CATEGORY_CONFIG, 3);
+        }
+    }
+#else
     static struct option long_options[] = {
         { "config",    required_argument, NULL, 'c' },
         { "log-level", required_argument, NULL, 'l' },
@@ -242,6 +307,7 @@ ADUC_Result2 ADUC_Agent_ParseArgs(int argc, char** argv, ADUC_AgentConfig* confi
                 return ADUC_RESULT2_MAKE(ADUC_FACILITY_AGENT, ADUC_CATEGORY_CONFIG, 3);
         }
     }
+#endif
 
     return ADUC_RESULT2_SUCCESS;
 }
@@ -432,10 +498,15 @@ ADUC_Result2 ADUC_Agent_Run(const ADUC_AgentConfig* config)
 
     /* Cold-start jitter (v3 §12.3): random delay before first requestUpdates */
     {
+#ifdef _WIN32
+        srand((unsigned int)time(NULL) ^ (unsigned int)getpid());
+        uint32_t jitterMs = (rand() % (effectivePollSec * 1000));
+#else
         unsigned int seed = (unsigned int)time(NULL) ^ (unsigned int)getpid();
         uint32_t jitterMs = (rand_r(&seed) % (effectivePollSec * 1000));
+#endif
         ADUC_Log_WriteText(ADUC_LOG_INFO, "agent", "Cold-start jitter: %u ms", jitterMs);
-        usleep(jitterMs * 1000);
+        ADU_SLEEP_MS(jitterMs);
     }
 
     while (!g_shutdownRequested)

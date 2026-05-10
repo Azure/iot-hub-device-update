@@ -9,14 +9,24 @@
 #include "aduc/extension_loader.h"
 #include "aduc/file_info.h"
 #include "aduc/log_writer.h"
+#include "aduc/platform.h"
 
 #include <errno.h>
 #include <openssl/evp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <sys/stat.h>
+#include <io.h>
+#include <direct.h>
+#define strcasecmp _stricmp
+#else
 #include <sys/stat.h>
 #include <unistd.h>
+#include <strings.h>
+#endif
 
 struct ADUC_DownloadService
 {
@@ -243,7 +253,7 @@ ADUC_Result2 ADUC_DownloadService_Create(
     }
 
     // Ensure temp dir exists
-    mkdir(svc->config.tempDir, 0755);
+    adu_mkdir(svc->config.tempDir, 0755);
 
     *outService = svc;
     return ADUC_RESULT2_SUCCESS;
@@ -323,7 +333,7 @@ ADUC_Result2 ADUC_DownloadService_DownloadFile(
             ADUC_Log_WriteText(ADUC_LOG_WARN, "DownloadService",
                      "Download failed (attempt %u/%u), retrying in %us",
                      attempt, maxAttempts, delaySec);
-            sleep(delaySec);
+            ADU_SLEEP_SEC(delaySec);
 
             // Update offset for resume
             if (stat(tempPath, &st) == 0)
@@ -363,7 +373,7 @@ ADUC_Result2 ADUC_DownloadService_DownloadFile(
     }
 
     // Move temp to final destination
-    mkdir(destDir, 0755);
+    adu_mkdir(destDir, 0755);
     if (rename(tempPath, destPath) != 0)
     {
         ADUC_Log_WriteText(ADUC_LOG_ERROR, "DownloadService", "Failed to move %s to %s: %s",

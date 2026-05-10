@@ -9,7 +9,11 @@ target_include_directories(tomlc99 PUBLIC
     third_party/tomlc99
 )
 # Suppress warnings in third-party code
-target_compile_options(tomlc99 PRIVATE -w)
+if(MSVC)
+    target_compile_options(tomlc99 PRIVATE /w)
+else()
+    target_compile_options(tomlc99 PRIVATE -w)
+endif()
 
 # ─── Extension SDK library ───────────────────────────────────────────────────
 find_package(Parson REQUIRED)
@@ -51,11 +55,18 @@ target_include_directories(aduc_extension_sdk PUBLIC
 
 target_link_libraries(aduc_extension_sdk
     PUBLIC tomlc99 Parson::parson
-    PRIVATE ${CMAKE_DL_LIBS}   # dlopen/dlsym on Linux
-    PRIVATE pthread
     PRIVATE CURL::libcurl
     PRIVATE OpenSSL::Crypto
 )
+
+if(WIN32)
+    target_compile_definitions(aduc_extension_sdk PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_WARNINGS)
+else()
+    target_link_libraries(aduc_extension_sdk
+        PRIVATE ${CMAKE_DL_LIBS}   # dlopen/dlsym on Linux
+        PRIVATE pthread
+    )
+endif()
 
 # Add alias for consistent naming
 add_library(aduc::extension_sdk ALIAS aduc_extension_sdk)

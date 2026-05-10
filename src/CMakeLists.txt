@@ -90,6 +90,8 @@ set (ADU_EXTENSION_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/extensions/inc
                             ${CMAKE_CURRENT_SOURCE_DIR}/extensions/step_handlers/swupdate_handler_v2/inc)
 
 add_subdirectory (libaducpal)
+add_subdirectory (extension_sdk)
+add_subdirectory (adu_gen2_agent)
 add_subdirectory (agent)
 add_subdirectory (agent_orchestration)
 add_subdirectory (adu-shell)

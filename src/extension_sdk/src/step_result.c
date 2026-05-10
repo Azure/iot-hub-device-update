@@ -7,17 +7,31 @@
  */
 #include "aduc/step_result.h"
 
+#include "aduc/platform.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 /* ─── Internal helpers ─────────────────────────────────────────────────────── */
 
 static uint64_t get_monotonic_ms(void)
 {
+#ifdef _WIN32
+    /* Use QueryPerformanceCounter for high-resolution monotonic time on Windows */
+    LARGE_INTEGER freq, count;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&count);
+    return (uint64_t)(count.QuadPart * 1000 / freq.QuadPart);
+#else
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000u + (uint64_t)ts.tv_nsec / 1000000u;
+#endif
 }
 
 static char* safe_strdup(const char* s)
