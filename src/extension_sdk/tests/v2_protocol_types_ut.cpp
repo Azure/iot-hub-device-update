@@ -46,7 +46,7 @@ TEST_CASE("ADUC_FailureOrigin enum values", "[v3protocol]")
     CHECK(ADUC_FailureOrigin_Device == 6);
 }
 
-TEST_CASE("ADUC_FailureOrigin_ToString v3 wire strings", "[v3protocol]")
+TEST_CASE("ADUC_FailureOrigin_ToString v3 wire strings", "[v3protocol][v4protocol]")
 {
     CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_NotApplicable), "NOT_APPLICABLE") == 0);
     CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AduCloudService), "ADU_CLOUD_SERVICE") == 0);
@@ -55,7 +55,9 @@ TEST_CASE("ADUC_FailureOrigin_ToString v3 wire strings", "[v3protocol]")
     CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentExtension), "AGENT_EXTENSION") == 0);
     CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_AgentDependency), "AGENT_DEPENDENCY") == 0);
     CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_Device), "DEVICE") == 0);
-    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(static_cast<ADUC_FailureOrigin>(99)), "AGENT_CORE") == 0);
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(ADUC_FailureOrigin_Other), "OTHER") == 0);
+    /* v4: unknown values default to OTHER (was AGENT_CORE in v3) */
+    CHECK(std::strcmp(ADUC_FailureOrigin_ToString(static_cast<ADUC_FailureOrigin>(99)), "OTHER") == 0);
 }
 
 TEST_CASE("Backward compat aliases for ADUC_Origin", "[v3protocol]")

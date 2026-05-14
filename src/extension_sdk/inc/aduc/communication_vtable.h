@@ -100,7 +100,7 @@ typedef struct ADUC_DeploymentResult2
     int64_t resultCode;                /**< Legacy result code (0=failed, -1=canceled, positive=success) */
     const char* extendedResultCodes;   /**< Comma-separated hex ERCs e.g. "3000001C,80004005" */
     const char* resultDetails;         /**< Human-readable diagnostic */
-    const char* installedUpdateId;     /**< Opaque string (serialized JSON by convention) */
+    const char* installedUpdateId;     /**< Colon-delimited "provider:name:version" (v4 format) */
     const char* stepResultsJson;       /**< Per-step results as JSON */
 } ADUC_DeploymentResult2;
 

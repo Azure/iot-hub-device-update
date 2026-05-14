@@ -106,7 +106,7 @@ typedef struct ADUC_Version
 } ADUC_Version;
 
 /**
- * @brief Authoritative terminal outcome of a deployment (v3 protocol).
+ * @brief Authoritative terminal outcome of a deployment (v4 protocol).
  */
 typedef enum ADUC_Outcome
 {
@@ -135,10 +135,11 @@ static inline const char* ADUC_Outcome_ToString(ADUC_Outcome o)
 }
 
 /**
- * @brief Advisory hint identifying which subsystem produced a failure (v3 protocol).
+ * @brief Advisory hint identifying which subsystem produced a failure (v4 protocol).
  *
  * Required on every reportStatus. Advisory only — the service MUST NOT use
  * this for state decisions. On success/cancel/skip, set to NOT_APPLICABLE.
+ * v4: FAILED + NOT_APPLICABLE is prohibited — use OTHER for unclassifiable failures.
  */
 typedef enum ADUC_FailureOrigin
 {
@@ -148,7 +149,8 @@ typedef enum ADUC_FailureOrigin
     ADUC_FailureOrigin_AgentCore = 3,
     ADUC_FailureOrigin_AgentExtension = 4,
     ADUC_FailureOrigin_AgentDependency = 5,
-    ADUC_FailureOrigin_Device = 6
+    ADUC_FailureOrigin_Device = 6,
+    ADUC_FailureOrigin_Other = 7
 } ADUC_FailureOrigin;
 
 /* Backward compat aliases for code using the old ADUC_Origin names */
@@ -173,7 +175,8 @@ static inline const char* ADUC_FailureOrigin_ToString(ADUC_FailureOrigin o)
         case ADUC_FailureOrigin_AgentExtension:     return "AGENT_EXTENSION";
         case ADUC_FailureOrigin_AgentDependency:    return "AGENT_DEPENDENCY";
         case ADUC_FailureOrigin_Device:             return "DEVICE";
-        default:                                    return "AGENT_CORE";
+        case ADUC_FailureOrigin_Other:              return "OTHER";
+        default:                                    return "OTHER";
     }
 }
 
@@ -181,7 +184,7 @@ static inline const char* ADUC_FailureOrigin_ToString(ADUC_FailureOrigin o)
 #define ADUC_Origin_ToString ADUC_FailureOrigin_ToString
 
 /**
- * @brief Agent protocol states (v3 protocol §7.1).
+ * @brief Agent protocol states (v4 protocol §7.1).
  * The agent maintains exactly one of these states at any time.
  */
 typedef enum ADUC_AgentState_v3

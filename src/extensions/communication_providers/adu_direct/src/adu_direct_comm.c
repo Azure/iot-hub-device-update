@@ -1,6 +1,6 @@
 /**
  * @file adu_direct_comm.c
- * @brief ADU Direct Communication Provider — v3 RPC-over-HTTP protocol.
+ * @brief ADU Direct Communication Provider — v4 RPC-over-HTTP protocol.
  *
  * Implements the ADUC_CommunicationVtable using the ADU Device Data Plane
  * Protocol v3 with three RPC operations:
@@ -41,7 +41,7 @@
 /*                              Constants                                      */
 /* -------------------------------------------------------------------------- */
 
-#define ADU_API_VERSION "2026-11-01"
+#define ADU_API_VERSION "2026-11-02-preview"
 #define ADU_USER_AGENT  "adu-agent/2.0.0"
 #define ADU_SDK_VERSION "2.0.0"
 #define ADU_AGENT_PROFILE 3
@@ -927,7 +927,7 @@ ADUC_Result2 AduDirect_Poll(ADUC_CommMessage* outMsg, uint32_t timeoutMs)
         {
             /* Cache fileUrls from the update object */
             size_t updateLen = 0;
-            const char* updateObj = JsonFindObject(response.data, "update", &updateLen);
+            const char* updateObj = JsonFindObject(response.data, "updateMetadata", &updateLen);
             if (updateObj != NULL)
             {
                 char updateBuf[8192];
@@ -979,7 +979,7 @@ ADUC_Result2 AduDirect_Poll(ADUC_CommMessage* outMsg, uint32_t timeoutMs)
             if (ADUC_RESULT2_IS_SUCCESS(result) && retryResp.data != NULL && retryResp.size > 0)
             {
                 size_t updateLen = 0;
-                const char* updateObj = JsonFindObject(retryResp.data, "update", &updateLen);
+                const char* updateObj = JsonFindObject(retryResp.data, "updateMetadata", &updateLen);
                 if (updateObj != NULL)
                 {
                     char updateBuf[8192];
@@ -1028,7 +1028,7 @@ ADUC_Result2 AduDirect_Poll(ADUC_CommMessage* outMsg, uint32_t timeoutMs)
             if (ADUC_RESULT2_IS_SUCCESS(result) && retryResp.data != NULL && retryResp.size > 0)
             {
                 size_t updateLen = 0;
-                const char* updateObj = JsonFindObject(retryResp.data, "update", &updateLen);
+                const char* updateObj = JsonFindObject(retryResp.data, "updateMetadata", &updateLen);
                 if (updateObj != NULL)
                 {
                     char updateBuf[8192];
@@ -1090,8 +1090,15 @@ ADUC_Result2 AduDirect_ReportResult(const ADUC_DeploymentResult2* deployResult)
         s_state.endpoint, ADU_API_VERSION);
 
     /* Build the reportStatus JSON body */
+    /* v4: FAILED + NOT_APPLICABLE is prohibited — auto-correct to OTHER */
+    ADUC_FailureOrigin effectiveOrigin = deployResult->failureOrigin;
+    if (deployResult->outcome == ADUC_Outcome_Failed &&
+        effectiveOrigin == ADUC_FailureOrigin_NotApplicable)
+    {
+        effectiveOrigin = ADUC_FailureOrigin_Other;
+    }
     const char* outcomeStr = ADUC_Outcome_ToString(deployResult->outcome);
-    const char* failureOriginStr = ADUC_FailureOrigin_ToString(deployResult->failureOrigin);
+    const char* failureOriginStr = ADUC_FailureOrigin_ToString(effectiveOrigin);
     const char* extendedResultCodes = deployResult->extendedResultCodes != NULL
         ? deployResult->extendedResultCodes : "00000000";
     const char* resultDetails = deployResult->resultDetails != NULL
