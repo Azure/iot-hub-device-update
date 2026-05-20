@@ -26,9 +26,11 @@ Device Update for IoT Hub is an end-to-end platform for deploying over-the-air u
 
 ## Reference Agent
 
-While we aim to provide production-ready, high-quality Device Update agent code and installation packages, this project is intended to serve as a **reference implementation** demonstrating how devices can communicate with and receive update deployments from the Azure Device Update cloud service.
-
-We encourage you to extend, enhance, and modify the source code to best fit your specific scenario requirements. If you have ideas, suggestions, or encounter issues, please report them using [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) or the [Discussion Forum](https://github.com/Azure/iot-hub-device-update/discussions).
+This repository provides a tested **reference implementation** of the Device Update agent. It demonstrates how devices can communicate with and receive update deployments from the Azure Device Update service.
+ 
+Customers are responsible for building, validating, and adapting this code for use in their environments to meet their specific requirements.
+ 
+We encourage you to extend and modify the implementation to fit your scenarios. If you have ideas, suggestions, or encounter issues, please use [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) or the [Discussion Forum](https://github.com/Azure/iot-hub-device-update/discussions).
 
 ## Getting Started
 
