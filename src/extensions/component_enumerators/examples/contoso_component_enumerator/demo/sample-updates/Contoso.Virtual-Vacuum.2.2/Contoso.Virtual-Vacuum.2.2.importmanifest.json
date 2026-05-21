@@ -1,0 +1,58 @@
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "Virtual-Vacuum",
+    "version": "2.2"
+  },
+  "isDeployable": true,
+  "compatibility": [
+    {
+      "manufacturer": "contoso",
+      "model": "virtual-vacuum-v1"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "description": "Install libcurl4-doc on host device",
+        "handler": "microsoft/apt:1",
+        "files": [
+          "apt-manifest-1.0.json"
+        ],
+        "handlerProperties": {
+          "installedCriteria": "apt-update-test-2.2"
+        }
+      },
+      {
+        "type": "inline",
+        "description": "Install tree on host device",
+        "handler": "microsoft/apt:1",
+        "files": [
+          "apt-manifest-tree-1.0.json"
+        ],
+        "handlerProperties": {
+          "installedCriteria": "apt-update-test-tree-2.2"
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "apt-manifest-1.0.json",
+      "sizeInBytes": 132,
+      "hashes": {
+        "sha256": "nACI0Obg4Px/f2f85oOko3bHE0HJ8Vlq3CMafx9g2Bo="
+      }
+    },
+    {
+      "filename": "apt-manifest-tree-1.0.json",
+      "sizeInBytes": 129,
+      "hashes": {
+        "sha256": "//nh3i0Hdj4H06Q0Pf1Ohz0sLfnAWv37ODPYQ8plPAE="
+      }
+    }
+  ],
+  "createdDateTime": "2026-04-30T23:33:48.3282808Z",
+  "manifestVersion": "4.0"
+}

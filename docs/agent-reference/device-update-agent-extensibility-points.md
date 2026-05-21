@@ -59,11 +59,11 @@ See [How to implement custom update handler](./how-to-implement-custom-update-ha
 
 ## Update Manifest Handler extension type
 
-The update manifest handler handles the processing of steps in the instructions of a v4 or later update manifest. See `steps` in `instructions` of a [v4+ update manifest](./update-manifest-v4-schema.md) here.
+The update manifest handler handles the processing of steps in the instructions of a v4 or later update manifest. See `steps` in `instructions` of a [v4+ update manifest](./update-manifest-v5-schema.md#multi-step-ordered-execution-msoe-support) here.
 
 ### Default Registered Update Manifest Handler
 
-The default Update Manifest Handler registered in deviceupdate-agent Debian package is the [Steps Handler](../../src/extensions/update_manifest_handlers/steps_handler/README.md) (Note: Plural Steps). The implementation is in [steps_handler.cpp](../../src/extensions/update_manifest_handlers/steps_handler/src/steps_handler.cpp).
+The default Update Manifest Handler registered in deviceupdate-agent Debian package is the [Steps Handler](../../src/extensions/update_manifest_handlers/steps_handler/README.md) (Note: Plural Steps). The implementation is in [steps_handler.cpp](../../src/extensions/update_manifest_handlers/steps_handler/src/steps_handler.cpp). For an authoritative description of its behavior phase-by-phase (Download / Install / Apply / Cancel / IsInstalled / Backup / Restore, plus reboot propagation and component handling), see [steps-handler.md](./steps-handler.md).
 
 [Steps Handler](../../src/extensions/update_manifest_handlers/steps_handler/README.md) is a handler that applies each action aggregated across every step:
 
@@ -82,7 +82,8 @@ To implement a custom Update Manifest Handler, which is a Step Handler, export t
 
 For detailed information, see:
 
-- [update-manifest-v4-schema](./update-manifest-v4-schema.md)
+- [steps-handler.md](./steps-handler.md) — Steps Handler implementation reference (phase-by-phase behavior)
+- [update-manifest-v5-schema](./update-manifest-v5-schema.md)
 - [How to implement custom update handler](./how-to-implement-custom-update-handler.md).
 - [Steps_Handler README.md](../../src/extensions/update_manifest_handlers/steps_handler/README.md)
 
@@ -108,7 +109,7 @@ Examples include [deliveryoptimization-content-downloader](../../src/extensions/
 
 ## Download Handler extension type
 
-The DownloadHandler extensibility point allows registering a shared library to be called by the core agent when a payload file in a [v5 update manifest](./update-manifest-v5-schema.md) has a `downloadHandlerId` that matches the registered id.  The main idea is that the download handler is called before downloading and if it can produce the update payload file, then the agent can skip the download; otherwise, it falls back to downloading the full update payload file.
+The DownloadHandler extensibility point allows registering a shared library to be called by the core agent when a payload file in a [v5 update manifest](./update-manifest-v5-schema.md#what-changed-between-v4-and-v5) has a `downloadHandlerId` that matches the registered id.  The main idea is that the download handler is called before downloading and if it can produce the update payload file, then the agent can skip the download; otherwise, it falls back to downloading the full update payload file.
 
 See the [download handler README.md](../../src/extensions/download_handlers/README.md) for more information.
 

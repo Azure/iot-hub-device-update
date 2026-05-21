@@ -6,7 +6,7 @@ The Azure Device Update (ADU) SDK provides a C ABI for external applications to 
 
 The SDK enables applications to:
 - Check if the ADU agent is actively processing updates
-- Determine when it's safe to enter low-power mode (There is a configurable pause interval when it enters Idle state)
+- Determine when it's safe to enter low-power mode (`Paused` is the safe state — see [GetAduServiceStatus.md](../../docs/agent-reference/GetAduServiceStatus.md#pause-state))
 
 The SDK communicates with the ADU agent through named pipes (FIFOs) and provides a simple, synchronous C ABI that handles the cross-proc comms.
 
@@ -42,19 +42,27 @@ const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status);
 - `ADUC_ServiceStatus_Initializing` - Agent starting up
 - `ADUC_ServiceStatus_Downloading` - Downloading update content
 - `ADUC_ServiceStatus_Installing` - Installing update
-- `ADUC_ServiceStatus_Rebooting` - System reboot in progress
+- `ADUC_ServiceStatus_Applying` - Applying update (post-install steps)
+- `ADUC_ServiceStatus_Cancelling` - Cancelling an in-progress deployment
 - `ADUC_ServiceStatus_Reporting` - Reporting results to IoT Hub
-- `ADUC_ServiceStatus_Paused` - Quiet period before idle
-- `ADUC_ServiceStatus_Idle` - Ready for new updates
+- `ADUC_ServiceStatus_Rebooting` - System reboot in progress
+- `ADUC_ServiceStatus_Paused` - Quiet period before idle (safe-to-power-down window)
+- `ADUC_ServiceStatus_Idle` - Ready for new updates (do NOT enter low-power mode)
+- `ADUC_ServiceStatus_Failed` - Last deployment failed
 
 #### Error States (10000+)
 - `ADUC_ServiceStatus_ERROR_UnsupportedApiVersion` - SDK/agent version mismatch
-- `ADUC_ServiceStatus_ERROR_AgentServiceNotRunning` - Agent service not running
-- `ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe` - Communication failure
-- `ADUC_ServiceStatus_ERROR_AgentServicePermission` - Permission denied
-- `ADUC_ServiceStatus_ERROR_AgentServiceTimeout` - Request timeout
-- `ADUC_ServiceStatus_ERROR_AgentServiceInternal` - Internal agent error
-- `ADUC_ServiceStatus_ERROR_Unknown` - Unknown error
+- `ADUC_ServiceStatus_ERROR_AgentServiceNotRunning` - Agent service not running (request FIFO missing or wrong permissions)
+- `ADUC_ServiceStatus_ERROR_AgentServiceBrokenPipe` - Communication failure on the request FIFO
+- `ADUC_ServiceStatus_ERROR_AgentServicePermission` - Permission denied on FIFO (caller is not in the `adu` group)
+- `ADUC_ServiceStatus_ERROR_AgentServiceTimeout` - Request timed out waiting for the agent
+- `ADUC_ServiceStatus_ERROR_AgentServiceInternal` - Agent returned an unexpected response
+- `ADUC_ServiceStatus_ERROR_AgentServiceReqFifoSvcEndNotOpenedYet` - Request FIFO has no reader (agent not ready)
+- `ADUC_ServiceStatus_ERROR_AgentServiceMkFifoFailed` - Could not create the per-call response FIFO
+- `ADUC_ServiceStatus_ERROR_AgentServiceChmodFailed` - Could not set permissions on the response FIFO
+- `ADUC_ServiceStatus_ERROR_AgentServiceSdkOpenRespFifoFailed` - Could not open the response FIFO created by the SDK
+- `ADUC_ServiceStatus_ERROR_RecvMsgFailed` - Failed to read the agent's response
+- `ADUC_ServiceStatus_ERROR_Unknown` - Unknown / unmapped error
 
 ## Building the SDK
 
@@ -62,11 +70,11 @@ const char* ADUC_ServiceStatusToString(ADUC_ServiceStatus status);
 
 ```bash
 # Ubuntu/Debian
-sudo apt update && sudo apt install build-essential cmake pkgconfig
+sudo apt update && sudo apt install build-essential cmake pkg-config
 
 # CentOS/RHEL/Fedora
 sudo yum install gcc cmake pkgconfig  # CentOS/RHEL 7
-sudo dnf install gcc cmake pkgconfig  # Fedora/RHEL 8+
+sudo dnf install gcc cmake pkgconf    # Fedora/RHEL 8+
 ```
 
 ### Build Instructions

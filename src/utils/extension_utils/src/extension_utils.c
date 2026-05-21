@@ -28,7 +28,9 @@
 #include <azure_c_shared_utility/azure_base64.h>
 #include <azure_c_shared_utility/buffer_.h>
 #include <azure_c_shared_utility/crt_abstractions.h> // for mallocAndStrcpy_s
-#include <azure_c_shared_utility/sha.h> // for SHAversion
+// SHAversion is provided by aduc/hash_utils.h (OpenSSL-backed). The legacy
+// include of azure_c_shared_utility/sha.h was removed to comply with the SDL
+// Approved Cryptographic Libraries policy. See docs/security/cryptography.md.
 
 /**
  * @brief Get the Extension File Entity object
