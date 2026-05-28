@@ -175,6 +175,42 @@ static PThreadCond g_d2cMessageProcessedCond;
 static PThreadMutex g_cloudServiceMutex;
 static PThreadMutex g_testCaseSyncMutex;
 
+//
+// Predicate-protected handshake for the existing [functional] tests.
+//
+// Background: the original test harness called pthread_cond_signal() from the
+// response handler without holding g_cloudServiceMutex, and the test thread
+// called pthread_cond_wait() with no predicate. POSIX condition variable
+// semantics drop the signal when no thread is currently in cond_wait, which
+// caused these tests to hang indefinitely in CI (1500s ctest timeout) when
+// the response handler won the race against the test thread reaching wait().
+//
+// Fix: a g_d2cMessageDone flag, written under g_cloudServiceMutex on the
+// signaller side and consumed in a loop on the waiter side. The test thread
+// resets the flag inside the locked setup window via _SetMockCloudBehavior
+// before kicking SendAsync, so it cannot observe a stale "done" from a
+// previous iteration.
+//
+static bool g_d2cMessageDone = false;
+
+static void signal_message_done()
+{
+    g_cloudServiceMutex.lock();
+    g_d2cMessageDone = true;
+    g_d2cMessageProcessedCond.signal();
+    g_cloudServiceMutex.unlock();
+}
+
+// Caller MUST hold g_cloudServiceMutex.
+static void wait_message_done_locked()
+{
+    while (!g_d2cMessageDone)
+    {
+        g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    }
+    g_d2cMessageDone = false;
+}
+
 static void set_timespec_ms(timespec* ts, unsigned long ms)
 {
     memset(ts, 0, sizeof(*ts));
@@ -275,6 +311,11 @@ static void _SetMockCloudBehavior(MockCloudBehavior* b, size_t size, size_t init
     g_cloudBehaviorIndex = initialIndex;
     g_attempts = 0;
     g_cloudBehaviorMutex.unlock();
+
+    // Reset the predicate that gates wait_message_done_locked() so the next
+    // SendAsync cycle starts from a clean "not yet done" state. Caller must
+    // already hold g_cloudServiceMutex per the existing test contract.
+    g_d2cMessageDone = false;
 }
 
 bool g_cancelDoWorkThread = false;
@@ -306,7 +347,7 @@ void OnMessageProcessCompleted_SaveWholeMessage_And_Signal(void* context, ADUC_D
     auto message = static_cast<ADUC_D2C_Message*>(context);
     *static_cast<ADUC_D2C_Message*>(message->userData) = *message;
     // Must signal after done updating global state.
-    g_d2cMessageProcessedCond.signal();
+    signal_message_done();
 };
 
 void OnMessageStatusChanged_SaveWholeMessage_And_Signal(void* context, ADUC_D2C_Message_Status status)
@@ -315,7 +356,7 @@ void OnMessageStatusChanged_SaveWholeMessage_And_Signal(void* context, ADUC_D2C_
     auto message = static_cast<ADUC_D2C_Message*>(context);
     *static_cast<ADUC_D2C_Message*>(message->userData) = *message;
     // Must signal after done updating global state.
-    g_d2cMessageProcessedCond.signal();
+    signal_message_done();
 };
 
 static void OnMessageProcessCompleted_SaveStatus(void* context, ADUC_D2C_Message_Status status)
@@ -328,7 +369,7 @@ static void OnMessageProcessCompleted_SaveStatus(void* context, ADUC_D2C_Message
 static void OnMessageProcessCompleted_SaveStatus_And_Signal(void* context, ADUC_D2C_Message_Status status)
 {
     OnMessageProcessCompleted_SaveStatus(context, status);
-    g_d2cMessageProcessedCond.signal();
+    signal_message_done();
 };
 
 // Make sure that we can deinitialize cleanly while there's a message in-progress.
@@ -479,7 +520,7 @@ TEST_CASE("Simple tests", "[.hide][functional]")
         &result);
 
     // Wait until the message has been processed.
-    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    wait_message_done_locked();
     g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
@@ -505,7 +546,7 @@ TEST_CASE("Simple tests", "[.hide][functional]")
         &result);
 
     // Wait until the message has been processed.
-    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    wait_message_done_locked();
     g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
@@ -531,7 +572,7 @@ TEST_CASE("Simple tests", "[.hide][functional]")
         &result);
 
     // Wait until the message has been processed.
-    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    wait_message_done_locked();
     g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
@@ -583,7 +624,7 @@ TEST_CASE("Bad http status retry info", "[.][functional]")
         &result);
 
     // Wait until the message has been processed.
-    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    wait_message_done_locked();
     g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
@@ -609,7 +650,7 @@ TEST_CASE("Bad http status retry info", "[.][functional]")
         &result);
 
     // Wait until the message has been processed.
-    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    wait_message_done_locked();
     g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
@@ -693,7 +734,7 @@ TEST_CASE("Message replacement test", "[.][functional]")
         &message3FinalStatus);
 
     // Wait until the message has been processed.
-    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    wait_message_done_locked();
     g_cloudServiceMutex.unlock();
 
     CHECK(message1FinalStatus == ADUC_D2C_Message_Status_Success);
@@ -757,7 +798,7 @@ TEST_CASE("30 retries - httpStatus 401", "[.][functional]")
         &result);
 
     // Wait until the message has been processed.
-    g_d2cMessageProcessedCond.wait(g_cloudServiceMutex);
+    wait_message_done_locked();
     g_cloudServiceMutex.unlock();
 
     CHECK(expectedAttempts == result.attempts);
