@@ -23,4 +23,8 @@ target_link_libraries (
             Catch2::Catch2WithMain)
 
 include (CTest)
+# Existing [functional]-tagged scenarios.
 add_test (NAME ${PROJECT_NAME} COMMAND ${PROJECT_NAME} [functional])
+# ADO Bug 38069154: deterministic, non-functional tests for
+# ADUC_D2C_Messaging_Reset_For_Handle_Refresh().
+add_test (NAME ${PROJECT_NAME}_handle_refresh COMMAND ${PROJECT_NAME} [handle_refresh])
