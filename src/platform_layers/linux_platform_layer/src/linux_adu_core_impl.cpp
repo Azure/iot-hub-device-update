@@ -59,6 +59,19 @@ std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
 
 LinuxPlatformLayer::~LinuxPlatformLayer()
 {
+    // Signal any in-flight worker that a shutdown is happening so cancellable
+    // operations (Download/Install/Apply) can return early, then wait for the
+    // worker to finish. This prevents the detached-thread use-after-free of
+    // workCompletionData / workflowData reported in issue #858.
+    _IsCancellationRequested = true;
+    {
+        std::lock_guard<std::mutex> lock(_activeWorkerMutex);
+        if (_activeWorker.joinable())
+        {
+            _activeWorker.join();
+        }
+    }
+
     ExtensionManager::Uninit();
 }
 

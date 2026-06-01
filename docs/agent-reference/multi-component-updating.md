@@ -10,8 +10,12 @@ To update components on an IoT device that is connected to an IoTHub, also known
 
 It's crucial to note that the Device Update service does not have any knowledge of the specific components on the target device since it's designed to be device agnostic. Therefore, the device builder must provide the necessary information to the Device Update Agent. This information includes a collection of components such as root file system partitions, firmware partitions, boot partition, or any applications or group of applications that are modeled virtually as a 'component'. The device builder can provide this information to the Agent by developing a Component Enumerator extension and registering it with the Agent.
 
-> Note: Multi-step ordered execution feature allow for granular update controls including an install order, pre-install, install and post-install steps. Use cases include
-> a required preinstall check that is needed to validate the device state before starting an update, etc. Learn more about [multi-step ordered execution](../agent-reference/update-manifest-v4-schema.md).
+> Note: Multi-step ordered execution (MSOE) allows for granular update controls including an install order, pre-install, install and post-install steps. Use cases include
+> a required preinstall check that is needed to validate the device state before starting an update, etc.
+>
+> * **Concept and authoring guidance:** [Multi-step Updates (Microsoft Learn)](https://learn.microsoft.com/en-us/azure/iot-hub-device-update/device-update-multi-step-updates)
+> * **Manifest JSON shape:** [Update Manifest v5 schema — MSOE Support](update-manifest-v5-schema.md#multi-step-ordered-execution-msoe-support)
+> * **Agent-side implementation (per-component × per-step iteration, reboot/restart propagation, cancel semantics):** [Steps Handler reference](steps-handler.md)
 
 ## Implementing the Component Enumerator Extension
 

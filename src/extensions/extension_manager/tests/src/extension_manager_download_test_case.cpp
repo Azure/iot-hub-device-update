@@ -45,6 +45,12 @@ ADUC_ExtensionContractInfo mockContractInfo{ 1, 0 };
 const int32_t FailureERC = 0xD0070070;
 char mockTargetFilename[] = "mock_update_payload.txt";
 char mockPayloadContent[] = "hello";
+char mockCorruptedContent[] = "corrupted-bytes";
+
+// Counters used by issue #765 regression tests to verify that a real download
+// is attempted when a stale file with an invalid hash already exists.
+static int g_mockDownloadSuccessProcCallCount = 0;
+static int g_mockDownloadFailureProcCallCount = 0;
 
 const std::string testWorkfolder = std::string{ ADUC_TEST_DATA_FOLDER } + "/extension_manager";
 const std::string pnpMsgPath = testWorkfolder + "/pnpMsg.json";
@@ -66,6 +72,8 @@ static ADUC_Result MockDownloadSuccessProc(
     UNREFERENCED_PARAMETER(timeoutInSeconds);
     UNREFERENCED_PARAMETER(downloadProgressCallback);
 
+    ++g_mockDownloadSuccessProcCallCount;
+
     std::ofstream fileStream;
     fileStream.open(downloaded_file_path.c_str(), std::ios::out | std::ios::trunc);
     fileStream << mockPayloadContent;
@@ -86,6 +94,8 @@ static ADUC_Result MockDownloadFailureProc(
     UNREFERENCED_PARAMETER(workFolder);
     UNREFERENCED_PARAMETER(timeoutInSeconds);
     UNREFERENCED_PARAMETER(downloadProgressCallback);
+
+    ++g_mockDownloadFailureProcCallCount;
 
     ADUC_Result result{ 0, FailureERC };
     return result;
@@ -109,8 +119,14 @@ static DownloadProc nullDownloadProcResolver(void* lib)
     return nullptr;
 }
 
-static void setupWorkflowHandle(const char* msgJson, ADUC_WorkflowHandle* outWorkflowHandle)
+static void SeedCorruptedTargetFile()
 {
+    std::ofstream fileStream;
+    fileStream.open(downloaded_file_path.c_str(), std::ios::out | std::ios::trunc);
+    fileStream << mockCorruptedContent;
+}
+
+static void setupWorkflowHandle(const char* msgJson, ADUC_WorkflowHandle* outWorkflowHandle){
     ADUC_Result result{ workflow_init(msgJson, false /* validateManifest */, outWorkflowHandle) };
     REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
 
@@ -125,6 +141,9 @@ static void setupWorkflowHandle(const char* msgJson, ADUC_WorkflowHandle* outWor
  */
 void ExtensionManagerDownloadTestCase::RunScenario()
 {
+    g_mockDownloadSuccessProcCallCount = 0;
+    g_mockDownloadFailureProcCallCount = 0;
+
     InitCommon();
 
     switch (download_scenario)
@@ -158,6 +177,25 @@ void ExtensionManagerDownloadTestCase::RunScenario()
         mockProcResolver = mockDownloadSuccessProcResolver;
         expected_result.ResultCode = ADUC_Result_Success;
         expected_result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED;
+        break;
+
+    case DownloadTestScenario::ExistingFileInvalidHashRedownload:
+        // Pre-seed a stale file whose content hash will not match the manifest.
+        SeedCorruptedTargetFile();
+        mockProcResolver = mockDownloadSuccessProcResolver;
+        expected_result.ResultCode = 1;
+        expected_result.ExtendedResultCode = 0;
+        break;
+
+    case DownloadTestScenario::ExistingFileInvalidHashDownloadFails:
+        // Pre-seed a stale file whose content hash will not match the manifest.
+        // Issue #765: prior to the fix, the file would be removed and SUCCESS
+        // returned without calling the downloader at all. With the fix, the
+        // downloader is invoked and its (failing) result is propagated.
+        SeedCorruptedTargetFile();
+        mockProcResolver = mockDownloadFailureProcResolver;
+        expected_result.ResultCode = 0;
+        expected_result.ExtendedResultCode = FailureERC;
         break;
 
     default:
@@ -224,4 +262,14 @@ void ExtensionManagerDownloadTestCase::Cleanup()
 {
     remove(downloaded_file_path.c_str());
     workflow_free(workflowHandle);
+}
+
+int ExtensionManagerDownloadTestCase::GetSuccessDownloadProcCallCount() const
+{
+    return g_mockDownloadSuccessProcCallCount;
+}
+
+int ExtensionManagerDownloadTestCase::GetFailureDownloadProcCallCount() const
+{
+    return g_mockDownloadFailureProcCallCount;
 }

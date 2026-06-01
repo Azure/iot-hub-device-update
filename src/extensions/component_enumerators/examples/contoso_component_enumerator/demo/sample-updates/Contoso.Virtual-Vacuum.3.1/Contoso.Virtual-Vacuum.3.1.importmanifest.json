@@ -1,0 +1,29 @@
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "Virtual-Vacuum",
+    "version": "3.1"
+  },
+  "isDeployable": true,
+  "compatibility": [
+    {
+      "manufacturer": "contoso",
+      "model": "virtual-vacuum-v1"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "reference",
+        "description": "Cameras Firmware Update",
+        "updateId": {
+          "provider": "contoso",
+          "name": "Virtual-Vacuum-virtual-camera",
+          "version": "1.2"
+        }
+      }
+    ]
+  },
+  "createdDateTime": "2026-04-30T23:33:49.2699994Z",
+  "manifestVersion": "4.0"
+}

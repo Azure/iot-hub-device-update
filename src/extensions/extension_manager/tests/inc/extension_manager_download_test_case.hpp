@@ -25,6 +25,12 @@ enum class DownloadTestScenario
     UnsupportedContractVersion,
     MissingDownloadProc,
     UnsupportedHashType,
+    // Regression coverage for issue #765: when a file already exists at the
+    // target download path but its hash does not match the manifest, the file
+    // must be removed and a real download must be attempted. The final result
+    // must reflect that download's outcome (never Success-without-download).
+    ExistingFileInvalidHashRedownload,
+    ExistingFileInvalidHashDownloadFails,
 };
 
 class ExtensionManagerDownloadTestCase
@@ -61,6 +67,11 @@ public:
     {
         return expected_result;
     }
+
+    // Accessors for issue #765 regression coverage: the number of times each
+    // mock download proc was invoked during the scenario.
+    int GetSuccessDownloadProcCallCount() const;
+    int GetFailureDownloadProcCallCount() const;
 
 private:
     void InitCommon();

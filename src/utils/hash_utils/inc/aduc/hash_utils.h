@@ -9,12 +9,12 @@
 #define ADUC_HASH_UTILS_H
 
 #include "aduc/c_utils.h"
+#include "aduc/hash_algorithm.h" // for SHAversion (OpenSSL-backed; replaces azure_c_shared_utility/sha.h)
 #include "aduc/types/hash.h"
-
-#include "azure_c_shared_utility/sha.h" // for SHAversion
 
 #include <stdbool.h> // for bool
 #include <stddef.h> // for size_t
+#include <stdint.h> // for uint8_t
 
 EXTERN_C_BEGIN
 

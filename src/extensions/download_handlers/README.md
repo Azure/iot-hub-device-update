@@ -2,7 +2,7 @@
 
 A download handler extension exports the function symbols + signatures defined in [extension_download_handler_export_symbols.h](../inc/aduc/exports/extension_download_handler_export_symbols.h)
 
-When the [v5 update manifest](../../../docs/agent-reference/update-manifest-v5-schema.md) has a `downloadHandlerId` property on an update payload file, then the core agent will see if there exists a registered download handler for that id. If there is, it will load the associated shared library and lookup and call the following exports:
+When the [v5 update manifest](../../../docs/agent-reference/update-manifest-v5-schema.md#what-changed-between-v4-and-v5) has a `downloadHandlerId` property on an update payload file, then the core agent will see if there exists a registered download handler for that id. If there is, it will load the associated shared library and lookup and call the following exports:
 
 - `GetContractInfo`
   - Populates the `contractInfo` out parameter

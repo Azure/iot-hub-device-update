@@ -50,6 +50,11 @@ $ cat /var/lib/adu/extensions/update_content_handlers/microsoft_apt_1/content_ha
     $adu_bin_path -l 2 --extension-type updateContentHandler --extension-id "microsoft/update-manifest:5" --register-extension $adu_extensions_sources_dir/$adu_steps_handler_file
 ```
 
+> **Why three registrations point at the same `libmicrosoft_steps_1.so`:**
+> The unversioned `microsoft/update-manifest` registration is the forward-compatibility default — it is matched when an inbound manifest declares no specific `updateManifestVersion`. The versioned entries `microsoft/update-manifest:4` and `microsoft/update-manifest:5` are matched when the manifest explicitly declares those versions. In 1.3.0 all three are served by the same Steps Handler shared library because the parsing/dispatch logic is identical for v4 and v5; only the per-file `downloadHandler` and `relatedFiles` fields differ in v5 (see [update-manifest-v5-schema.md](update-manifest-v5-schema.md#what-changed-between-v4-and-v5)). If a future version requires divergent handling, the registration table allows you to point a specific version at a different shared library without affecting the others.
+>
+> See [steps-handler.md](steps-handler.md) for the handler's per-phase implementation.
+
 ### Contents of resultant content_handler.json for update manifest handler
 
 ```sh

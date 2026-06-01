@@ -70,7 +70,8 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 | [Troubleshooting Guide](../how-to-troubleshoot-guide.md) | Common issues, log collection, and error code decoding |
 | [Diagnostics Log Collection](../diagnostics-log-collection.md) | Remote log collection and Azure Storage upload |
 | [Error Codes Reference](device-update-agent-extended-result-codes.md) | ExtendedResultCode encoding, facility codes, and result code generation |
-| [Update Manifest v4 Schema](update-manifest-v4-schema.md) | Manifest format for multi-step and proxy updates |
+| [Update Manifest v5 Schema](update-manifest-v5-schema.md) | Manifest format for multi-step and proxy updates |
+| [Steps Handler (Update Manifest Handler)](steps-handler.md) | How the agent processes multi-step manifests, per-component / per-step flow, reboot propagation, and result codes |
 
 ## Quick Navigation
 

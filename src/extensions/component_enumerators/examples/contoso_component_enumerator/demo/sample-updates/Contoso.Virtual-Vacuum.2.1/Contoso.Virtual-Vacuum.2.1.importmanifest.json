@@ -1,0 +1,58 @@
+{
+  "updateId": {
+    "provider": "Contoso",
+    "name": "Virtual-Vacuum",
+    "version": "2.1"
+  },
+  "isDeployable": true,
+  "compatibility": [
+    {
+      "manufacturer": "contoso",
+      "model": "virtual-vacuum-v1"
+    }
+  ],
+  "instructions": {
+    "steps": [
+      {
+        "type": "inline",
+        "description": "Install libcurl4-doc on host device",
+        "handler": "microsoft/apt:1",
+        "files": [
+          "apt-manifest-1.0.json"
+        ],
+        "handlerProperties": {
+          "installedCriteria": "apt-update-test-2.1"
+        }
+      },
+      {
+        "type": "inline",
+        "description": "Install APT update with bad manifest file (failure case)",
+        "handler": "microsoft/apt:1",
+        "files": [
+          "bad-apt-manifest-1.0.json"
+        ],
+        "handlerProperties": {
+          "installedCriteria": "apt-update-test-tree-2.1"
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "filename": "apt-manifest-1.0.json",
+      "sizeInBytes": 132,
+      "hashes": {
+        "sha256": "nACI0Obg4Px/f2f85oOko3bHE0HJ8Vlq3CMafx9g2Bo="
+      }
+    },
+    {
+      "filename": "bad-apt-manifest-1.0.json",
+      "sizeInBytes": 54,
+      "hashes": {
+        "sha256": "wFdRbAzw/lxEty2XuEqRExI5+aiguTR963ad7wuxix0="
+      }
+    }
+  ],
+  "createdDateTime": "2026-04-30T23:33:48.3103268Z",
+  "manifestVersion": "4.0"
+}

@@ -53,3 +53,7 @@ configure_file(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/aducsdk.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
+
+if (ADUC_BUILD_UNIT_TESTS)
+    add_subdirectory (tests)
+endif ()
