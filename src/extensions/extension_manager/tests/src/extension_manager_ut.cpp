@@ -90,6 +90,57 @@ TEST_CASE("ExtensionManager::Download failure should return failure ResultCode a
 }
 
 //
+// Regression tests for issue #765:
+// https://github.com/Azure/iot-hub-device-update/issues/765
+//
+// "Download function returns SUCCESS after deleting file it should have downloaded."
+//
+// When the target file already exists in the work folder but its hash does not
+// match the manifest, ExtensionManager::Download must:
+//   1) remove the stale file, AND
+//   2) actually attempt a fresh download, AND
+//   3) return a result that reflects that download's outcome.
+//
+// Prior to the fix in commit 9eff6612 (PR #856), the code returned ADUC_Result_Success
+// immediately after removing the stale file, without invoking the downloader.
+//
+
+TEST_CASE("ExtensionManager::Download redownloads when existing file has invalid hash (issue #765)")
+{
+    ExtensionManagerDownloadTestCase testCase{ DownloadTestScenario::ExistingFileInvalidHashRedownload };
+    REQUIRE_NOTHROW(testCase.RunScenario());
+
+    ADUC_Result actual_result = testCase.GetActualResult();
+    ADUC_Result expected_result = testCase.GetExpectedResult();
+
+    // The downloader MUST have been invoked exactly once. Before the fix this
+    // count would be 0, because Download returned Success after deleting the
+    // stale file without ever calling the downloader.
+    CHECK(testCase.GetSuccessDownloadProcCallCount() == 1);
+
+    CHECK(actual_result.ResultCode == expected_result.ResultCode);
+    CHECK(actual_result.ExtendedResultCode == expected_result.ExtendedResultCode);
+}
+
+TEST_CASE("ExtensionManager::Download must not return SUCCESS when stale file is deleted and redownload fails (issue #765)")
+{
+    ExtensionManagerDownloadTestCase testCase{ DownloadTestScenario::ExistingFileInvalidHashDownloadFails };
+    REQUIRE_NOTHROW(testCase.RunScenario());
+
+    ADUC_Result actual_result = testCase.GetActualResult();
+    ADUC_Result expected_result = testCase.GetExpectedResult();
+
+    // The downloader MUST have been invoked. Before the fix it was not called
+    // at all and the function erroneously returned Success.
+    CHECK(testCase.GetFailureDownloadProcCallCount() == 1);
+
+    // The result MUST reflect the (failed) download, not the stale-file removal.
+    CHECK(IsAducResultCodeFailure(actual_result.ResultCode));
+    CHECK(actual_result.ResultCode == expected_result.ResultCode);
+    CHECK(actual_result.ExtendedResultCode == expected_result.ExtendedResultCode);
+}
+
+//
 // V2 contract tests
 //
 
