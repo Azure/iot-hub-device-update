@@ -38,8 +38,23 @@ typedef struct tagAducTimer
     pthread_t timerThread;
     pthread_mutex_t mut;
     bool timerThreadRunning;
+    bool threadCreated;
     bool initialized;
 } AducTimer;
+
+/**
+ * Threading contract:
+ *  - Start/Stop are thread-safe with respect to each other and to Update.
+ *  - Stop blocks until the polling thread has exited (up to one
+ *    updateIntervalMs sleep cycle).
+ *  - Start is idempotent: if a previous Start has not been matched by a
+ *    Stop, Start will internally stop and join the previous polling
+ *    thread before starting a new one (the onStop callback is NOT
+ *    invoked in this case, only on an explicit Stop).
+ *  - Signal callbacks (onStart / onStop / onTimeout) MUST NOT call
+ *    Start, Stop, or uninit on the same timer. The timer thread joins
+ *    itself in that case, which is undefined behavior.
+ */
 
 int AducTimer_init(AducTimer* t, AducTimerSignals s, unsigned update_interval_ms);
 void AducTimer_uninit(AducTimer* t);
