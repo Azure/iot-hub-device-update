@@ -990,3 +990,88 @@ TEST_CASE("GetConnectionInfoFromConnectionString X509 paths")
         ADUC_ConnectionInfo_DeAlloc(&info);
     }
 }
+
+//
+// ADO Bug 38069154: classification of IoT Hub connection-status reasons.
+//
+// These tests pin down the policy that drives Connection_Maintenance():
+// transient transport disconnects (NO_NETWORK, NO_PING_RESPONSE,
+// COMMUNICATION_ERROR) must NOT cause the agent to destroy the client
+// handle or restart the host process, because the Azure IoT C SDK has its
+// own exponential-backoff reconnect policy and will recover on the
+// existing handle.
+
+typedef enum tagADUC_ConnReasonClass
+{
+    ADUC_ConnReason_TransientTransport = 0,
+    ADUC_ConnReason_Credential = 1,
+    ADUC_ConnReason_DeviceDisabled = 2,
+    ADUC_ConnReason_Ok = 3,
+    ADUC_ConnReason_Unknown = 4,
+} ADUC_ConnReasonClass;
+
+extern "C" ADUC_ConnReasonClass IoTHub_CommunicationManager_ClassifyConnectionReason(
+    IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason);
+
+TEST_CASE("ADO 38069154: NO_NETWORK is classified as transient transport (no restart)")
+{
+    // The headline behavior the customer's restart loop hinged on: a
+    // socket-level RST (errno=104) surfaced by the SDK as NO_NETWORK must
+    // be treated as something the SDK can recover from on the existing
+    // handle, NOT as a reason to destroy and recreate anything.
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_NO_NETWORK)
+        == ADUC_ConnReason_TransientTransport);
+}
+
+TEST_CASE("ADO 38069154: all transport-level disconnects classify as transient transport")
+{
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_NO_NETWORK)
+        == ADUC_ConnReason_TransientTransport);
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE)
+        == ADUC_ConnReason_TransientTransport);
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR)
+        == ADUC_ConnReason_TransientTransport);
+}
+
+TEST_CASE("ADO 38069154: credential-related reasons classify as credential (reauth path)")
+{
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN)
+        == ADUC_ConnReason_Credential);
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL)
+        == ADUC_ConnReason_Credential);
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED)
+        == ADUC_ConnReason_Credential);
+}
+
+TEST_CASE("ADO 38069154: DEVICE_DISABLED has its own long-backoff class")
+{
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED)
+        == ADUC_ConnReason_DeviceDisabled);
+}
+
+TEST_CASE("ADO 38069154: OK reason classifies as healthy")
+{
+    CHECK(
+        IoTHub_CommunicationManager_ClassifyConnectionReason(IOTHUB_CLIENT_CONNECTION_OK)
+        == ADUC_ConnReason_Ok);
+}
+
+TEST_CASE("ADO 38069154: unrecognized reason classifies as Unknown (conservative)")
+{
+    // Reason codes added to the SDK in the future must default to a
+    // non-destructive bucket; specifically must NOT classify as
+    // Credential (which would destroy and recreate the handle).
+    auto bogus = static_cast<IOTHUB_CLIENT_CONNECTION_STATUS_REASON>(99999);
+    auto cls = IoTHub_CommunicationManager_ClassifyConnectionReason(bogus);
+    CHECK(cls == ADUC_ConnReason_Unknown);
+    CHECK(cls != ADUC_ConnReason_Credential);
+    CHECK(cls != ADUC_ConnReason_DeviceDisabled);
+}

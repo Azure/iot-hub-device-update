@@ -22,10 +22,10 @@ find_package (umqtt REQUIRED)
 target_link_libraries (
     ${target_name}
     PUBLIC aduc::adu_types
-    PRIVATE aduc::adu_core_export_helpers
-            aduc::communication_abstraction
+    PRIVATE aduc::communication_abstraction
             aduc::config_utils
             aduc::c_utils
+            aduc::d2c_messaging
             aduc::eis_utils
             aduc::logging
             aduc::retry_utils

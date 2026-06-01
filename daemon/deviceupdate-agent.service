@@ -5,8 +5,20 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-Restart=always
-RestartSec=5
+# Restart=on-failure (not "always") is required to defeat the
+# self-reinforcing restart loop described in ADO Bug 38069154. Any code
+# path in the agent that does exit(0) intentionally must NOT cause systemd
+# to respawn it: only exit(EXIT_FAILURE) and uncaught crashes do.
+Restart=on-failure
+# Five seconds was too aggressive for a fleet device: a transient cloud
+# disconnect that the SDK can recover from in tens of seconds would cause
+# multiple agent restarts and burn IoT Hub connect-rate quota per device.
+RestartSec=60s
+# Cap the respawn budget to 8 failures per 30 minutes. A device that
+# fails harder than that is genuinely broken and should stop hammering
+# the cloud control plane.
+StartLimitIntervalSec=1800
+StartLimitBurst=8
 User=adu
 Group=adu
 # systemd will try to start the ADU executable 5 times and then give up.

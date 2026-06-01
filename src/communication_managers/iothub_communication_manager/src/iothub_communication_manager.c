@@ -6,11 +6,11 @@
  * Licensed under the MIT License.
  */
 #include "aduc/iothub_communication_manager.h"
-#include "aduc/adu_core_export_helpers.h" // ADUC_MethodCall_RestartAgent
 #include "aduc/adu_types.h"
 #include "aduc/client_handle_helper.h"
 #include "aduc/config_utils.h"
 #include "aduc/connection_string_utils.h" // ConnectionStringUtils_DoesKeyExist
+#include "aduc/d2c_messaging.h" // ADUC_D2C_Messaging_Reset_For_Handle_Refresh
 #include "aduc/https_proxy_utils.h"
 #include "aduc/logging.h"
 #include "aduc/retry_utils.h"
@@ -225,6 +225,74 @@ typedef enum tagADUC_ConnUnauthCategory
     ADUC_ConnUnauth_TransientSasRenewal = 0, /**< Expected SAS token renewal; log at Info. */
     ADUC_ConnUnauth_Broken = 1, /**< Real failure; log at Error. */
 } ADUC_ConnUnauthCategory;
+
+/**
+ * @brief Classification of an IoT Hub connection-status reason for the
+ *        purposes of `Connection_Maintenance()` policy.
+ *
+ * This classifier exists so that the policy decision ("is this a transient
+ * transport disconnect the SDK can recover from on the existing handle, or
+ * is this something that requires us to recreate the client handle?") is a
+ * pure function of the reason code and can be unit-tested directly. See
+ * ADO Bug 38069154 ("ADU Agent — Restart Loop on Transient IoT Hub
+ * Disconnect") for the background. Prior to that fix, the
+ * `IOTHUB_CLIENT_CONNECTION_NO_NETWORK` branch unconditionally called
+ * `ADUC_MethodCall_RestartAgent()` which terminated the host process and
+ * relied on systemd to respawn — producing a self-reinforcing restart loop
+ * on any device experiencing transient TCP RSTs (errno=104) on the
+ * MQTT/TLS socket while a deployment was in progress.
+ */
+typedef enum tagADUC_ConnReasonClass
+{
+    /** Transport-layer disconnect the IoT Hub C SDK can recover from on the
+     *  existing client handle (default retry policy:
+     *  IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER). The agent must
+     *  NOT destroy the handle and must NOT exit. */
+    ADUC_ConnReason_TransientTransport = 0,
+    /** Credential needs to be refreshed; the existing reauth path will
+     *  destroy and recreate the client handle. */
+    ADUC_ConnReason_Credential = 1,
+    /** The device has been administratively disabled on the IoT Hub side.
+     *  Long backoff (existing behavior: 1 hour). */
+    ADUC_ConnReason_DeviceDisabled = 2,
+    /** Reason code indicates the connection is healthy; no maintenance
+     *  action needed. */
+    ADUC_ConnReason_Ok = 3,
+    /** Reason code not recognized by this version of the agent. Treated
+     *  conservatively (transient-style backoff, no restart). */
+    ADUC_ConnReason_Unknown = 4,
+} ADUC_ConnReasonClass;
+
+/**
+ * @brief Classifies an IoT Hub connection-status reason.
+ *
+ * Pure function with no side effects; safe to call from tests.
+ *
+ * @param reason The IOTHUB_CLIENT_CONNECTION_STATUS_REASON reported by the
+ *               SDK in either an AUTHENTICATED or UNAUTHENTICATED callback.
+ * @return The policy class for `Connection_Maintenance()`.
+ */
+ADUC_ConnReasonClass IoTHub_CommunicationManager_ClassifyConnectionReason(
+    IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason)
+{
+    switch (reason)
+    {
+    case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
+    case IOTHUB_CLIENT_CONNECTION_NO_PING_RESPONSE:
+    case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:
+        return ADUC_ConnReason_TransientTransport;
+    case IOTHUB_CLIENT_CONNECTION_EXPIRED_SAS_TOKEN:
+    case IOTHUB_CLIENT_CONNECTION_BAD_CREDENTIAL:
+    case IOTHUB_CLIENT_CONNECTION_RETRY_EXPIRED:
+        return ADUC_ConnReason_Credential;
+    case IOTHUB_CLIENT_CONNECTION_DEVICE_DISABLED:
+        return ADUC_ConnReason_DeviceDisabled;
+    case IOTHUB_CLIENT_CONNECTION_OK:
+        return ADUC_ConnReason_Ok;
+    default:
+        return ADUC_ConnReason_Unknown;
+    }
+}
 
 /**
  * @brief Categorizes an IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED event by reason.
@@ -764,6 +832,8 @@ done:
  */
 static void ADUC_Refresh_IotHub_Connection_SAS_Token()
 {
+    bool handleWasRecreated = false;
+
     pthread_mutex_lock(&s_client_handle_mutex);
     if (g_aduc_client_handle_address == NULL)
     {
@@ -799,10 +869,33 @@ static void ADUC_Refresh_IotHub_Connection_SAS_Token()
         g_iothub_client_handle_changed_callback(*g_aduc_client_handle_address);
     }
 
+    handleWasRecreated = true;
     Log_Info("Successfully re-authenticated the IoT Hub connection.");
 
 done:
     pthread_mutex_unlock(&s_client_handle_mutex);
+
+    // The reset is intentionally invoked AFTER releasing s_client_handle_mutex:
+    //   1. It avoids any future deadlock if a D2C status/completion callback
+    //      ever reaches back into the communication manager (e.g. via
+    //      IoTHub_CommunicationManager_GetHandle()).
+    //   2. The handle pointer (*g_aduc_client_handle_address) captured by
+    //      previously-submitted messages is the address of the global, so it
+    //      remains valid after we release the lock; the next D2C send will
+    //      deref the updated pointer.
+    //
+    // The previous client handle was destroyed above; any reported-state
+    // messages already submitted to the old handle are now stuck in
+    // Waiting_For_Response because the SDK's ack callback queue went away
+    // with it. Replay them on the new handle (or drop them in favor of a
+    // newer pending message of the same type). This is what makes it safe
+    // for the transient-disconnect path in Connection_Maintenance() to stop
+    // restarting the agent on IOTHUB_CLIENT_CONNECTION_NO_NETWORK — see ADO
+    // Bug 38069154 §4.2.
+    if (handleWasRecreated)
+    {
+        ADUC_D2C_Messaging_Reset_For_Handle_Refresh();
+    }
 
     ADUC_ConnectionInfo_DeAlloc(&info);
 }
@@ -857,14 +950,24 @@ static void Connection_Maintenance()
             additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
             break;
         case IOTHUB_CLIENT_CONNECTION_NO_NETWORK:
-            // 1) try to restart agent to prevent empty reported properties in module twin
-            // 2) if restart agent could not be performed, wait for at least 5 minutes to retry.
-            Log_Error("No network.");
-            if (ADUC_MethodCall_RestartAgent() != 0)
-            {
-                additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
-                Log_Error("Agent restart attempt failed.");
-            }
+            // Transient transport-layer disconnect (typically a TCP RST or
+            // ECONNRESET on the MQTT/TLS socket). The Azure IoT C SDK has
+            // its own reconnect policy (default
+            // IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER) and will
+            // attempt to reconnect on the existing client handle as long as
+            // IoTHub_CommunicationManager_DoWork() keeps invoking
+            // ClientHandle_DoWork(). Do NOT destroy the handle and do NOT
+            // restart the host process: doing so was the cause of ADO Bug
+            // 38069154 (single transient socket reset → self-reinforcing
+            // systemd restart loop while a deployment was in progress).
+            //
+            // The original "prevent empty reported properties in module
+            // twin" concern that motivated the restart is now handled
+            // properly by ADUC_D2C_Messaging_Reset_For_Handle_Refresh(),
+            // which is invoked from the credential-reauth path that
+            // actually destroys and recreates the client handle.
+            Log_Warn("No network. Treating as transient transport disconnect; SDK will reconnect.");
+            additionalDelayInSeconds = TIME_SPAN_FIVE_MINUTES_IN_SECONDS;
             break;
 
         case IOTHUB_CLIENT_CONNECTION_COMMUNICATION_ERROR:
