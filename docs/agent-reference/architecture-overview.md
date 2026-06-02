@@ -390,35 +390,35 @@ sequenceDiagram
     participant Shell as adu-shell
     participant Inst as Installer Process
 
-    Note over Core: main() → IoTHub_CommunicationManager_Init<br/>→ ADUC_DeviceClient_Create
-    Core->>Hub: ClientHandle_CreateFromConnectionString / X.509
+    Note over Core: main -> IoTHub_CommunicationManager_Init -> ADUC_DeviceClient_Create
+    Core->>Hub: ClientHandle_CreateFromConnectionString or X.509
     Hub-->>Core: connection established
-    Core->>Hub: PnP reported: deviceProperties + compatPropertyNames
+    Core->>Hub: PnP reported - deviceProperties + compatPropertyNames
 
-    Svc->>Hub: set desired { workflow.action=3,<br/>updateManifest (JWS),<br/>updateManifestSignature, fileUrls,<br/>rootKeyPackageUrl }
+    Svc->>Hub: set desired - workflow.action=3, updateManifest JWS, signature, fileUrls, rootKeyPackageUrl
     Hub->>Core: PnP PropertyUpdateCallback
-    Core->>Core: OrchestratorUpdateCallback<br/>→ ADUC_Workflow_HandlePropertyUpdate
-    Core->>Core: rootkey verify · JWS verify ·<br/>manifest-hash check (workflow_utils.c:904-985)
-    Core->>Hub: PnP reported: state=6 (DeploymentInProgress)
+    Core->>Core: OrchestratorUpdateCallback -> ADUC_Workflow_HandlePropertyUpdate
+    Core->>Core: rootkey verify, JWS verify, manifest-hash check (workflow_utils.c 904-985)
+    Core->>Hub: PnP reported - state 6 (DeploymentInProgress)
 
-    Core->>Ext: LoadUpdateContentHandlerExtension<br/>("microsoft/update-manifest:5")<br/>→ ContentHandler::IsInstalled
+    Core->>Ext: LoadUpdateContentHandlerExtension microsoft/update-manifest 5 -> ContentHandler IsInstalled
     Ext-->>Core: NotInstalled
-    Core->>Ext: ContentHandler::Download(workflowData)
-    Ext->>DL: ExtensionManager::Download(fileEntity)
-    Note over DL: try DownloadHandler.id first<br/>(microsoft/delta:1) — fall back<br/>to full download
+    Core->>Ext: ContentHandler Download workflowData
+    Ext->>DL: ExtensionManager Download fileEntity
+    Note over DL: try DownloadHandler.id first (microsoft/delta 1), fall back to full download
     DL-->>Ext: file in sandbox + SHA-256 verified
-    Ext-->>Core: ADUC_Result(Download_Success)
+    Ext-->>Core: ADUC_Result Download_Success
 
-    Core->>Ext: ContentHandler::Backup / Install
-    Ext->>Shell: ADUC_LaunchChildProcess(adu-shell, args)<br/>fork+execvp; --update-type --update-action
-    Shell->>Inst: fork+execvp apt-get / user-script
+    Core->>Ext: ContentHandler Backup / Install
+    Ext->>Shell: ADUC_LaunchChildProcess adu-shell args - fork+execvp, --update-type --update-action
+    Shell->>Inst: fork+execvp apt-get or user-script
     Inst-->>Shell: exit code + stdout/stderr
     Shell-->>Ext: exit code + captured output
-    Ext->>Core: workflow_set_result_details(...) +<br/>return ADUC_Result
+    Ext->>Core: workflow_set_result_details + return ADUC_Result
 
-    Core->>Ext: ContentHandler::Apply (no-op for Steps Handler<br/>— per-step apply ran inside Install)
-    Core->>Core: SetInstalledUpdateIdAndGoToIdle(updateId)
-    Core->>Hub: PnP reported: state=0 (Idle) +<br/>installedUpdateId="{provider,name,version}" +<br/>lastInstallResult
+    Core->>Ext: ContentHandler Apply (no-op for Steps Handler, per-step apply ran inside Install)
+    Core->>Core: SetInstalledUpdateIdAndGoToIdle updateId
+    Core->>Hub: PnP reported - state 0 (Idle) + installedUpdateId provider.name.version + lastInstallResult
     Hub-->>Svc: deployment Succeeded
 ```
 
