@@ -234,15 +234,21 @@ package-manager commands, user scripts, and reboot — is delegated to a
 **separate `adu-shell` child process**.
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {
-  'primaryColor': '#ffffff', 'primaryTextColor': '#1a1a1a',
-  'primaryBorderColor': '#333333', 'lineColor': '#333333',
-  'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e8e8e8',
-  'mainBkg': '#ffffff', 'nodeBorder': '#333333',
-  'clusterBkg': '#f5f5f5', 'clusterBorder': '#333333',
-  'titleColor': '#1a1a1a', 'edgeLabelBackground': '#ffffff',
-  'fontFamily': 'monospace', 'fontSize': '13px'
-}}}%%
+%%{init: {
+  'theme': 'base',
+  'themeCSS': 'svg { background-color: #ffffff !important; } .node rect, .node circle, .node ellipse, .node polygon, .node path { fill: #ffffff !important; stroke: #333333 !important; } .cluster rect { fill: #f5f5f5 !important; stroke: #333333 !important; } .nodeLabel, .nodeLabel p, .cluster-label, .cluster-label p { color: #1a1a1a !important; fill: #1a1a1a !important; } .edgePath .path { stroke: #333333 !important; } .arrowheadPath { fill: #333333 !important; stroke: #333333 !important; } .edgeLabel, .edgeLabel p { background-color: #ffffff !important; color: #1a1a1a !important; fill: #1a1a1a !important; }',
+  'themeVariables': {
+    'background': '#ffffff',
+    'primaryColor': '#ffffff', 'primaryTextColor': '#1a1a1a',
+    'primaryBorderColor': '#333333', 'lineColor': '#333333',
+    'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e8e8e8',
+    'mainBkg': '#ffffff', 'nodeBorder': '#333333',
+    'clusterBkg': '#f5f5f5', 'clusterBorder': '#333333',
+    'titleColor': '#1a1a1a', 'edgeLabelBackground': '#ffffff',
+    'nodeTextColor': '#1a1a1a',
+    'fontFamily': 'monospace', 'fontSize': '13px'
+  }
+}}%%
 flowchart LR
   subgraph Main[" "]
     subgraph AgentProc["ADU Agent process (AducIotAgent)"]
@@ -372,15 +378,27 @@ A narrative walkthrough of a deployment from the moment the agent process starts
 ### Happy-path sequence
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {
-  'primaryColor': '#ffffff', 'primaryTextColor': '#1a1a1a',
-  'primaryBorderColor': '#333333', 'lineColor': '#333333',
-  'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e8e8e8',
-  'mainBkg': '#ffffff', 'nodeBorder': '#333333',
-  'clusterBkg': '#f5f5f5', 'clusterBorder': '#333333',
-  'titleColor': '#1a1a1a', 'edgeLabelBackground': '#ffffff',
-  'fontFamily': 'monospace', 'fontSize': '13px'
-}}}%%
+%%{init: {
+  'theme': 'base',
+  'themeCSS': 'svg { background-color: #ffffff !important; } .actor { fill: #ffffff !important; stroke: #333333 !important; } text.actor>tspan { fill: #1a1a1a !important; stroke: none !important; } line { stroke: #333333 !important; } .messageLine0, .messageLine1 { stroke: #1a1a1a !important; } text.messageText { fill: #1a1a1a !important; stroke: none !important; } .noteText, .noteText>tspan { fill: #1a1a1a !important; stroke: none !important; } .note { fill: #fff8c4 !important; stroke: #333333 !important; } .labelBox { fill: #ffffff !important; stroke: #333333 !important; } .labelText, .labelText>tspan { fill: #1a1a1a !important; stroke: none !important; }',
+  'themeVariables': {
+    'background': '#ffffff',
+    'primaryColor': '#ffffff', 'primaryTextColor': '#1a1a1a',
+    'primaryBorderColor': '#333333', 'lineColor': '#333333',
+    'secondaryColor': '#f5f5f5', 'tertiaryColor': '#e8e8e8',
+    'mainBkg': '#ffffff', 'nodeBorder': '#333333',
+    'clusterBkg': '#f5f5f5', 'clusterBorder': '#333333',
+    'titleColor': '#1a1a1a', 'edgeLabelBackground': '#ffffff',
+    'actorBkg': '#ffffff', 'actorBorder': '#333333', 'actorTextColor': '#1a1a1a', 'actorLineColor': '#333333',
+    'signalColor': '#1a1a1a', 'signalTextColor': '#1a1a1a',
+    'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#333333', 'labelTextColor': '#1a1a1a',
+    'loopTextColor': '#1a1a1a',
+    'noteBkgColor': '#fff8c4', 'noteTextColor': '#1a1a1a', 'noteBorderColor': '#333333',
+    'activationBkgColor': '#f5f5f5', 'activationBorderColor': '#333333',
+    'sequenceNumberColor': '#ffffff',
+    'fontFamily': 'monospace', 'fontSize': '13px'
+  }
+}}%%
 sequenceDiagram
     participant Svc as ADU Service
     participant Hub as IoT Hub
