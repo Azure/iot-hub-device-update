@@ -650,3 +650,128 @@ TEST_CASE("LinuxPlatformLayer destructor blocks until an in-flight worker finish
     CHECK(unregisterReturned.load() == true);
     CHECK(probe.completions.load() == 1);
 }
+
+//
+// Regression for re-entrant TrackWorker (#xxx - APT deployment SIGABRT).
+//
+// Symptom on the device: every workflow attempt crashed with
+//   "terminate called without an active exception" -> SIGABRT
+// immediately after a download step's worker thread completed.
+//
+// Root cause: workflow_engine's WorkCompletionCallback synchronously
+// transitions to the next workflow step on the worker thread itself. That
+// next step's platform callback creates a new std::thread and calls
+// TrackWorker(std::move(worker)). The previously-tracked _activeWorker IS
+// the current thread; std::thread::join() on self throws
+// resource_deadlock_would_occur. The exception was caught by the catch
+// (std::exception) handler in InstallCallback, but the local std::thread in
+// the catching scope was still joinable -> its destructor called
+// std::terminate.
+//
+// This test simulates the workflow engine's behaviour by having the
+// WorkCompletionCallback re-enter the platform layer on the worker thread,
+// invoking a second async callback. With the fix in TrackWorker, the prior
+// worker is detached (not joined) when it is the current thread, so the
+// second callback returns InProgress without throwing and the process does
+// not terminate.
+//
+namespace
+{
+struct ReentrantTransitionProbe
+{
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::atomic<int> firstCompletions{ 0 };
+    std::atomic<int> secondCompletions{ 0 };
+    std::atomic<int> reentrantResultCode{ -999 };
+    std::atomic<int> reentrantExtendedResultCode{ -999 };
+    std::atomic<bool> reentrantCallReturnedInProgress{ false };
+    std::atomic<bool> reentrantCallThrew{ false };
+
+    ADUC_UpdateActionCallbacks callbacks{};
+    ADUC_WorkflowData workflowData{};
+    ADUC_WorkCompletionData secondCompletionData{};
+
+    static void FirstOnComplete(const void* token, ADUC_Result /*result*/, bool /*isAsync*/)
+    {
+        auto* self =
+            const_cast<ReentrantTransitionProbe*>(static_cast<const ReentrantTransitionProbe*>(token));
+        {
+            std::lock_guard<std::mutex> lock(self->mtx);
+            ++self->firstCompletions;
+        }
+        self->cv.notify_all();
+
+        // Synchronously invoke the next async callback on this very thread,
+        // mirroring what ADUC_Workflow_AutoTransitionWorkflow does.
+        try
+        {
+            ADUC_Result r = self->callbacks.InstallCallback(
+                self->callbacks.PlatformLayerHandle,
+                &self->secondCompletionData,
+                &self->workflowData);
+            self->reentrantResultCode.store(r.ResultCode);
+            self->reentrantExtendedResultCode.store(r.ExtendedResultCode);
+            self->reentrantCallReturnedInProgress.store(r.ResultCode == ADUC_Result_Install_InProgress);
+        }
+        catch (...)
+        {
+            self->reentrantCallThrew.store(true);
+        }
+    }
+
+    static void SecondOnComplete(const void* token, ADUC_Result /*result*/, bool /*isAsync*/)
+    {
+        auto* self =
+            const_cast<ReentrantTransitionProbe*>(static_cast<const ReentrantTransitionProbe*>(token));
+        {
+            std::lock_guard<std::mutex> lock(self->mtx);
+            ++self->secondCompletions;
+        }
+        self->cv.notify_all();
+    }
+
+    bool WaitForSecondCompletion(std::chrono::milliseconds timeout)
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        return cv.wait_for(lock, timeout, [this] { return secondCompletions.load() >= 1; });
+    }
+};
+} // namespace
+
+TEST_CASE("LinuxPlatformLayer TrackWorker re-entered from worker thread does not terminate")
+{
+    ReentrantTransitionProbe probe;
+    REQUIRE(IsAducResultCodeSuccess(
+        ADUC_RegisterPlatformLayer(&probe.callbacks, 0, nullptr).ResultCode));
+
+    probe.workflowData.WorkflowHandle = nullptr; // fast-fail in GetUpdateManifestHandler
+
+    ADUC_WorkCompletionData firstCompletionData{};
+    firstCompletionData.WorkCompletionCallback = &ReentrantTransitionProbe::FirstOnComplete;
+    firstCompletionData.WorkCompletionToken = &probe;
+
+    probe.secondCompletionData.WorkCompletionCallback = &ReentrantTransitionProbe::SecondOnComplete;
+    probe.secondCompletionData.WorkCompletionToken = &probe;
+
+    // First async step (Download). Its worker will, on completion, synchronously
+    // invoke a second async step (Install) on the same thread.
+    ADUC_Result first = probe.callbacks.DownloadCallback(
+        probe.callbacks.PlatformLayerHandle, &firstCompletionData, &probe.workflowData);
+    REQUIRE(first.ResultCode == ADUC_Result_Download_InProgress);
+
+    // Both worker completions must fire without process termination.
+    REQUIRE(probe.WaitForSecondCompletion(std::chrono::seconds(10)));
+    CHECK(probe.firstCompletions.load() == 1);
+    CHECK(probe.secondCompletions.load() == 1);
+
+    // The re-entrant InstallCallback must have returned InProgress (i.e. the
+    // worker thread was spawned and TrackWorker succeeded), and must not have
+    // thrown back into FirstOnComplete.
+    INFO("reentrant ResultCode=" << probe.reentrantResultCode.load()
+         << " ERC=0x" << std::hex << probe.reentrantExtendedResultCode.load());
+    CHECK(probe.reentrantCallReturnedInProgress.load() == true);
+    CHECK(probe.reentrantCallThrew.load() == false);
+
+    ADUC_Unregister(probe.callbacks.PlatformLayerHandle);
+}
