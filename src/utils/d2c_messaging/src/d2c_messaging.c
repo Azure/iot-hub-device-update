@@ -341,6 +341,88 @@ void ADUC_D2C_Messaging_DoWork()
     }
 }
 
+void ADUC_D2C_Messaging_Reset_For_Handle_Refresh(void)
+{
+    pthread_mutex_lock(&s_pendingMessageStoreMutex);
+    if (!s_core_initialized)
+    {
+        pthread_mutex_unlock(&s_pendingMessageStoreMutex);
+        return;
+    }
+
+    // Small grace period before the demoted message is resent on the new
+    // client handle. The IoT Hub C SDK creates the client object
+    // synchronously but performs the actual MQTT/TLS connect and
+    // authenticate asynchronously inside its own DoWork loop. Pushing the
+    // first replay attempt a few seconds into the future avoids racing the
+    // SDK's first authentication and keeps the transport function from
+    // potentially marking the message as Failed if a not-yet-connected
+    // SendReportedState ever returned non-OK on some builds of the SDK.
+    // The SDK's own queueing usually masks this, so this is defensive.
+    const time_t now = GetTimeSinceEpochInSeconds();
+    const time_t replayAt = now + 5; // seconds
+
+    // Stale-callback note: the dedupe branch below completes the in-flight
+    // WFR message via OnMessageProcessingCompleted(), which zeroes
+    // ctx->message. The SDK callback registered for that message was
+    // handed only ctx (no per-send token), so in principle a late callback
+    // could mutate the next message that lands in ctx. In the actual ADO
+    // 38069154 scenario this is unreachable: the only situation where a
+    // WFR message survives long enough to need this reset is when the
+    // underlying IoT Hub client handle has been destroyed, which tears
+    // down the SDK ack queue and prevents any further callbacks for
+    // messages sent through the old handle. The response handler also
+    // already checks `ctx->message.content == NULL` and bails, which
+    // covers the window between completion-as-Replaced here and the next
+    // DoWork tick that promotes the pending replacement.
+
+    for (int i = 0; i < ADUC_D2C_Message_Type_Max; i++)
+    {
+        ADUC_D2C_Message_Processing_Context* ctx = &s_messageProcessingContext[i];
+        if (!ctx->initialized)
+        {
+            continue;
+        }
+
+        pthread_mutex_lock(&ctx->mutex);
+
+        // Only WFR messages are at risk of being stuck after a client-handle
+        // recreate: the SDK's ack callback that would normally drive them to
+        // Success/Failed is torn down with the old handle. Messages in any
+        // other state will be advanced by ProcessMessage() on its own.
+        if (ctx->message.content != NULL
+            && ctx->message.status == ADUC_D2C_Message_Status_Waiting_For_Response)
+        {
+            if (s_pendingMessageStore[i].content != NULL)
+            {
+                // A newer message of the same type is already queued. Drop
+                // the in-flight one (it carries stale content) and let
+                // ProcessMessage() promote the pending one on the next
+                // tick. This is the "dedupe so only the latest state per
+                // message type is replayed" path.
+                Log_Info(
+                    "Handle refresh: dropping in-flight WFR message in favor of newer pending (t:%d).",
+                    i);
+                OnMessageProcessingCompleted(&ctx->message, ADUC_D2C_Message_Status_Replaced);
+            }
+            else
+            {
+                // No newer message: demote the in-flight one back to
+                // In_Progress so it is resent on the new handle on the next
+                // ADUC_D2C_Messaging_DoWork() tick after the grace period.
+                Log_Info(
+                    "Handle refresh: demoting WFR message to In_Progress for replay (t:%d).", i);
+                SetMessageStatus(&ctx->message, ADUC_D2C_Message_Status_In_Progress);
+                ctx->nextRetryTimeStampEpoch = replayAt;
+            }
+        }
+
+        pthread_mutex_unlock(&ctx->mutex);
+    }
+
+    pthread_mutex_unlock(&s_pendingMessageStoreMutex);
+}
+
 /**
  * @brief Processes the message.
  * @param message_processing_context The message processing context.

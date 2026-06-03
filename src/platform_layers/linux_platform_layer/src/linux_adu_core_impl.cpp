@@ -59,6 +59,43 @@ std::unique_ptr<LinuxPlatformLayer> LinuxPlatformLayer::Create()
 
 LinuxPlatformLayer::~LinuxPlatformLayer()
 {
+    // Signal any in-flight worker that a shutdown is happening so cancellable
+    // operations (Download/Install/Apply) can return early, then wait for the
+    // worker to finish. This prevents the detached-thread use-after-free of
+    // workCompletionData / workflowData reported in issue #858.
+    //
+    // We must NOT call std::thread::join() while holding _activeWorkerMutex,
+    // because a worker thread that is in the middle of a synchronous workflow
+    // transition can call TrackWorker() and block on that same mutex; if we
+    // held the mutex and waited for the worker, both threads would wait
+    // forever. Instead, atomically take ownership of the active worker under
+    // the lock, drop the lock, join outside the lock, and loop in case the
+    // worker installed a successor (e.g. Download -> Install) during the join.
+    // If the worker we want to join is the current thread (which can only
+    // happen if ~LinuxPlatformLayer is invoked from within a worker callback,
+    // e.g. during teardown triggered by the workflow itself), detach rather
+    // than deadlock.
+    _IsCancellationRequested = true;
+
+    while (true)
+    {
+        std::thread workerToJoin;
+        {
+            std::lock_guard<std::mutex> lock(_activeWorkerMutex);
+            if (!_activeWorker.joinable())
+            {
+                break;
+            }
+            if (_activeWorker.get_id() == std::this_thread::get_id())
+            {
+                _activeWorker.detach();
+                break;
+            }
+            workerToJoin = std::move(_activeWorker);
+        }
+        workerToJoin.join();
+    }
+
     ExtensionManager::Uninit();
 }
 

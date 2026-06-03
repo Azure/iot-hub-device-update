@@ -172,6 +172,47 @@ void ADUC_D2C_Messaging_Uninit();
 void ADUC_D2C_Messaging_DoWork();
 
 /**
+ * @brief Reset in-flight D2C messages so they are replayed after the
+ *        IoT Hub client handle has been destroyed and recreated.
+ *
+ * Must be called by the connection-management layer immediately after the
+ * `ADUC_ClientHandle` referenced by previously-sent messages
+ * (via `cloudServiceHandle`) is replaced with a freshly authenticated one,
+ * and BEFORE the agent submits any new messages on the new handle.
+ *
+ * Rationale: when `ClientHandle_SendReportedState` returns OK we transition
+ * the message to `Waiting_For_Response` and the SDK takes ownership of the
+ * eventual ack callback. If the underlying client handle is then destroyed
+ * (credential reauth path), the SDK's ack queue is torn down with it and
+ * the message remains stuck in `Waiting_For_Response` forever — which is
+ * the "empty reported properties in module twin" failure mode that
+ * originally motivated the (incorrect) process-restart reflex on
+ * `IOTHUB_CLIENT_CONNECTION_NO_NETWORK`. See ADO Bug 38069154.
+ *
+ * Behavior, per message processing context:
+ *   - If the current message is in `Waiting_For_Response` AND a newer
+ *     pending message of the same type is queued (the typical case during
+ *     a long disconnect with new reported-state updates piling up), the
+ *     in-flight message is completed as `Replaced`. The pending message
+ *     will be picked up on the next `ADUC_D2C_Messaging_DoWork()` tick.
+ *     This is the dedupe-by-message-type behavior the cross-component
+ *     "two queued updates of the same type collapse to one replay (the
+ *     latest)" requirement.
+ *   - If the current message is in `Waiting_For_Response` AND no newer
+ *     pending message exists, the message status is demoted to
+ *     `In_Progress` and `nextRetryTimeStampEpoch` is reset to a small
+ *     number of seconds in the future (a defensive grace period so the
+ *     replay does not race the new client handle's MQTT/TLS authentication
+ *     inside the IoT Hub C SDK), causing it to be resent by the next
+ *     `ADUC_D2C_Messaging_DoWork()` tick scheduled after that delay.
+ *   - Messages already in `Pending`, `In_Progress`, `Success`, `Failed`,
+ *     `Replaced`, `Canceled` or `Max_Retries_Reached` are left untouched.
+ *
+ * Idempotent and cheap; safe to call when no messages are in flight.
+ */
+void ADUC_D2C_Messaging_Reset_For_Handle_Refresh(void);
+
+/**
  * @brief Submits the message to messaging utility queue. If the message for specified @p type already exist, it will be replaced by the latest message.
  *
  *        IMPORTANT: The implementation of @p responseCallback, @p completedCallback, and @p statusChangedCallback MUST NOT

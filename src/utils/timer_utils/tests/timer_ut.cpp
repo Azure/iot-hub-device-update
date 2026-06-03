@@ -18,6 +18,19 @@ bool _g_start_called = false;
 bool _g_stop_called = false;
 bool _g_timeout_called = false;
 
+// Bounded poll for a flag set by the timer's polling thread. The thread
+// wakes every updateIntervalMs (50 in these tests), so a fixed usleep
+// shorter than that interval is racy. Poll up to ~500ms in 5ms slices
+// before giving up so the assertion still fails if the callback truly
+// never fires (e.g. under a real regression).
+static void s_wait_for_flag(volatile bool* flag)
+{
+    for (int i = 0; i < 100 && !*flag; ++i)
+    {
+        usleep(5 * 1000);
+    }
+}
+
 static void s_reset_test_metrics()
 {
     _g_start_called = false;
@@ -64,6 +77,7 @@ TEST_CASE("AducTimer callback on timeout", "[timer]")
     AducTimer_Start(&t, 200);
     usleep(250 * 1000);
     CHECK(_g_start_called);
+    s_wait_for_flag(&_g_timeout_called);
     CHECK(_g_timeout_called);
 
     AducTimer_Stop(&t);
@@ -94,7 +108,7 @@ TEST_CASE("AducTimer reuse", "[timer]")
     AducTimer_Start(&t, 100);
     CHECK(_g_start_called);
 
-    usleep(125 * 1000);
+    s_wait_for_flag(&_g_timeout_called);
     CHECK(_g_timeout_called);
 
     AducTimer_Stop(&t);
@@ -108,7 +122,7 @@ TEST_CASE("AducTimer reuse", "[timer]")
     s_reset_test_metrics();
     AducTimer_Start(&t, 25);
     CHECK(_g_start_called);
-    usleep(30 * 1000);
+    s_wait_for_flag(&_g_timeout_called);
     CHECK(_g_timeout_called);
 }
 
