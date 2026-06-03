@@ -11,9 +11,6 @@ You can use [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issue
 * Need support?  
 Please document your question on [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) thoroughly, attach logs and give repro steps, so that we can help you unblock as soon as possible. 
 
-* Customers with an [Azure support](https://azure.microsoft.com/support/options/) plan can open an [Azure support ticket](https://azure.microsoft.com/support/create-ticket/).
-We recommend this option if your problem requires immediate attention.
-
 ## Microsoft Support Policy  
 
 Support for IoT Hub Device Update is limited to the resources listed above.
