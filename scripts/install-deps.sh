@@ -54,7 +54,7 @@ use_ssh=false
 
 install_aduc_deps=false
 install_azure_iot_sdk=false
-azure_sdk_ref=LTS_08_2023
+azure_sdk_ref=LTS_03_2025
 
 # ADUC Diagnostics Deps
 azure_storage_sdk_branch_ref=main

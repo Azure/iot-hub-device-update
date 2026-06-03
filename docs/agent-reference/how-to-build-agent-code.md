@@ -81,7 +81,7 @@ These major components are built from source during the build process:
 #### Azure IoT C SDK
 - **Repository**: [Azure/azure-iot-sdk-c](https://github.com/Azure/azure-iot-sdk-c)
 - **Purpose**: Connect to IoT Hub and call Azure IoT Plug and Play APIs
-- **Default Branch**: `LTS_08_2023`
+- **Default Branch**: `LTS_03_2025`
 - **Required For**: All Azure IoT Hub communication (MQTT, device authentication, telemetry)
 - **Customization**: Use `--azure-iot-sdk-ref <branch/tag>` to specify version
 
@@ -309,7 +309,7 @@ The [`scripts/install-deps.sh`](../../scripts/install-deps.sh) script provides e
 
 | Option | Purpose | Default Version | Customization |
 |--------|---------|-----------------|---------------|
-| `--install-azure-iot-sdk` | Azure IoT C SDK | `LTS_08_2023` | `--azure-iot-sdk-ref <branch>` |
+| `--install-azure-iot-sdk` | Azure IoT C SDK | `LTS_03_2025` | `--azure-iot-sdk-ref <branch>` |
 | `--install-do` | Delivery Optimization SDK | `develop` | `--do-ref <branch/tag>` |
 | `--install-azure-storage-sdk` | Azure SDK for C++ | Latest | For blob storage features |
 | `--install-catch2` | Testing framework | `v2.13.9` | `--catch2-ref <version>` |
@@ -1118,7 +1118,7 @@ All platforms: cmake 3.23.2  # Guaranteed compatibility
 
 The ADU project builds several key dependencies from source for similar cross-platform reliability:
 
-#### Azure IoT C SDK (LTS_08_2023)
+#### Azure IoT C SDK (LTS_03_2025)
 - **Reason**: Specific LTS branch with known stability
 - **Benefit**: Consistent Azure connectivity across all platforms
 - **Alternative**: System packages often have different versions/patches
