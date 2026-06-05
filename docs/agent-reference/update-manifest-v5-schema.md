@@ -33,11 +33,33 @@ The structural definitions for `updateId`, `compatibility`, `instructions`, `inl
 | ---------- | -- | -- |
 | `manifestVersion` | `"4.0"` | `"5.0"` |
 | `files[].downloadHandler` (object with `id`, e.g. `"microsoft/delta:1"`) | ❌ Not supported | ✅ Optional — opts a payload file into a registered Download Handler so the agent can produce the payload from another source instead of downloading it in full |
-| `files[].relatedFiles` (array of auxiliary files with their own `filename`, `sizeInBytes`, `hashes`, and freeform `properties`) | ❌ Not supported | ✅ Optional — used to declare additional payloads consumed by the download handler (for example, the delta file plus `microsoft.sourceFileHashAlgorithm` / `microsoft.sourceFileHash` properties used by the [Microsoft Delta Download Handler](../../src/extensions/download_handlers/plugin_examples/microsoft_delta_download_handler/README.md)) |
+| `files[].relatedFiles` (**JSON object/map** keyed by related-file id; each value has its own `fileName`, `sizeInBytes`, `hashes`, and **required** freeform `properties`) | ❌ Not supported | ✅ Optional — declares additional payloads consumed by the download handler (for example, the delta file plus `microsoft.sourceFileHashAlgorithm` / `microsoft.sourceFileHash` properties used by the [Microsoft Delta Download Handler](./delta-download-handler.md)) |
 
 In short, **v5 = v4 plus the ability to attach a Download Handler and `relatedFiles` to any payload file**. Existing v4 manifests remain valid as v5 manifests after bumping `manifestVersion` to `"5.0"`.
 
-See [Download Handler Extensibility Point](../../src/extensions/download_handlers/README.md) and [Device Update Agent Extensibility Points](./device-update-agent-extensibility-points.md#download-handler-extension-type) for how the agent consumes these v5 fields at runtime.
+See [Download Handler Extensibility Point](../../src/extensions/download_handlers/README.md), [Device Update Agent Extensibility Points](./device-update-agent-extensibility-points.md#download-handler-extension-type), and the [Microsoft Delta Download Handler runtime deep-dive](./delta-download-handler.md) for how the agent consumes these v5 fields at runtime.
+
+### `relatedFiles` shape and required fields
+
+The `relatedFiles` field on a `files.<id>` entry is a **JSON object keyed by related-file id**, not an array. Each value must include:
+
+| Field | Required by parser | Notes |
+|---|---|---|
+| `fileName` | yes | Filename used under the sandbox work folder (`workflow_utils.c:503` + `:257-258`). |
+| `sizeInBytes` | yes | Validated by content downloader after fetch. |
+| `hashes` | yes — missing ⇒ parse fail (`workflow_utils.c:507-512`) | Map of algorithm → hash. The download handler verifies this against the downloaded related-file payload. |
+| `properties` | yes — missing ⇒ parse fail (`workflow_utils.c:523-528`) | Free-form map of strings. The download handler implementation decides which property names it consumes — they are opaque to the agent core. |
+
+The related-file id (the object key) **must** appear in the parent update's `fileUrls` map; otherwise parsing fails (`workflow_utils.c:489-499`).
+
+Property names consumed by the Microsoft Delta Download Handler:
+
+| Property name | Required | Used for |
+|---|---|---|
+| `microsoft.sourceFileHash` | yes | Cache lookup key — must equal the SHA-256 (or other algorithm) of the device's cached source full payload. |
+| `microsoft.sourceFileHashAlgorithm` | yes | Cache lookup key — algorithm name, e.g. `"sha256"`. |
+
+Any other property name is informational and not consumed by the handler.
 
 ## Multi-Step Ordered Execution (MSOE) Support
 

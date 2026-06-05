@@ -1,99 +1,62 @@
 # Download Handler Extensibility Point
 
-A download handler extension exports the function symbols + signatures defined in [extension_download_handler_export_symbols.h](../inc/aduc/exports/extension_download_handler_export_symbols.h)
+A download handler extension is a `.so` that exports the function symbols + signatures defined in [extension_download_handler_export_symbols.h](../inc/aduc/exports/extension_download_handler_export_symbols.h).
 
-When the [v5 update manifest](../../../docs/agent-reference/update-manifest-v5-schema.md#what-changed-between-v4-and-v5) has a `downloadHandlerId` property on an update payload file, then the core agent will see if there exists a registered download handler for that id. If there is, it will load the associated shared library and lookup and call the following exports:
+When the [v5 update manifest](../../../docs/agent-reference/update-manifest-v5-schema.md#what-changed-between-v4-and-v5) has a `downloadHandler.id` property on an update payload file, the core agent checks the on-disk download-handler registry for a `.so` registered under that id. If one is found, the agent loads it and calls the following exports during the **Download** phase:
 
-- `GetContractInfo`
-  - Populates the `contractInfo` out parameter
-- `Initialize`
-  - Initializes the handler
-- `ProcessUpdate`
-  - returns `ADUC_Result_Download_Handler_SuccessSkipDownload` if it is able to produce the update payload in the download sandbox work folder; otherwise, it returns a ResultCode of `ADUC_Result_DownloadHandler_RequiredFullDownload` or a failure ResultCode.
+| Export | When called | Required? |
+|---|---|---|
+| `Initialize(logLevel)` | At plugin load (plugin ctor, `download_handler_plugin.cpp:34-39`) | Recommended |
+| `GetContractInfo(out)` | Before first `ProcessUpdate` (`extension_manager_helper.cpp:71`) | **Required** — contract version is enforced |
+| `ProcessUpdate(workflow, fileEntity, targetPath)` | For each file with a matching `downloadHandler.id` (`extension_manager_helper.cpp:106`) | **Required** |
+| `OnUpdateWorkflowCompleted(workflow)` | After a successful Apply (`agent_workflow.c:1257`) | Recommended — handlers that need to retain payloads on success use this |
+| `CacheSourceUpdate(workflow)` | Immediately before reboot/agent-restart triggered by Apply (`agent_workflow.c:1750, 1798`) | Optional — `download_handler_plugin.cpp:181-196` returns success when the export is absent |
+| `Cleanup()` | At plugin unload (plugin dtor) | Recommended |
 
-The Agent will not download the update payload if it receives `ADUC_Result_Download_Handler_SuccessSkipDownload` from `ProcessUpdate` call; otherwise, it will continue with a fallback download of the update payload as though the downloadHandlerId were not there.
+### `ProcessUpdate` return contract
 
-After successful `Install` and `Apply`, the agent will call `OnUpdateWorkflowCompleted` symbol on the DownloadHandler.
+`ProcessUpdate` returns `ADUC_Result`. The agent reacts to three buckets (`extension_manager.cpp:973-1011`):
 
-When Agent shuts down, it will call `Cleanup()` on the DownloadHandler Extension.
+- `ADUC_Result_Download_Handler_SuccessSkipDownload` — handler produced the target payload at `targetFilePath`; agent **skips** the standard download for this file.
+- `ADUC_Result_Download_Handler_RequiredFullDownload` — **success-bucket** code meaning "I cannot produce this payload, please download it normally"; agent **falls back** to the standard content downloader.
+- Any failure code — agent records the ERC against the workflow and **falls back** to the standard content downloader (same path as `RequiredFullDownload`).
 
-## Usage by Microsoft Delta Download Handler to implement Delta Updates
+In all cases the agent re-verifies the final payload's SHA-256 against `files.<id>.hashes` from the signed manifest before continuing to Install, so the trust chain is preserved regardless of how the file was obtained.
 
-The [Microsoft Delta Download Handler](./plugin_examples/microsoft_delta_download_handler/handler/plugin/src/microsoft_delta_download_handler_plugin.EXPORTS.c) is a DownloadHandler that calls the [Diff API](https://github.com/Azure/iot-hub-device-update-delta#diff-api) to produce a large swupdate .swu update payload from a "source .swu file" in a local [source update cache](./plugin_examples/microsoft_delta_download_handler/source_update_cache/inc/aduc/source_update_cache.h) and a much smaller diff file that is downloaded.
+## Reference implementation: Microsoft Delta Download Handler
 
-### Delta Update Flow Overview
+The [Microsoft Delta Download Handler](./plugin_examples/microsoft_delta_download_handler/handler/plugin/src/microsoft_delta_download_handler_plugin.EXPORTS.c) registers the id `microsoft/delta:1`. It uses the file's `relatedFiles` map to advertise candidate delta payloads (one per known source version). For each candidate it:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│           Delta Download Handler Workflow                       │
-└─────────────────────────────────────────────────────────────────┘
+1. Reads `microsoft.sourceFileHash` + `microsoft.sourceFileHashAlgorithm` from `relatedFiles.<rid>.properties`.
+2. Looks up the source full payload in the on-disk source-update cache by `(target update provider, alg, hash)`. The default cache root is **`/var/lib/adu/sdc`** (set in `CMakeLists.txt:517-522`).
+3. On cache hit: downloads only the small `.diff` file (the agent's content downloader verifies its hash), then calls `libadudiffapi` to apply the diff against the cached source and write the reconstructed target into the sandbox. Returns `SuccessSkipDownload`.
+4. On cache miss for every candidate: returns `RequiredFullDownload` so the agent downloads the full payload normally; that full payload is then cached on workflow success so it can serve as a source for future deltas.
 
-1. Update Manifest Processing
-   └─> Agent detects "downloadHandlerId": "microsoft/delta:1"
-   └─> Loads libmicrosoft_delta_download_handler.so
-   └─> Calls ProcessUpdate() function
+> **For the full runtime walkthrough, sequence diagram, source-cache layout, trust-chain analysis, and a worked manifest example, see [docs/agent-reference/delta-download-handler.md](../../../docs/agent-reference/delta-download-handler.md).** For build/install instructions see [building-with-delta-handler.md](../../../docs/agent-reference/building-with-delta-handler.md).
 
-2. Source Cache Check
-   └─> Handler examines "relatedFiles" in manifest
-   └─> Searches for matching source in /var/lib/adu/cache/
-   └─> Compares source file hash with manifest
 
-3. Delta Download
-   └─> If source found: Download only diff file (50MB)
-   └─> If source not found: Try next relatedFile or fallback
+> **For the full runtime walkthrough, sequence diagram, source-cache layout, trust-chain analysis, and a worked manifest example, see [docs/agent-reference/delta-download-handler.md](../../../docs/agent-reference/delta-download-handler.md).** For build/install instructions see [building-with-delta-handler.md](../../../docs/agent-reference/building-with-delta-handler.md).
 
-4. Delta Reconstruction
-   └─> Call libadudiffapi to reconstruct target from source + delta
-   └─> (libadudiffapi uses bsdiff/bspatch algorithms internally)
-   └─> Verify target hash matches manifest
-   └─> Place target in download sandbox work folder
+## Producing deltas (delta-generation toolchain)
 
-5. Return Result
-   └─> Success: ADUC_Result_Download_Handler_SuccessSkipDownload
-   └─> Agent skips downloading full file (saved 750MB!)
-   └─> Failure: ADUC_Result_DownloadHandler_RequiredFullDownload
-   └─> Agent proceeds with full download as fallback
+The diff file is produced offline (typically as part of your update-import pipeline) using the [Diff Generation tool](https://github.com/Azure/iot-hub-device-update-delta#diff-generation) from the iot-hub-device-update-delta repo. The tool emits two artifacts:
+
+- **The diff file** (e.g. `v1-to-v2.diff`) — binary patch, typically 5-20% of the full update size.
+- **A recompressed target `.swu`** — the target SWUpdate payload with its inner ext3/ext4 raw image recompressed with `zstd`. Both the source and target SWUs must use the same recompression settings — otherwise diff application cannot reproduce a byte-identical target and the final SHA-256 verification in the agent will fail.
+
+### SWUpdate requirements on the device
+
+The on-device `swupdate` binary must be built with `CONFIG_ZSTD=y`. Zstd support landed in [swupdate 2019.11](https://github.com/sbabic/swupdate/releases/tag/2019.11), so use that release or newer.
+
+```bash
+swupdate --help | grep -i zstd        # quick check
+grep CONFIG_ZSTD /path/to/swupdate/.config   # build-config check
 ```
 
-### Delta Generation Process
+### Recommended step-handler pairing
 
-The diff file is produced using the [Diff Generation](https://github.com/Azure/iot-hub-device-update-delta#diff-generation) tool. This tool outputs two files:
+Pair the delta handler with [`microsoft/swupdate:2`](../update_manifest_handlers/steps_handler/README.md) so the install step can invoke `swupdate` against the reconstructed (recompressed) target produced by the handler. Typical `handlerProperties`:
 
-1. **The diff file** (`v1-to-v2.diff`)
-   - Contains binary differences between source and target
-   - Typically 5-20% of full update size
-   - Generated using bsdiff algorithm
-
-2. **A recompressed target .swu file** (`v2-recompressed.swu`)
-   - Target update payload with ext3/ext4 raw image recompressed with ZSTD
-   - Ensures consistent compression between source and target
-   - Critical for reliable delta reconstruction
-
-### Source Update Cache Management
-
-The source .swu is placed in the cache via one of these methods:
-
-1. **Baked into OS image** at build time (factory default)
-   - Source SWU included in base image
-   - Located at expected cache path: `/var/lib/adu/cache/`
-
-2. **Cached after first full update**
-   - First update is always full download
-   - Handler caches recompressed version for future deltas
-
-3. **Multi-step update with caching script**
-   - Use script handler in preceding step
-   - Script caches recompressed SWU before delta update step
-
-### Handler Integration Requirements
-
-It is recommended to use [swupdate handler v2 handler](../step_handlers/swupdate_handler_v2/README.md) (update type of "microsoft/swupdate:2") where:
-
-- `"scriptFileName"` in `"handlerProperties"` of import/update manifest is set to a payload file script that will call `swupdate` appropriately and cache the recompressed file.
-
-- `"swuFileName"` in `"handlerProperties"` is set to the payload file corresponding to the recompressed target .swu swupdate CPIO archive file.
-
-Example handler properties:
 ```json
 {
   "handler": "microsoft/swupdate:2",
@@ -106,75 +69,3 @@ Example handler properties:
 }
 ```
 
-### SWUpdate Configuration Requirements
-
-`swupdate` executable will need to be built with `CONFIG_ZSTD=y` in swupdate's `.config` file.
-
-**NOTE:** swupdate source code will need to be greater than equal to [release tag 2019.11](https://github.com/sbabic/swupdate/releases/tag/2019.11) since that was the release when zstd compression support was first added.
-
-**Verification:**
-```bash
-# Check if SWUpdate has zstd support
-swupdate --help | grep -i zstd
-
-# Or check build configuration
-grep CONFIG_ZSTD /path/to/swupdate/.config
-```
-
-### Update Manifest Example with Delta
-
-```json
-{
-  "updateId": {
-    "provider": "Contoso",
-    "name": "Device",
-    "version": "2.0.0"
-  },
-  "files": {
-    "update-v2.swu": {
-      "filename": "update-v2-recompressed.swu",
-      "sizeInBytes": 838860800,
-      "hashes": {
-        "sha256": "target_file_hash..."
-      },
-      "downloadHandlerId": "microsoft/delta:1",
-      "relatedFiles": [
-        {
-          "filename": "v1-to-v2.diff",
-          "sizeInBytes": 52428800,
-          "hashes": {
-            "sha256": "diff_file_hash..."
-          },
-          "properties": {
-            "microsoft.sourceFileHashAlgorithm": "sha256",
-            "microsoft.sourceFileHash": "source_v1_hash...",
-            "microsoft.sourceVersion": "1.0.0"
-          }
-        }
-      ]
-    },
-    "v1-to-v2.diff": {
-      "filename": "v1-to-v2.diff",
-      "sizeInBytes": 52428800,
-      "hashes": {
-        "sha256": "diff_file_hash..."
-      }
-    }
-  }
-}
-```
-
-### Bandwidth Savings Example
-
-**Typical Scenario (800MB rootfs):**
-- Full update: 800MB download
-- Delta update: 50-80MB download (93-90% reduction)
-- Time on 10Mbps: 10 minutes → 40-60 seconds
-
-**Multiple Version Support:**
-The handler can include multiple relatedFiles for different source versions:
-- Device on v1.0 → Download v1-to-v3.diff (150MB)
-- Device on v2.0 → Download v2-to-v3.diff (60MB)
-- Device on v0.x → Download full v3.swu (800MB)
-
-The handler automatically selects the optimal delta based on cached source availability.

@@ -1,137 +1,33 @@
 # Microsoft Delta Download Handler
 
-## Overview
+The Microsoft Delta Download Handler is an extension for the Azure Device Update (ADU) agent that enables differential updates: instead of downloading the full target payload, the agent downloads only a small `.diff` file and reconstructs the full target on-device using a previously cached source payload. The plugin registers under the id `microsoft/delta:1`.
 
-The Microsoft Delta Download Handler is an extension for the Azure Device Update (ADU) agent that enables efficient delta-based firmware and software updates. Instead of downloading complete update files, this handler processes delta patches that contain only the differences between the current and target versions, significantly reducing bandwidth usage and update time.
-
-Delta updates can reduce download sizes by 90-95% compared to full updates, making them ideal for devices with limited bandwidth, metered connections, or cellular networks. For example, a 800MB full update can be reduced to just 50-80MB with delta updates.
+> **⚠️ Authoritative runtime documentation lives in [docs/agent-reference/delta-download-handler.md](../../../../docs/agent-reference/delta-download-handler.md).**
+>
+> That document is the single source of truth for:
+> - how the agent decides to invoke the handler (`downloadHandler.id` dispatch);
+> - how the handler decides a delta is applicable (`relatedFiles` map shape, cache-lookup key);
+> - how the target is reconstructed and how the trust chain is preserved;
+> - the source-update cache layout (default `/var/lib/adu/sdc`);
+> - the plugin's six exports and which are required vs optional;
+> - the sequence diagram (happy path + fallback);
+> - a worked v5 manifest example.
+>
+> For **build / package / install instructions** see [docs/agent-reference/building-with-delta-handler.md](../../../../docs/agent-reference/building-with-delta-handler.md).
+>
+> **The rest of this README** covers source-tree-specific concerns: dependencies, in-tree build steps, unit tests, observability, and ERC reference. For runtime behavior (manifest shape, cache paths, decision logic), defer to the canonical doc.
 
 ## Purpose
 
 This download handler:
-- Downloads and processes delta update files from Azure Device Update service
-- Applies binary delta patches using `libadudiffapi` library (which implements bsdiff/bspatch algorithms)
-- Validates downloaded content and applied patches using cryptographic hashes
-- Integrates seamlessly with the ADU agent's update workflow
-- Supports various compression (zstd, gzip) and delta algorithms through the `libadudiffapi` abstraction
-- Manages source update cache for delta reconstruction
-- Falls back to full download if delta application fails
+- Downloads a small `.diff` file declared as a `relatedFiles` entry under a target payload that carries `downloadHandler.id = "microsoft/delta:1"`.
+- Applies the diff against a cached source payload using [`libadudiffapi`](https://github.com/Azure/iot-hub-device-update-delta) to reconstruct the full target payload in the sandbox.
+- Returns `ADUC_Result_Download_Handler_SuccessSkipDownload` so the agent skips the standard full-payload download. On any failure (including source-cache miss for every candidate), returns `ADUC_Result_Download_Handler_RequiredFullDownload` so the agent falls back to a full download. The reconstructed (or fallback-downloaded) payload then goes through the agent's normal SHA-256 verification against the signed manifest.
+- After a successful workflow, moves payloads from the sandbox into the source-update cache so they can serve as sources for future deltas.
 
-## How Delta Updates Work
+## Runtime behavior
 
-### High-Level Workflow
-
-```
-1. Device has Current Version (v1.0) installed
-   └─> Cached in source update cache: /var/lib/adu/cache/v1.0.swu
-
-2. Azure ADU Service has Target Version (v2.0)
-   └─> Pre-generated delta file: v1.0-to-v2.0.diff (50MB)
-   └─> Full update file available as fallback: v2.0.swu (800MB)
-
-3. Download Handler Process:
-   ├─> Check if source v1.0 exists in cache
-   ├─> Download small delta file (50MB vs 800MB)
-   ├─> Reconstruct target v2.0 from: source + delta
-   ├─> Verify reconstructed file hash matches manifest
-   └─> If success: skip full download | If fail: fallback to full download
-
-4. Install Handler:
-   └─> Install reconstructed v2.0.swu via SWUpdate
-
-5. Post-Install:
-   └─> Cache v2.0.swu for future delta updates (v2.0 → v3.0)
-```
-
-### Delta Reconstruction Process
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│              Delta Download & Reconstruction                │
-└─────────────────────────────────────────────────────────────┘
-
-Source Cache: /var/lib/adu/cache/
-  └─> v1.0-recompressed.swu (800MB, zstd compressed ext4)
-
-Download: /var/lib/adu/downloads/
-  └─> v1.0-to-v2.0.diff (50MB, binary delta)
-
-Reconstruction (via libadudiffapi):
-  Input:  v1.0-recompressed.swu + v1.0-to-v2.0.diff
-  Output: v2.0-recompressed.swu (800MB)
-
-  // Conceptually equivalent to: bspatch old.swu new.swu delta.diff
-  // Actual call: libadudiffapi->apply_diff(source, delta, target)
-         │         │         └─> Downloaded diff file
-         │         └─> Reconstructed target
-         └─> Cached source
-
-  Note: libadudiffapi is a higher-level library that wraps bsdiff/bspatch
-  algorithms and handles SWU-specific archive processing and compression.
-
-Verification:
-  Compute SHA256 of v2.0-recompressed.swu
-  Compare with hash from update manifest
-  If match: Success, proceed to install
-  If mismatch: Fail, fallback to full download
-```
-
-## Key Concepts
-
-### Source Update Cache
-
-The source update cache (`/var/lib/adu/cache/` or `/var/lib/adu/downloads/delta-cache/`) stores previously installed update files for use in future delta updates. When a full update is installed, the recompressed version is automatically cached for delta reconstruction.
-
-**Cache Management:**
-- Source updates must be recompressed with zstd compression
-- Cache location: `/var/lib/adu/cache/` (default) or `/var/lib/adu/downloads/delta-cache/`
-- Each cached file includes metadata for version matching
-- Cache cleanup happens automatically based on available disk space
-
-### Recompressed SWU Files
-
-Delta updates require the source SWU file to be recompressed with zstd compression. This ensures:
-- Consistent compression across source and target
-- Efficient binary diff generation
-- Reliable delta reconstruction
-
-**Requirements:**
-- SWUpdate must be built with `CONFIG_ZSTD=y`
-- ext3/ext4 filesystems in SWU must use zstd compression
-- Both source and target use identical compression settings
-
-### Related Files in Update Manifest
-
-The update manifest includes "relatedFiles" that specify delta files associated with different source versions:
-
-```json
-{
-  "files": [
-    {
-      "filename": "v2.0.swu",
-      "relatedFiles": [
-        {
-          "filename": "v1.0-to-v2.0.diff",
-          "properties": {
-            "microsoft.sourceFileHashAlgorithm": "sha256",
-            "microsoft.sourceFileHash": "abc123...",
-            "microsoft.sourceVersion": "1.0"
-          }
-        },
-        {
-          "filename": "v0.9-to-v2.0.diff",
-          "properties": {
-            "microsoft.sourceFileHash": "def456...",
-            "microsoft.sourceVersion": "0.9"
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-The handler iterates through relatedFiles and attempts delta reconstruction with each one until it finds a matching source in the cache.
+See **[docs/agent-reference/delta-download-handler.md](../../../../docs/agent-reference/delta-download-handler.md)** for the authoritative runtime walkthrough: decision logic, `relatedFiles` map shape and required properties, source-update cache key and path layout, sequence diagram, trust-chain analysis, and a worked manifest example.
 
 ## Architecture
 
@@ -797,6 +693,8 @@ The handler uses the ADU agent's standard extension mechanism. No additional con
    - Handler selection criteria in update metadata
 
 ## End-to-End Integration Guide
+
+> **Note.** The walkthrough below uses simplified path/manifest illustrations for orientation. For the authoritative manifest example and cache-path format see [docs/agent-reference/delta-download-handler.md §11](../../../../docs/agent-reference/delta-download-handler.md#11-worked-manifest-example) and [§7](../../../../docs/agent-reference/delta-download-handler.md#7-source-update-cache-layout-and-lifecycle).
 
 ### Prerequisites
 

@@ -2,6 +2,8 @@
 
 This document describes how to build the Azure IoT Hub Device Update Agent with the optional Microsoft Delta Download Handler.
 
+> **Looking for the runtime behavior** (how the agent decides to invoke the delta handler, how the handler decides a delta is applicable, how reconstruction works, the sequence diagram, etc.)? See **[delta-download-handler.md](./delta-download-handler.md)**. This document only covers build / package / install.
+
 ## Overview
 
 The Microsoft Delta Download Handler enables differential updates using the [iot-hub-device-update-delta](https://github.com/Azure/iot-hub-device-update-delta) library. This feature is optional and can be enabled during the build process.
