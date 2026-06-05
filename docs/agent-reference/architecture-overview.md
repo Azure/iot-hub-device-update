@@ -1,7 +1,5 @@
 # Azure Device Update Agent — Architecture Overview
 
-> **Applies to:** ADU agent v1.3.0-rc1
-
 This document provides a high-level overview of the Device Update for IoT Hub agent
 architecture: its components, communication model, extension system, security layers,
 and update lifecycle. For build instructions see
@@ -31,7 +29,7 @@ and update lifecycle. For build instructions see
   - [8. Process Management and Privilege Elevation](#8-process-management-and-privilege-elevation)
   - [9. Context and Result Hand-Off Across Boundaries](#9-context-and-result-hand-off-across-boundaries)
   - [10. Reporting State and Result to IoT Hub](#10-reporting-state-and-result-to-iot-hub)
-  - [⚠️ Idle requires an accurate `installedUpdateId`](#️-idle-requires-an-accurate-installedupdateid)
+  - [Idle requires an accurate `installedUpdateId`](#idle-requires-an-accurate-installedupdateid)
 - [Update Manifest v5 — Field → Agent Consumption Map](#update-manifest-v5--field--agent-consumption-map)
   - [Twin envelope (delivered to the agent over PnP `deviceUpdate.service`)](#twin-envelope-delivered-to-the-agent-over-pnp-deviceupdateservice)
   - [Manifest body (inside the signed `updateManifest` JWS payload)](#manifest-body-inside-the-signed-updatemanifest-jws-payload)
@@ -276,7 +274,7 @@ flowchart LR
 [`src/adu-shell/src/adushell_action.cpp`](../../src/adu-shell/src/adushell_action.cpp)):
 
 - **Invocation**: `ADUC_LaunchChildProcess(config->aduShellFilePath, args, output)` —
-  a `fork()` + `execvp()` (`src/utils/process_utils/src/process_utils.cpp:106,130`).
+  a `fork()` + `execvp()` (`src/utils/process_utils/src/process_utils.cpp`).
 - **Inputs (CLI flags)**: `--update-type {microsoft/apt | microsoft/script | common}`,
   `--update-action {initialize | download | install | apply | cancel | rollback | remove | reboot | execute}`,
   `--target-data`, `--target-options`, `--target-log-folder`, `--config-folder`.
@@ -416,7 +414,7 @@ sequenceDiagram
     Svc->>Hub: set desired - workflow.action=3, updateManifest JWS, signature, fileUrls, rootKeyPackageUrl
     Hub->>Core: PnP PropertyUpdateCallback
     Core->>Core: OrchestratorUpdateCallback -> ADUC_Workflow_HandlePropertyUpdate
-    Core->>Core: rootkey verify, JWS verify, manifest-hash check (workflow_utils.c 904-985)
+    Core->>Core: rootkey verify, JWS verify, manifest-hash check (workflow_utils.c)
     Core->>Hub: PnP reported - state 6 (DeploymentInProgress)
 
     Core->>Ext: LoadUpdateContentHandlerExtension microsoft/update-manifest 5 -> ContentHandler IsInstalled
@@ -442,28 +440,28 @@ sequenceDiagram
 
 ### 1. Establishing the IoT Hub Connection
 
-The agent does **not** perform DPS enrollment in the connection-string path. `main()` (`src/agent/src/main.c:797,821`) calls `IoTHub_CommunicationManager_Init` (`src/communication_managers/iothub_communication_manager/src/iothub_communication_manager.c:127`), which calls `ADUC_DeviceClient_Create` (`:437`), which in turn calls `ClientHandle_CreateFromConnectionString` (`src/communication_abstraction/src/client_handle_helper.c:55`) for the configured `ADUC_ConnType` (Device or Module). The X.509 path (new in 1.3.0; see [how-to-x509-authentication.md](how-to-x509-authentication.md)) substitutes the credential source but uses the same client-handle plumbing. When the IoT Hub link comes up, `AzureDeviceUpdateCoreInterface_Connected` (`adu_core_interface.c:301`) fires and sends only the startup `deviceProperties` + `compatPropertyNames` (see [Reported Properties Contract](#reported-properties-contract)).
+The agent does **not** perform DPS enrollment in the connection-string path. `main()` (`src/agent/src/main.c`) calls `IoTHub_CommunicationManager_Init` (`src/communication_managers/iothub_communication_manager/src/iothub_communication_manager.c`), which calls `ADUC_DeviceClient_Create`, which in turn calls `ClientHandle_CreateFromConnectionString` (`src/communication_abstraction/src/client_handle_helper.c`) for the configured `ADUC_ConnType` (Device or Module). The X.509 path (see [how-to-x509-authentication.md](how-to-x509-authentication.md)) substitutes the credential source but uses the same client-handle plumbing. When the IoT Hub link comes up, `AzureDeviceUpdateCoreInterface_Connected` (`adu_core_interface.c`) fires and sends only the startup `deviceProperties` + `compatPropertyNames` (see [Reported Properties Contract](#reported-properties-contract)).
 
 ### 2. Receiving Desired-Property Updates
 
-PnP property-update events are routed into the `deviceUpdate` component's callback, which dispatches to `OrchestratorUpdateCallback` (`adu_core_interface.c:354`) and then `ADUC_Workflow_HandlePropertyUpdate` (`agent_workflow.c`). The callback parses the **unprotected** part of the payload (`workflow_parse_peek_unprotected_workflow_properties`) to obtain `workflow.action`, `workflow.id`, and `rootKeyPackageUrl` — enough to decide whether to act, reject, retry, or short-circuit the special `nodeployment` cancel. The signed `updateManifest` body is **not trusted** until the security checks in §3 pass.
+PnP property-update events are routed into the `deviceUpdate` component's callback, which dispatches to `OrchestratorUpdateCallback` (`adu_core_interface.c`) and then `ADUC_Workflow_HandlePropertyUpdate` (`agent_workflow.c`). The callback parses the **unprotected** part of the payload (`workflow_parse_peek_unprotected_workflow_properties`) to obtain `workflow.action`, `workflow.id`, and `rootKeyPackageUrl` — enough to decide whether to act, reject, retry, or short-circuit the special `nodeployment` cancel. The signed `updateManifest` body is **not trusted** until the security checks in §3 pass.
 
 ### 3. Trust Chain and Content Verification
 
 Three independent checks must succeed before any payload runs:
 
 1. **Root-key package update** (`src/rootkey_workflow/`, `src/utils/rootkeypackage_utils/`) — fetched via `rootKeyPackageUrl`, self-verified by its own JWS, and merged into the trusted-key store (also carries a disabled-key list for revocation).
-2. **Manifest JWS verification** — `updateManifestSignature` is a JWS whose payload is the SHA-256 of `updateManifest`. `jws_utils.c` (`VerifyJWSWithSJWK`, `VerifyJWSWithKey`) verifies the signature, then `workflow_utils.c:904-985` recomputes the manifest hash and compares.
+2. **Manifest JWS verification** — `updateManifestSignature` is a JWS whose payload is the SHA-256 of `updateManifest`. `jws_utils.c` (`VerifyJWSWithSJWK`, `VerifyJWSWithKey`) verifies the signature, then `workflow_utils.c` (`ValidateUpdateManifestSignature`) recomputes the manifest hash and compares.
 3. **Per-file content hash** — after each download, `ExtensionManager::Download` (`extension_manager.cpp`) hashes the file with `src/utils/hash_utils/` and compares to `files.<id>.hashes.sha256` from the verified manifest. Mismatch aborts the workflow.
 
 ### 4. Processing a Deployment or Cancellation
 
-`ADUC_Workflow_HandleUpdateAction` (`agent_workflow.c:657-779`) is the single entry point for both actions:
+`ADUC_Workflow_HandleUpdateAction` (`agent_workflow.c`) is the single entry point for both actions:
 
 - **`ProcessDeployment` (3)** — chosen when the action is non-Cancel and no normal cancellation is in flight. The agent first calls the matched handler's `IsInstalled`; if installed, it short-circuits to Idle via `SetInstalledUpdateIdAndGoToIdle`; otherwise it transitions to `DeploymentInProgress` and begins orchestration (§6).
-- **`Cancel` (255)** — handled in the cancel branch (`:683-718`). If an operation is in progress, the agent flips the `WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED` flag on the workflow handle so per-step handlers can self-terminate; otherwise it just returns to Idle.
+- **`Cancel` (255)** — handled in the cancel branch of the same function. If an operation is in progress, the agent flips the `WORKFLOW_PROPERTY_FIELD_CANCEL_REQUESTED` flag on the workflow handle so per-step handlers can self-terminate; otherwise it just returns to Idle.
 - **Replace / Retry** — a new desired payload arriving while a workflow is in flight triggers `ADUC_WorkflowCancellationType_Replacement` (new workflowId) or `_Retry` (same id, different `retryTimestamp`). See `AgentOrchestration_IsRetryApplicable` and `workflow_update_retry_deployment`.
-- **`nodeployment` NOOP** — `adu_core_interface.c:426-430` silently drops Cancel + `workflow.id == "nodeployment"` (a service signal that "this device group has no deployment").
+- **`nodeployment` NOOP** — `adu_core_interface.c` (`OrchestratorUpdateCallback`) silently drops Cancel + `workflow.id == "nodeployment"` (a service signal that "this device group has no deployment").
 
 ### 5. Downloading Payloads and the Download Handler
 
@@ -494,9 +492,9 @@ Step handlers run **in-process** inside the agent; privileged work goes out thro
 
 There are **two** distinct hand-off boundaries; the docs sometimes conflate them.
 
-**(a) Agent core ↔ content handler — in-process, by reference.** The orchestrator loads the handler via `ExtensionManager::LoadUpdateContentHandlerExtension`, which `dlopen`s the `.so` and resolves the factory symbol `CreateUpdateContentHandlerExtension` (`src/extensions/inc/aduc/exports/extension_content_handler_export_symbols.h:24`). The factory returns a `ContentHandler*` whose virtual methods (`IsInstalled`, `Download`, `Backup`, `Install`, `Apply`, `Restore`, `Cancel`) are called directly. Each call receives an `ADUC_WorkflowDataToken` that wraps `ADUC_WorkflowData` / `ADUC_WorkflowHandle`; the handler returns `ADUC_Result { ResultCode, ExtendedResultCode }`. **Result details flow back through the workflow handle, not the `ADUC_Result` struct** — the handler calls `workflow_set_result_details(handle, "...")` (`workflow_utils.c:3383`); the reporter (`GetReportingJsonValue`) later reads them via `workflow_peek_result_details` and serializes them as `lastInstallResult.resultDetails` / `stepResults.step_N.resultDetails`. Step children attach their results to their own child handles; the Steps Handler aggregates them into the parent at the end of each phase.
+**(a) Agent core ↔ content handler — in-process, by reference.** The orchestrator loads the handler via `ExtensionManager::LoadUpdateContentHandlerExtension`, which `dlopen`s the `.so` and resolves the factory symbol `CreateUpdateContentHandlerExtension` (`src/extensions/inc/aduc/exports/extension_content_handler_export_symbols.h`). The factory returns a `ContentHandler*` whose virtual methods (`IsInstalled`, `Download`, `Backup`, `Install`, `Apply`, `Restore`, `Cancel`) are called directly. Each call receives an `ADUC_WorkflowDataToken` that wraps `ADUC_WorkflowData` / `ADUC_WorkflowHandle`; the handler returns `ADUC_Result { ResultCode, ExtendedResultCode }`. **Result details flow back through the workflow handle, not the `ADUC_Result` struct** — the handler calls `workflow_set_result_details(handle, "...")` (`workflow_utils.c`); the reporter (`GetReportingJsonValue`) later reads them via `workflow_peek_result_details` and serializes them as `lastInstallResult.resultDetails` / `stepResults.step_N.resultDetails`. Step children attach their results to their own child handles; the Steps Handler aggregates them into the parent at the end of each phase.
 
-**(b) Content handler ↔ adu-shell ↔ external installer — process boundary.** A `fork()`+`execvp()` of `adu-shell` with CLI args; no shared memory, no pipes between calls. The reply is the OS-level exit code plus captured stdout/stderr (`src/utils/process_utils/src/process_utils.cpp:106,130`). adu-shell internally does the same `fork()`+`execvp()` again to launch `apt-get` / user script / reboot wrapper. Failure information from the external process is plain text, which the handler must parse and forward via `workflow_set_result_details` to make it visible to the cloud.
+**(b) Content handler ↔ adu-shell ↔ external installer — process boundary.** A `fork()`+`execvp()` of `adu-shell` with CLI args; no shared memory, no pipes between calls. The reply is the OS-level exit code plus captured stdout/stderr (`src/utils/process_utils/src/process_utils.cpp`). adu-shell internally does the same `fork()`+`execvp()` again to launch `apt-get` / user script / reboot wrapper. Failure information from the external process is plain text, which the handler must parse and forward via `workflow_set_result_details` to make it visible to the cloud.
 
 ### 10. Reporting State and Result to IoT Hub
 
@@ -505,15 +503,15 @@ Two reporters exist:
 - `ReportStartupMsg` — runs once per connect; sends only `deviceProperties` + `compatPropertyNames`.
 - `GetReportingJsonValue` → `AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync` — runs on every meaningful state transition, but `AgentOrchestration_ShouldNotReportToCloud` filters everything except `Idle (0)`, `DeploymentInProgress (6)`, and `Failed (255)`. The reported JSON shape — `state` + `workflow{action,id,retryTimestamp?}` + optional `installedUpdateId` + `lastInstallResult{resultCode,extendedResultCode,extendedResultCodes,resultDetails,stepResults?}` — is fully documented in [Reported Properties Contract](#reported-properties-contract). Step-level results are aggregated by walking the workflow handle's children (`stepResults.step_0`, `step_1`, …).
 
-### ⚠️ Idle requires an accurate `installedUpdateId`
+### Idle requires an accurate `installedUpdateId`
 
-> **Service contract.** When the agent reports `state = Idle (0)` while a deployment is active, the service **requires** `installedUpdateId` to match the deployment's `updateId` (`{provider,name,version}`). If `installedUpdateId` is **omitted** (the field is left out — the agent never writes it as JSON `null`) or **does not match**, the service treats the deployment as **failed**, regardless of `lastInstallResult.resultCode`.
+> ⚠️ **Service contract.** When the agent reports `state = Idle (0)` while a deployment is active, the service **requires** `installedUpdateId` to match the deployment's `updateId` (`{provider,name,version}`). If `installedUpdateId` is **omitted** (the field is left out — the agent never writes it as JSON `null`) or **does not match**, the service treats the deployment as **failed**, regardless of `lastInstallResult.resultCode`.
 
 This is why the codebase carefully gates Idle reporting on the update being verifiably installed:
 
-- The only call site that supplies a non-NULL `installedUpdateId` to the reporter is `ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle` (`agent_workflow.c:1353+`). It is invoked from exactly two places: (i) after the Apply step succeeds (`ADUC_Workflow_AutoTransitionWorkflow`), and (ii) on startup when the step handler's `IsInstalled` already reports the deployment as installed (`HandleStartupWorkflowData`, `HandleUpdateAction`).
-- The agent **delays** reporting Idle around reboot / agent-restart sequences so that the post-reboot Idle is paired with the (now correct) `installedUpdateId`. See `agent_workflow.c:628-631` and `:1170-1183` — the comments explicitly note that an Idle reported without the matching id would be interpreted as failure by ADU Service.
-- All non-success state transitions report Idle with `installedUpdateId = NULL`, which causes the field to be **omitted entirely** from the reported JSON (`GetReportingJsonValue` `:785-793` — there is **no** `json_object_set_null` for this field). The service distinguishes "no installed id" from "wrong installed id" purely by absence vs. value mismatch.
+- The only call site that supplies a non-NULL `installedUpdateId` to the reporter is `ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle` (`agent_workflow.c`). It is invoked from exactly two places: (i) after the Apply step succeeds (`ADUC_Workflow_AutoTransitionWorkflow`), and (ii) on startup when the step handler's `IsInstalled` already reports the deployment as installed (`HandleStartupWorkflowData`, `HandleUpdateAction`).
+- The agent **delays** reporting Idle around reboot / agent-restart sequences so that the post-reboot Idle is paired with the (now correct) `installedUpdateId`. The in-source comments in `agent_workflow.c` (search for "ADU Service") explicitly note that an Idle reported without the matching id would be interpreted as failure by ADU Service.
+- All non-success state transitions report Idle with `installedUpdateId = NULL`, which causes the field to be **omitted entirely** from the reported JSON (`GetReportingJsonValue` — there is **no** `json_object_set_null` for this field). The service distinguishes "no installed id" from "wrong installed id" purely by absence vs. value mismatch.
 
 **Implication for handler / orchestrator authors:** never call `ReportStateAndResultAsyncCallback` with `ADUCITF_State_Idle` and a non-NULL `installedUpdateId` unless you have verified — via the step handler's `IsInstalled` — that the deployment is actually installed. Conversely, when Apply genuinely succeeds, you **must** report Idle paired with the correct `installedUpdateId` (`workflow_get_expected_update_id_string`), or the cloud will mark the deployment failed.
 
@@ -521,43 +519,9 @@ This is why the codebase carefully gates Idle reporting on the update being veri
 
 ## Update Manifest v5 — Field → Agent Consumption Map
 
-A v5 update manifest is delivered to the device as a **signed JWS** sitting inside the IoT Hub device-twin desired properties. The agent verifies the signature, parses the payload, and walks each field through one or more workflow phases. For the schema reference (and v4 vs v5 deltas) see [update-manifest-v5-schema.md](update-manifest-v5-schema.md); the public schema lives at <https://json.schemastore.org/azure-deviceupdate-import-manifest-5.0.json>.
+A v5 update manifest is delivered to the device as a **signed JWS** sitting inside the IoT Hub device-twin desired properties. The agent verifies the signature, parses the payload, and walks each field through one or more workflow phases.
 
-### Twin envelope (delivered to the agent over PnP `deviceUpdate.service`)
-
-| Field | Purpose | Parsed by | Workflow phase that consumes it | If absent / invalid |
-|---|---|---|---|---|
-| `workflow.action` | `3 = ProcessDeployment`, `255 = Cancel` | `workflow_parse_peek_unprotected_workflow_properties` (`workflow_utils.c`) | Read before any phase; chooses `HandleUpdateAction` branch | `Undefined` → ignored |
-| `workflow.id` | Service-assigned deployment id. Special value `"nodeployment"` paired with `Cancel` means "no work for this device group" | same | Echoed back in every reported `workflow.id` | Cancel + `"nodeployment"` is silently dropped (`adu_core_interface.c:426-430`) |
-| `workflow.retryTimestamp` | Service-supplied retry token. A change in this value enables same-workflow retry processing via `AgentOrchestration_IsRetryApplicable` / `workflow_update_retry_deployment` | same | `ADUC_Workflow_HandlePropertyUpdate` re-runs the workflow when the token changes | Optional |
-| `updateManifest` | JSON **string** containing the v5 manifest body | `workflow_parse` | All phases parse fields from this object | Parse failure ⇒ `Failed` |
-| `updateManifestSignature` | JWS whose signed payload is the SHA-256 hash of `updateManifest`. Verified by `jws_utils.c` (`VerifyJWSWithSJWK` / `VerifyJWSWithKey`); the hash check is in `workflow_utils.c` | `jws_utils.c`, `workflow_utils.c:904-985` | Verified before any download | Verification failure ⇒ `Failed`, no content fetched |
-| `fileUrls` | Map of `fileId` → download URL (HTTP or HTTPS — the agent does not enforce the scheme) | `workflow_get_entity_workfolder_filepath`, `extension_manager.cpp` | Download phase, per file entity | Missing URL for required file ⇒ download failure |
-| `rootKeyPackageUrl` | URL to the signed root-key package | `rootkey_workflow` | Run before manifest signature verification | Failure ⇒ continues with on-disk root keys (best-effort) |
-
-### Manifest body (inside the signed `updateManifest` JWS payload)
-
-| Field | Purpose | Parsed by | Workflow phase that consumes it | If absent / invalid |
-|---|---|---|---|---|
-| `manifestVersion` | `"4.0"` or `"5.0"` | `workflow_get_update_manifest_version` | Selects Update Manifest Handler `microsoft/update-manifest:<n>`; falls back to default `microsoft/update-manifest` if the versioned variant fails to load (`linux_adu_core_impl.cpp:128-147`) | Unsupported ⇒ no handler ⇒ `Failed` |
-| `updateId.{provider,name,version}` | Globally unique update identity (`ADUC_UpdateId`) | `workflow_get_expected_update_id` | Reported as `installedUpdateId` **only after** successful Apply (`SetInstalledUpdateIdAndGoToIdle`) | Required; missing ⇒ parse failure |
-| `compatibility[]` | Service uses this for targeting; agent uses it (child manifest only) for component selection through the registered Component Enumerator | `workflow_get_compatibility` | Reference-step processing (level 1) only | Level 0: not consumed at runtime |
-| `instructions.steps[]` | Ordered list of inline / reference steps. Top-level update has no `updateType`; agent implicitly uses `microsoft/steps:1` | `workflow_get_instructions_steps_count`, `workflow_get_step` | Iterated in Download / Install (per Steps Handler) | Empty ⇒ nothing to do; not currently treated as failure |
-| `instructions.steps[].type` | `"inline"` (default) or `"reference"` | `workflow_peek_step_type` | Steps Handler chooses inline-handler load vs detached-manifest download + recursion | Missing ⇒ defaults to `"reference"` in `workflow_peek_step_type` but `workflow_is_inline_step` treats anything not `"reference"` as inline — be explicit |
-| `instructions.steps[].handler` (inline) | e.g. `microsoft/swupdate:2`, `microsoft/apt:1`, `microsoft/script:1` | same | Inline step → `LoadUpdateContentHandlerExtension(handler)` then run handler's `IsInstalled` → `Download` → `Backup` → `Install` → `Apply` | Missing for inline step ⇒ load failure ⇒ `Failed` |
-| `instructions.steps[].handlerProperties` | Free-form bag of args forwarded to the step handler (e.g. installedCriteria, scriptFileName, arguments) | `workflow_peek_step_handler_property` | Read by the **selected step handler** (not by Steps Handler itself) | Handler-specific |
-| `instructions.steps[].files[]` | File IDs from the parent `files` map that this step needs | `PrepareStepsWorkflowDataObject` | Inline-step child workflow is created with this **subset** of file entities | Empty ⇒ no payload for the step |
-| `instructions.steps[].updateId` (reference) | Identifies the **child** update to recurse into | `workflow_get_update_id` (child manifest) | Reference step → triggers detached-manifest download and child workflow | Required for reference steps |
-| `instructions.steps[].detachedManifestFileId` (reference) | `fileId` of the child manifest payload | `workflow_get_step_detached_manifest_file` | Steps Handler downloads + verifies the child manifest before recursing | Required for reference steps |
-| `files` (map of `fileId` → entry) | Payload index | `workflow_get_update_file`, `workflow_get_update_files_count` | Download phase enumerates this map | Empty / id mismatch ⇒ download failure |
-| `files.<id>.fileName` | File name to use under the sandbox work folder | same | Download phase | Required |
-| `files.<id>.sizeInBytes` | Expected file size | same | Validated by content downloader after fetch | Mismatch ⇒ `Failed` |
-| `files.<id>.hashes` (e.g. `sha256`) | Map of algorithm → hash | `parser_utils.c`, `hash_utils.c` | Hash check after download (full or delta-reconstructed) | Mismatch ⇒ `Failed` |
-| `files.<id>.arguments` | Per-file arguments forwarded to handler | `workflow_get_update_file` (sets `ADUC_FileEntity.Arguments`) | Step handler specific | Optional |
-| `files.<id>.relatedFiles` (**v5**) | Map of `relatedFileId` → entry (auxiliary payloads consumed by a Download Handler — e.g. delta source-file metadata + hashes). Parsed only when the file entity declares a `downloadHandler` | `workflow_get_related_files` | Download Handler phase only | If a `downloadHandler` references missing `relatedFiles` ⇒ Download Handler fails ⇒ fall back to full download |
-| `files.<id>.relatedFiles.<rid>.properties` (**v5**) | Free-form map (e.g. `microsoft.sourceFileHashAlgorithm`, `microsoft.sourceFileHash` for Microsoft Delta). **Required** by `workflow_utils.c:521-533` when a related file is present | same | Read by the Download Handler implementation | Parse failure on missing `properties` |
-| `files.<id>.downloadHandler.id` (**v5**) | Identifies a registered Download Handler extension (e.g. `microsoft/delta:1`) | `parser_utils.c` (sets `ADUC_FileEntity.DownloadHandlerId`) | `ExtensionManager::Download` attempts the Download Handler **first**; on `ADUC_Result_Download_Handler_RequiredFullDownload` (or any download-handler failure) it falls back to the standard Content Downloader | Unknown id ⇒ fall back to full download |
-| `createdDateTime`, `mimeType` | Service / schema metadata | parsed but not used in the runtime workflow | — | Not enforced |
+The full **twin envelope** and **manifest body** field → parser → consuming-phase tables live next to the schema reference, in [update-manifest-v5-schema.md → Field → Agent Consumption Map](./update-manifest-v5-schema.md#field--agent-consumption-map). The narrative end-to-end flow above ([§4](#4-processing-a-deployment-or-cancellation)–[§7](#7-multi-step-update-iteration)) references those fields by name without re-tabulating them.
 
 > The Steps Handler builds a **tree** of `ADUC_WorkflowHandle` objects: the parent at level 0, one child per top-level step at level 1, and (for reference steps only) grandchild steps at level 2. The same seven `ContentHandler` virtual methods (`IsInstalled`, `Download`, `Backup`, `Install`, `Apply`, `Restore`, `Cancel`) are dispatched at every level; the `.so` itself only exports the factory symbol `CreateUpdateContentHandlerExtension`. See [steps-handler.md](steps-handler.md) for the full phase-by-phase contract.
 
@@ -569,12 +533,12 @@ The agent reports back to the ADU service by writing IoT Hub PnP **reported prop
 
 | Reporter | Function | When it fires | What it sends |
 |---|---|---|---|
-| **Startup / device properties** | `ReportStartupMsg` (`src/agent/adu_core_interface/src/adu_core_interface.c:192-258`) | Every successful IoT Hub connect | `deviceProperties` + `compatPropertyNames` only. **No** `state`, no `workflow`, no `lastInstallResult`, no `installedUpdateId`. |
-| **State + result** | `GetReportingJsonValue` (same file, `:638-909`) via `AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync` | Each workflow state transition (filtered by `AgentOrchestration_ShouldNotReportToCloud`) | `state`, `workflow{action,id,retryTimestamp?}`, `installedUpdateId?`, `lastInstallResult{…}` |
+| **Startup / device properties** | `ReportStartupMsg` (`src/agent/adu_core_interface/src/adu_core_interface.c`) | Every successful IoT Hub connect | `deviceProperties` + `compatPropertyNames` only. **No** `state`, no `workflow`, no `lastInstallResult`, no `installedUpdateId`. |
+| **State + result** | `GetReportingJsonValue` (same file) via `AzureDeviceUpdateCoreInterface_ReportStateAndResultAsync` | Each workflow state transition (filtered by `AgentOrchestration_ShouldNotReportToCloud`) | `state`, `workflow{action,id,retryTimestamp?}`, `installedUpdateId?`, `lastInstallResult{…}` |
 
 ### Which states reach the wire
 
-`AgentOrchestration_ShouldNotReportToCloud` (`src/agent_orchestration/src/agent_orchestration.c:52-55`) filters all state transitions: **only** these three states are ever sent as reported properties:
+`AgentOrchestration_ShouldNotReportToCloud` (`src/agent_orchestration/src/agent_orchestration.c`) filters all state transitions: **only** these three states are ever sent as reported properties:
 
 | State | Numeric | When set |
 |---|---:|---|
@@ -734,8 +698,8 @@ Wrapped in the PnP envelope as written on the twin:
 
 ### Service expectations
 
-- **Success** requires `state=0` accompanied by `installedUpdateId` matching the deployment's `updateId`. Code comments at `agent_workflow.c:1170-1171, 1182-1183` make this contract explicit: if Idle is reported without the matching id, the service treats the deployment as failed.
-- `state=0` **without** `installedUpdateId` is the agent's signal for "no work in progress" (e.g. cancel, NOOP startup) — but in the context of an active deployment row, the service interprets it as a failed end state (see `agent_workflow.c:628-631`).
+- **Success** requires `state=0` accompanied by `installedUpdateId` matching the deployment's `updateId`. In-source comments in `agent_workflow.c` make this contract explicit: if Idle is reported without the matching id, the service treats the deployment as failed.
+- `state=0` **without** `installedUpdateId` is the agent's signal for "no work in progress" (e.g. cancel, NOOP startup) — but in the context of an active deployment row, the service interprets it as a failed end state.
 - `state=255` is failure; the service surfaces `resultCode` / `extendedResultCode` / `extendedResultCodes` / `resultDetails` (and `stepResults`) in the portal "Failed deployments" view.
 - `state=6` is the agent's "I've started" ack; the deployment shows `In Progress` until the agent reports a terminal state (`0` or `255`).
 - "No deployment active for this device" is inferred service-side from the absence of a deployment row, not from any agent-reported state.
