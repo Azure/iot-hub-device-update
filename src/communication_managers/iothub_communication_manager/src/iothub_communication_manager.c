@@ -759,21 +759,14 @@ static bool ApplyEdgeGatewayCertIfConfigured(ADUC_ConnectionInfo* info)
         goto done;
     }
 
-    // For SASCert (EIS x509 auth), the client cert is currently in certificateString.
-    // Move it to clientCertificateString before we overwrite with the gateway cert.
-    if (info->authType == ADUC_AuthType_SASCert && info->certificateString != NULL)
-    {
-        free(info->clientCertificateString);
-        info->clientCertificateString = info->certificateString;
-        info->certificateString = NULL;
-    }
-    else
-    {
-        // For X509: certificateString held the CA cert — replace with gateway cert.
-        // For SASToken: certificateString is NULL — no-op.
-        free(info->certificateString);
-        info->certificateString = NULL;
-    }
+    // certificateString is now reserved for trust-anchor (CA / Edge gateway) certificates.
+    // The identity (client) cert always lives in clientCertificateString — populated by
+    // either the direct X509 path (GetConnectionInfoFromConnectionString) or the EIS x509
+    // path (RequestConnectionStringFromEISWithExpiry). So here we only need to free any
+    // existing trust anchor (e.g. the IoT Hub CA cert from direct X509) before replacing
+    // it with the gateway cert.
+    free(info->certificateString);
+    info->certificateString = NULL;
 
     // Store the gateway cert as the trust anchor (will be set as OPTION_TRUSTED_CERT).
     if (mallocAndStrcpy_s(&info->certificateString, certificateString) != 0)

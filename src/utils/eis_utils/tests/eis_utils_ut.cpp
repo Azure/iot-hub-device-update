@@ -274,7 +274,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
 
         CHECK(expectedConnStrStream.str() == outInfo.connectionString);
 
-        CHECK(outInfo.certificateString == expectedCertificateString);
+        CHECK(outInfo.clientCertificateString == expectedCertificateString);
+        CHECK(outInfo.certificateString == nullptr);
 
         CHECK(outInfo.authType == ADUC_AuthType_SASCert);
         CHECK(outInfo.connType == ADUC_ConnType_Device);
@@ -355,7 +356,8 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "RequestConnectionStringFromEISW
 
         CHECK(expectedConnStrStream.str() == outInfo.connectionString);
 
-        CHECK(outInfo.certificateString == expectedCertificateString);
+        CHECK(outInfo.clientCertificateString == expectedCertificateString);
+        CHECK(outInfo.certificateString == nullptr);
 
         CHECK(outInfo.authType == ADUC_AuthType_SASCert);
         CHECK(outInfo.connType == ADUC_ConnType_Module);

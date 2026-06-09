@@ -1018,26 +1018,30 @@ TEST_CASE("ApplyEdgeGatewayCertIfConfigured preserves X509 auth state")
         ADUC_ConnectionInfo_DeAlloc(&info);
     }
 
-    SECTION("SASCert auth with gateway cert keeps authType as SASCert and moves client cert")
+    SECTION("SASCert auth with gateway cert keeps authType as SASCert; client cert stays in clientCertificateString")
     {
-        // Simulate state after GetConnectionInfoFromIdentityService with x509 auth
+        // Simulate state after GetConnectionInfoFromIdentityService with x509 auth.
+        // EIS now writes the identity cert directly to clientCertificateString — the
+        // data model is uniform with the direct-X509 path. certificateString is
+        // reserved for trust anchors only.
         ADUC_ConnectionInfo info;
         memset(&info, 0, sizeof(info));
 
         info.authType = ADUC_AuthType_SASCert;
         info.connType = ADUC_ConnType_Device;
         mallocAndStrcpy_s(&info.connectionString, "HostName=hub;DeviceId=dev;x509=true;GatewayHostName=10.0.0.1");
-        mallocAndStrcpy_s(&info.certificateString, "-----BEGIN CERTIFICATE-----\nEIS_CLIENT_CERT\n-----END CERTIFICATE-----");
+        mallocAndStrcpy_s(&info.clientCertificateString, "-----BEGIN CERTIFICATE-----\nEIS_CLIENT_CERT\n-----END CERTIFICATE-----");
         mallocAndStrcpy_s(&info.opensslPrivateKey, "aziot_keys_handle");
         mallocAndStrcpy_s(&info.opensslEngine, "aziot_keys");
 
-        // Verify initial state: client cert in certificateString (EIS behavior)
-        CHECK(info.clientCertificateString == nullptr);
-        CHECK(info.certificateString != nullptr);
+        // Verify initial state: identity cert in clientCertificateString, no trust anchor yet
+        CHECK(info.clientCertificateString != nullptr);
+        CHECK(info.certificateString == nullptr);
 
         // Simulate what ApplyEdgeGatewayCertIfConfigured does for SASCert:
-        // Move client cert to clientCertificateString, replace certificateString with gateway cert
-        info.clientCertificateString = info.certificateString;
+        // Free any existing trust anchor (none here) and install the gateway cert.
+        // The client cert is NOT touched — it already lives in clientCertificateString.
+        free(info.certificateString);
         info.certificateString = NULL;
         mallocAndStrcpy_s(&info.certificateString, "-----BEGIN CERTIFICATE-----\nGATEWAY_CA\n-----END CERTIFICATE-----");
         // authType preserved for SASCert
@@ -1049,6 +1053,37 @@ TEST_CASE("ApplyEdgeGatewayCertIfConfigured preserves X509 auth state")
         CHECK(strcmp(info.certificateString, "-----BEGIN CERTIFICATE-----\nGATEWAY_CA\n-----END CERTIFICATE-----") == 0);
         CHECK(info.opensslPrivateKey != nullptr);
         CHECK(info.opensslEngine != nullptr);
+
+        ADUC_ConnectionInfo_DeAlloc(&info);
+    }
+
+    SECTION("SASCert auth WITHOUT gateway cert: identity cert is presented via SU_OPTION_X509_CERT (regression for AIS+EIS x509 e2e)")
+    {
+        // Regression for the AIS + EIS-x509 device used by the gen1 e2e pipeline
+        // (du-config.json connectionType = "AIS"). Prior to routing the EIS cert
+        // through clientCertificateString, ADUC_DeviceClient_Create() would (a)
+        // fail to set SU_OPTION_X509_CERT because clientCertificateString was
+        // NULL and (b) install the identity cert as OPTION_TRUSTED_CERT.
+        // The TLS handshake to IoT Hub then failed and systemd restart-looped
+        // the agent every ~60s.
+        ADUC_ConnectionInfo info;
+        memset(&info, 0, sizeof(info));
+
+        info.authType = ADUC_AuthType_SASCert;
+        info.connType = ADUC_ConnType_Device;
+        mallocAndStrcpy_s(&info.connectionString, "HostName=hub.azure-devices.net;DeviceId=dev;x509=true");
+        mallocAndStrcpy_s(&info.clientCertificateString, "-----BEGIN CERTIFICATE-----\nEIS_CLIENT_CERT\n-----END CERTIFICATE-----");
+        mallocAndStrcpy_s(&info.opensslPrivateKey, "aziot_keys_handle");
+        mallocAndStrcpy_s(&info.opensslEngine, "aziot_keys");
+        // No edge gateway: certificateString remains NULL.
+
+        // Identity cert is in clientCertificateString — this is what
+        // SU_OPTION_X509_CERT will be set from in ADUC_DeviceClient_Create().
+        CHECK(info.clientCertificateString != nullptr);
+        // No trust anchor — OPTION_TRUSTED_CERT will not be set, which is
+        // correct because the device trusts the system CA bundle for IoT Hub.
+        CHECK(info.certificateString == nullptr);
+        CHECK(info.authType == ADUC_AuthType_SASCert);
 
         ADUC_ConnectionInfo_DeAlloc(&info);
     }
