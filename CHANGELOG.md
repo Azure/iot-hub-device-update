@@ -1,3 +1,10 @@
+## Release 1.3.1
+
+### Other Bug Fixes
+
+* Fix `edgegatewayCertPath` overwriting X.509 / EIS-x509 auth state — the gateway cert is now applied as a post-processing step that preserves the original authType so client cert, private key, and engine SDK options keep getting set on the IoT Hub handle (previously a non-Edge regression replaced authType with NestedEdgeCert and skipped all mTLS options)
+* Fix AIS + EIS-x509 (no Edge gateway) regression where the EIS-issued identity certificate was never installed as `SU_OPTION_X509_CERT` and was mis-installed as `OPTION_TRUSTED_CERT`, causing the IoT Hub mTLS handshake to fail and the agent to restart-loop during deployments
+
 ## Release 1.3.0
 
 ### Major Features and Enhancements
@@ -42,8 +49,6 @@
 * Fix line commented by mistake and remove unneeded imports
 * Fix warnings and add test for ADUC_HashUtils_GetIndexStrongestValidHash
 * Fix apisvc unit tests to use test data folder instead of /tmp
-* Fix `edgegatewayCertPath` overwriting X.509 / EIS-x509 auth state — the gateway cert is now applied as a post-processing step that preserves the original authType so client cert, private key, and engine SDK options keep getting set on the IoT Hub handle (previously a non-Edge regression replaced authType with NestedEdgeCert and skipped all mTLS options)
-* Fix AIS + EIS-x509 (no Edge gateway) regression where the EIS-issued identity certificate was never installed as `SU_OPTION_X509_CERT` and was mis-installed as `OPTION_TRUSTED_CERT`, causing the IoT Hub mTLS handshake to fail and the agent to restart-loop during deployments
 
 ### Testing and Code Quality
 
