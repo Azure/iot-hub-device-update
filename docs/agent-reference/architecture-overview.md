@@ -124,9 +124,7 @@ For a deep dive into writing custom extensions, see
 
 ### Cryptographic Verification
 
-Every update manifest received from the service is wrapped in a **JWS (JSON Web
-Signature, RFC 7515)**. The agent validates the signature before any content is
-downloaded or installed.
+Every deployment received from the service arrives as a JSON object with two relevant fields: `updateManifest` (a stringified JSON manifest) and `updateManifestSignature` (a detached **JWS (JSON Web Signature, RFC 7515)** whose payload contains the SHA-256 hash of the `updateManifest` string). The agent validates the JWS signature and re-hashes the manifest string to bind the signature to it, before any content is downloaded or installed.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {
@@ -148,11 +146,18 @@ downloaded or installed.
 flowchart LR
     subgraph Main[" "]
         A["Root Key Package
-        from service"] -->|"Self-verified JWS"| B["Trusted Root Keys"]
+        from service"] -->|"Self-verified
+        (every embedded
+        key must sign)"| B["Trusted Root Keys"]
         B -->|"Verify intermediate SJWK"| C["Signing Key"]
-        C -->|"Verify Update Manifest JWS"| D["Update Manifest
+        C -->|"Verify updateManifest-
+        Signature (detached JWS)"| D["Signature
+        verified"]
+        D -->|"Re-hash updateManifest
+        string, compare to
+        sha256 in JWS payload"| E["Manifest
         trusted"]
-        D -->|"SHA-256 hash per payload"| E["Downloaded Content
+        E -->|"SHA-256 hash per payload"| F["Downloaded Content
         Integrity Check ✓"]
     end
 

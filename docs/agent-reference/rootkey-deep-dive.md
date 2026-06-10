@@ -31,11 +31,13 @@ This document explains, end-to-end, **how the ADU agent uses root keys to verify
 
 ## 1. Why root keys matter
 
-The ADU agent receives **every** update instruction (the update manifest, including which payload to download, where to get it, and its expected SHA-256) over Azure IoT Hub as a JSON Web Signature (JWS). The agent has no other way to authenticate the manifest. **If the agent trusted whatever JWS it received, anyone able to inject a desired-property update on a device twin could install arbitrary code.**
+The ADU agent receives every update instruction from Azure IoT Hub as a JSON object — the **update manifest** (carried as a stringified JSON in the `updateManifest` field) plus a **detached signature** in the `updateManifestSignature` field. The signature is a compact JWS whose payload is a small object containing the SHA-256 hash of the `updateManifest` string. The agent verifies the JWS, then re-computes the hash of the manifest string and compares it to the hash in the JWS payload (see [`workflow_utils.c:875-934`](../../src/utils/workflow_utils/src/workflow_utils.c) — `Json_ValidateManifestHash`). Only after both succeed is the manifest trusted.
+
+The agent has no other way to authenticate the manifest. **If the agent trusted whatever the C2D payload claimed, anyone able to inject a desired-property update on a device twin could install arbitrary code.**
 
 Root keys are the **anchors of trust** that break this circular problem. They are the only piece of cryptographic material baked into the agent binary at build time, and they are the only keys the agent trusts a priori. Every other key used in the verification pipeline (signing keys, intermediate keys) ultimately derives its trust from one of these embedded root keys.
 
-Concretely, root keys answer one question: *"Should this update manifest be trusted?"* Without them, the entire JWS chain in [`src/utils/jws_utils/src/jws_utils.c`](../../src/utils/jws_utils/src/jws_utils.c) (`VerifyJWSWithSJWK` → `VerifySJWK` → `VerifyJWSWithKey`) has nothing to anchor against.
+Concretely, root keys answer one question: *"Should this update-manifest signature be trusted?"* Without them, the entire JWS chain in [`src/utils/jws_utils/src/jws_utils.c`](../../src/utils/jws_utils/src/jws_utils.c) (`VerifyJWSWithSJWK` → `VerifySJWK` → `VerifyJWSWithKey`) has nothing to anchor against.
 
 ## 2. The trust chain at a glance
 
@@ -43,38 +45,57 @@ Concretely, root keys answer one question: *"Should this update manifest be trus
 [Agent binary]                                [Service / Cloud]
 +----------------+                            +------------------+
 | Hardcoded RSA  |  <-- self-validates --     | Root key package |
-| root keys      |      (every embedded key   | (signed JWS)     |
-| K1, K2         |       must have a valid    |                  |
-+--------+-------+       signature)           +---------+--------+
-         |                                              |
+| root keys      |      (every embedded key   | (JSON + multiple |
+| K1, K2         |       must have a valid    |  RS256 sigs over |
++--------+-------+       signature)           |  protected{...}) |
+         |                                    +---------+--------+
          | (kid lookup)                                 |
          v                                              v
 +----------------+                            +------------------+
-| Disk store of  |  <-- replaces --           | Update manifest  |
-| latest         |                            | (signed JWS,     |
-| root-key pkg   |                            |  payload =       |
-+--------+-------+                            |  the manifest)   |
-         |                                    +---------+--------+
-         | (used to verify SJWK in            ----------+
-         |  manifest header)                            |
-         v                                              v
+| Disk store of  |  <-- replaces -----------  | C2D message      |
+| latest         |                            |  updateManifest: |
+| root-key pkg   |                            |    "<json str>"  |
++--------+-------+                            |  updateManifest- |
+         |                                    |    Signature:    |
+         | (used to verify SJWK in            |    "<detached    |
+         |  manifest signature header)        |     JWS>"        |
+         v                                    +---------+--------+
 +----------------+                                      |
-| Manifest JWS   | <----- verified by SJWK <------------+
-| validated      |        (signing key embedded in
-+--------+-------+         the manifest header)
+| SJWK in JWS    | <----- verified --------------- ----+
+| header valid   |        (signed by trusted root key)
++--------+-------+
          |
          v
 +----------------+
-| Payload SHA-256|
-| compared       |
+| Signing key    | <-- check vs. disabledSigningKeys
+| in SJWK valid  |     (SHA-256 of pub key)
++--------+-------+
+         |
+         v
 +----------------+
+| JWS payload    | <-- VerifyJWSWithKey(sig, signingKey)
+| signature valid|     payload = { "sha256": "<hash>" }
++--------+-------+
+         |
+         v
++----------------+
+| SHA-256 of     | <-- Json_ValidateManifestHash
+| updateManifest |     re-hashes the manifest string,
+| string matches |     compares against payload hash
+| payload hash   |
++----------------+
+         |
+         v
+   Manifest now trusted; per-payload SHA-256s
+   inside the manifest are checked at download time
 ```
 
-The three independent verification hops are:
+The independent verification hops are:
 
 1. **Root-key package self-validation** — the downloaded root-key JSON contains a `signatures` array. For **every** hardcoded root key in the agent binary, the package must contain a matching valid RS256 signature over its `protected` properties. ([`root_key_util.c:371-417`](../../src/utils/root_key_utils/src/root_key_util.c))
-2. **SJWK validation** — the update manifest's JWS header carries an `sjwk` (a "Signed JSON Web Key" — itself a JWS whose payload is a JWK). The SJWK's header carries a `kid` that identifies which **root key** signed it. The agent looks up that key in `RootKeyUtility_GetKeyForKid`, which checks both the hardcoded list and the on-disk package's `rootKeys`, while rejecting any kid present in the package's `disabledRootKeys`. ([`jws_utils.c:316-460`](../../src/utils/jws_utils/src/jws_utils.c), [`root_key_util.c:760-814`](../../src/utils/root_key_utils/src/root_key_util.c))
-3. **Manifest signature validation** — once the SJWK is trusted, the key it carries is used to verify the manifest JWS itself via `VerifyJWSWithKey`. ([`jws_utils.c:468-546`](../../src/utils/jws_utils/src/jws_utils.c))
+2. **SJWK validation** — the JWS in `updateManifestSignature` carries an `sjwk` header parameter (a "Signed JSON Web Key" — itself a JWS whose payload is a JWK). The SJWK's own header carries a `kid` that identifies which **root key** signed it. The agent looks up that key in `RootKeyUtility_GetKeyForKid`, which checks both the hardcoded list and the on-disk package's `rootKeys`, while rejecting any kid present in the package's `disabledRootKeys`. ([`jws_utils.c:316-460`](../../src/utils/jws_utils/src/jws_utils.c), [`root_key_util.c:760-814`](../../src/utils/root_key_utils/src/root_key_util.c))
+3. **Manifest-signature validation** — once the SJWK is trusted, the signing key it carries is used to verify the `updateManifestSignature` JWS itself via `VerifyJWSWithKey`. ([`jws_utils.c:468-546`](../../src/utils/jws_utils/src/jws_utils.c))
+4. **Manifest-content binding** — after the JWS is verified, the agent decodes the JWS payload (a JSON object with a `sha256` field) and re-hashes the `updateManifest` string. The two SHA-256 values must match, or the manifest is rejected. ([`workflow_utils.c:875-934`](../../src/utils/workflow_utils/src/workflow_utils.c) — `Json_ValidateManifestHash`, called from `workflow_validate_update_manifest_signature` at [lines 942-998](../../src/utils/workflow_utils/src/workflow_utils.c))
 
 Step 2 also runs `IsSigningKeyDisallowed`, which SHA-256-hashes the SJWK public key and rejects it if the hash is in the package's `disabledSigningKeys` list. ([`jws_utils.c:555-625`](../../src/utils/jws_utils/src/jws_utils.c))
 
@@ -237,17 +258,18 @@ ADUC_ROOTKEY_STORE_PATH     = /var/lib/adu/rootkeystore                 (directo
 ADUC_ROOTKEY_STORE_PACKAGE_PATH = /var/lib/adu/rootkeystore/rootkeys.json  (file)
 ```
 
-**Runtime use during manifest verification.** With `s_localStore` populated, the agent can verify update manifests. When the manifest's JWS arrives, the chain is:
+**Runtime use during manifest verification.** With `s_localStore` populated, the agent can verify update manifests. When the deployment arrives, the C2D message carries two separate fields: `updateManifest` (a stringified JSON manifest) and `updateManifestSignature` (a detached compact JWS whose payload is `{"sha256": "<hash of updateManifest string>"}`). Verification is driven by `workflow_validate_update_manifest_signature` in [`workflow_utils.c:942-998`](../../src/utils/workflow_utils/src/workflow_utils.c) and proceeds as follows:
 
 | Step | Code | What it does |
 |------|------|--------------|
-| 1 | `VerifyJWSWithSJWK(jws)` — [`jws_utils.c:468`](../../src/utils/jws_utils/src/jws_utils.c) | Pulls the `sjwk` field from the JWS header. |
+| 1 | `VerifyJWSWithSJWK(manifestSignature)` — [`jws_utils.c:468`](../../src/utils/jws_utils/src/jws_utils.c) | Pulls the `sjwk` field from the JWS header. |
 | 2 | `VerifySJWK(sjwk)` — [`jws_utils.c:316`](../../src/utils/jws_utils/src/jws_utils.c) | Reads the `kid` from the SJWK's own JWS header. |
 | 3 | `RootKeyUtility_GetKeyForKid(&rootKey, kid)` — [`root_key_util.c:760`](../../src/utils/root_key_utils/src/root_key_util.c) | First looks up `kid` in the hardcoded list, then in `s_localStore->protectedProperties.rootKeys`. **Rejects if `kid` appears in `s_localStore->protectedProperties.disabledRootKeys`** (lines 782–787). Lazily loads `s_localStore` from disk if not yet loaded. |
 | 4 | `VerifyJWSWithKey(sjwk, rootKey)` | RS256-verifies the SJWK against the resolved root key. |
 | 5 | `RootKeyUtility_GetDisabledSigningKeys(...)` | Fetches the on-disk `disabledSigningKeys` list. |
 | 6 | `IsSigningKeyDisallowed(payload, list)` — [`jws_utils.c:555`](../../src/utils/jws_utils/src/jws_utils.c) | Builds an RSA pub key from `(n,e)` in the SJWK payload, SHA-256-hashes it, and rejects if the hash matches any entry in the list. |
-| 7 | `GetKeyFromBase64EncodedJWK(sjwk)` then `VerifyJWSWithKey(jws, key)` | Finally, verify the actual manifest JWS using the now-trusted signing key. |
+| 7 | `GetKeyFromBase64EncodedJWK(sjwk)` then `VerifyJWSWithKey(manifestSignature, key)` | Verifies the `updateManifestSignature` JWS itself using the now-trusted signing key. After this, the JWS payload (a small JSON object with a `sha256` field) is cryptographically attested — but the manifest *string* is not yet bound to it. |
+| 8 | `Json_ValidateManifestHash(updateActionObject)` — [`workflow_utils.c:875`](../../src/utils/workflow_utils/src/workflow_utils.c) | Decodes the JWS payload, extracts the `sha256` field, and SHA-256-hashes the verbatim `updateManifest` string from the C2D message. If the two hashes match, the manifest is bound to the verified signature. If not, validation fails with `ADUC_ERC_UTILITIES_UPDATE_DATA_PARSER_MANIFEST_VALIDATION_FAILED`. |
 
 After all that, the manifest can be parsed. Per-payload SHA-256 hashes declared in the manifest are then checked after each file is downloaded — see the Security Model in [architecture-overview.md](architecture-overview.md#security-model).
 
