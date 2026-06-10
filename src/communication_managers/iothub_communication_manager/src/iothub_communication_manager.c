@@ -466,15 +466,8 @@ static bool ADUC_DeviceClient_Create(
         result = false;
     }
     else if (
-        connInfo->certificateString != NULL && connInfo->authType == ADUC_AuthType_SASCert
-        && (iothubResult = ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->certificateString))
-            != IOTHUB_CLIENT_OK)
-    {
-        Log_Error("Unable to set IotHub certificate, error=%d", iothubResult);
-        result = false;
-    }
-    else if (
-        connInfo->clientCertificateString != NULL && connInfo->authType == ADUC_AuthType_X509
+        connInfo->clientCertificateString != NULL
+        && (connInfo->authType == ADUC_AuthType_SASCert || connInfo->authType == ADUC_AuthType_X509)
         && (iothubResult =
                 ClientHandle_SetOption(*outClientHandle, SU_OPTION_X509_CERT, connInfo->clientCertificateString))
             != IOTHUB_CLIENT_OK)
@@ -492,7 +485,8 @@ static bool ADUC_DeviceClient_Create(
     }
     else if (
         connInfo->certificateString != NULL
-        && (connInfo->authType == ADUC_AuthType_NestedEdgeCert || connInfo->authType == ADUC_AuthType_X509)
+        && (connInfo->authType == ADUC_AuthType_NestedEdgeCert || connInfo->authType == ADUC_AuthType_X509
+            || connInfo->authType == ADUC_AuthType_SASCert)
         && (iothubResult = ClientHandle_SetOption(*outClientHandle, OPTION_TRUSTED_CERT, connInfo->certificateString))
             != IOTHUB_CLIENT_OK)
     {
@@ -631,7 +625,6 @@ bool GetConnectionInfoFromConnectionString(
     const char* const x509CaCert)
 {
     bool succeeded = false;
-    const ADUC_ConfigInfo* config = NULL;
     if (info == NULL)
     {
         Log_Error("GetConnectionInfoFromConnectionString: info parameter is NULL");
@@ -644,8 +637,6 @@ bool GetConnectionInfoFromConnectionString(
     }
 
     memset(info, 0, sizeof(*info));
-
-    char certificateString[8192];
 
     if (mallocAndStrcpy_s(&info->connectionString, connectionString) != 0)
     {
@@ -692,29 +683,9 @@ bool GetConnectionInfoFromConnectionString(
         info->authType = ADUC_AuthType_SASToken;
     }
 
-    // Optional: The certificate string is needed for Edge Gateway connection.
-    config = ADUC_ConfigInfo_GetInstance();
-    if (config != NULL && config->edgegatewayCertPath != NULL)
-    {
-        if (!LoadBufferWithFileContents(config->edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
-        {
-            Log_Error("Failed to read the certificate from path: %s", config->edgegatewayCertPath);
-            goto done;
-        }
-
-        if (mallocAndStrcpy_s(&info->certificateString, certificateString) != 0)
-        {
-            Log_Error("Failed to copy certificate string.");
-            goto done;
-        }
-
-        info->authType = ADUC_AuthType_NestedEdgeCert;
-    }
-
     succeeded = true;
 
 done:
-    ADUC_ConfigInfo_ReleaseInstance(config);
     return succeeded;
 }
 
@@ -751,6 +722,71 @@ bool GetConnectionInfoFromIdentityService(ADUC_ConnectionInfo* info)
     succeeded = true;
 done:
 
+    return succeeded;
+}
+
+/**
+ * @brief Applies edge gateway certificate as a post-processing step after auth-specific initialization.
+ *
+ * @details When edgegatewayCertPath is configured in du-config.json, the gateway certificate is loaded
+ * and set as the trusted certificate for validating the Edge gateway's TLS server certificate.
+ * For certificate-based auth (X509, SASCert), the original authType is preserved so that client
+ * certificate and private key SDK options continue to be applied. For SASCert (EIS x509), the
+ * client cert is relocated from certificateString to clientCertificateString before overwriting.
+ *
+ * @param info Connection info struct already populated by GetConnectionInfoFromConnectionString or
+ *             GetConnectionInfoFromIdentityService.
+ * @return true on success, false on failure
+ */
+static bool ApplyEdgeGatewayCertIfConfigured(ADUC_ConnectionInfo* info)
+{
+    bool succeeded = false;
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+
+    if (config == NULL || config->edgegatewayCertPath == NULL)
+    {
+        // No edge gateway configured — nothing to do.
+        succeeded = true;
+        goto done;
+    }
+
+    Log_Info("Applying edge gateway certificate from: %s", config->edgegatewayCertPath);
+
+    char certificateString[8192];
+    if (!LoadBufferWithFileContents(config->edgegatewayCertPath, certificateString, ARRAY_SIZE(certificateString)))
+    {
+        Log_Error("Failed to read the edge gateway certificate from path: %s", config->edgegatewayCertPath);
+        goto done;
+    }
+
+    // certificateString is now reserved for trust-anchor (CA / Edge gateway) certificates.
+    // The identity (client) cert always lives in clientCertificateString — populated by
+    // either the direct X509 path (GetConnectionInfoFromConnectionString) or the EIS x509
+    // path (RequestConnectionStringFromEISWithExpiry). So here we only need to free any
+    // existing trust anchor (e.g. the IoT Hub CA cert from direct X509) before replacing
+    // it with the gateway cert.
+    free(info->certificateString);
+    info->certificateString = NULL;
+
+    // Store the gateway cert as the trust anchor (will be set as OPTION_TRUSTED_CERT).
+    if (mallocAndStrcpy_s(&info->certificateString, certificateString) != 0)
+    {
+        Log_Error("Failed to copy edge gateway certificate string.");
+        goto done;
+    }
+
+    // Only change authType for non-cert-based auth scenarios.
+    // For X509 and SASCert, preserve the original authType so that client cert,
+    // private key, and engine SDK options are still set on the IoT Hub handle.
+    if (info->authType == ADUC_AuthType_SASToken || info->authType == ADUC_AuthType_NotSet)
+    {
+        info->authType = ADUC_AuthType_NestedEdgeCert;
+    }
+
+    succeeded = true;
+
+done:
+    ADUC_ConfigInfo_ReleaseInstance(config);
     return succeeded;
 }
 
@@ -808,6 +844,14 @@ bool GetAgentConfigInfo(ADUC_ConnectionInfo* info)
     else
     {
         Log_Error("The connection type %s is not supported", agent->connectionType);
+        goto done;
+    }
+
+    // Post-processing: apply edge gateway cert if configured (for nested edge scenarios).
+    // This must happen after auth-specific initialization so that the gateway cert is
+    // stored as the trust anchor without clobbering client cert/key state.
+    if (!ApplyEdgeGatewayCertIfConfigured(info))
+    {
         goto done;
     }
 

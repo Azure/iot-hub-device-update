@@ -684,12 +684,18 @@ done:
     free(certResponseStr);
 
     provisioningInfo->connectionString = connectionStr;
-    provisioningInfo->certificateString = certString;
+    // The EIS-issued certificate is the device's *identity* (client) certificate used to
+    // present during mTLS. It belongs in clientCertificateString so it matches the data
+    // model used by the direct-X509 path, and so that certificateString is reserved for
+    // trust-anchor (CA / Edge gateway) certificates only. See ADUC_DeviceClient_Create()
+    // in iothub_communication_manager.c, which now uses clientCertificateString for
+    // SU_OPTION_X509_CERT for both SASCert and X509 auth types.
+    provisioningInfo->clientCertificateString = certString;
     provisioningInfo->opensslPrivateKey = keyHandlePtr;
     provisioningInfo->connType = connType;
     provisioningInfo->authType = authType;
 
-    if (provisioningInfo->authType == ADUC_AuthType_SASCert && provisioningInfo->certificateString != NULL)
+    if (provisioningInfo->authType == ADUC_AuthType_SASCert && provisioningInfo->clientCertificateString != NULL)
     {
         if (mallocAndStrcpy_s(&provisioningInfo->opensslEngine, EIS_OPENSSL_KEY_ENGINE_ID) != 0)
         {
