@@ -35,20 +35,43 @@ jobs:
           restore-keys: |
             vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-
       - name: Install prereqs
+        shell: bash
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+          set -eo pipefail
+          # Retry to absorb transient apt mirror failures (e.g. debian:11 arm64
+          # has intermittently failed to fetch fakeroot during tzdata install).
+          for i in 1 2 3; do
+            apt-get update -o Acquire::Retries=5 \
+              && DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing -o Acquire::Retries=5 tzdata \
+              && break
+            echo "::warning::Install prereqs failed, retry $i/3"
+            apt-get clean || true
+            rm -rf /var/lib/apt/lists/* || true
+            sleep $((i * 10))
+          done
           dpkg-reconfigure -f noninteractive tzdata
       - name: Install dependencies (with ValGrind)
         if: matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04'
         shell: bash
         run: |
-            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind apt --work-folder $GITHUB_WORKSPACE/.workspace
+          set -eo pipefail
+          for i in 1 2 3; do
+            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind apt --work-folder $GITHUB_WORKSPACE/.workspace && break
+            echo "::warning::install-deps.sh failed, retry $i/3"
+            apt-get update -o Acquire::Retries=5 || true
+            sleep $((i * 10))
+          done
       - name: Install dependencies (without ValGrind)
         if: matrix.os != 'ubuntu:22.04' && !(startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04')
         shell: bash
         run: |
-            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --work-folder $GITHUB_WORKSPACE/.workspace
+          set -eo pipefail
+          for i in 1 2 3; do
+            scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --work-folder $GITHUB_WORKSPACE/.workspace && break
+            echo "::warning::install-deps.sh failed, retry $i/3"
+            apt-get update -o Acquire::Retries=5 || true
+            sleep $((i * 10))
+          done
       - name: Build packages and tests
         run: scripts/build.sh --clean --build-unit-tests --build-packages --type MinSizeRel --work-folder $GITHUB_WORKSPACE/.workspace
       - name: Run tests

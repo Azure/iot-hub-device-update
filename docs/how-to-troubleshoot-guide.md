@@ -90,5 +90,4 @@ The unsigned hex representation is `FFFFFFFF E0000083`:
 ## Getting Help
 
 - [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues)
-- [Azure Support](https://azure.microsoft.com/support/)
 - [Device Update Documentation](https://learn.microsoft.com/azure/iot-hub-device-update/)

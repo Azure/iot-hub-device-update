@@ -459,15 +459,49 @@ private:
      *
      * The workflow engine only dispatches one async operation at a time, but we
      * still join defensively to make the ownership model explicit.
+     *
+     * Important: TrackWorker can be invoked re-entrantly on the very worker
+     * thread it is tracking. This happens during a normal successful workflow
+     * step transition: a worker finishes its operation (e.g. Download), calls
+     * WorkCompletionCallback, which synchronously transitions the workflow to
+     * the next step (e.g. Install) and invokes the next step's callback on the
+     * same thread. That callback then arrives here with
+     * _activeWorker.get_id() == std::this_thread::get_id(). Joining a thread on
+     * itself throws std::system_error (EDEADLK); allowing that exception to
+     * propagate caused the local std::thread in the caller to be destroyed
+     * while still joinable, which terminates the process. To avoid that, we
+     * detach the prior worker in the re-entrant case: it is already returning
+     * from its lambda and is no longer responsible for waiting on completion.
+     *
+     * We also avoid calling std::thread::join() while holding
+     * _activeWorkerMutex, so a worker trying to install its successor cannot
+     * deadlock against a shutdown thread holding the mutex.
      */
     void TrackWorker(std::thread&& worker)
     {
-        std::lock_guard<std::mutex> lock(_activeWorkerMutex);
-        if (_activeWorker.joinable())
+        std::thread previous;
         {
-            _activeWorker.join();
+            std::lock_guard<std::mutex> lock(_activeWorkerMutex);
+            if (_activeWorker.joinable()
+                && _activeWorker.get_id() == std::this_thread::get_id())
+            {
+                // Re-entrant install from inside the currently tracked worker
+                // (synchronous workflow transition). Detach so the running
+                // thread can finish unwinding its stack independently; the new
+                // worker we install here represents the in-flight work that
+                // the destructor must wait for.
+                _activeWorker.detach();
+            }
+            else if (_activeWorker.joinable())
+            {
+                previous = std::move(_activeWorker);
+            }
+            _activeWorker = std::move(worker);
         }
-        _activeWorker = std::move(worker);
+        if (previous.joinable())
+        {
+            previous.join();
+        }
     }
 };
 } // namespace ADUC
