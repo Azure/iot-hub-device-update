@@ -170,6 +170,10 @@ flowchart LR
 - **Content hashing** — After download, each payload file's SHA-256 hash is
   compared against the hash declared in the verified manifest.
 
+For an end-to-end walkthrough of how root keys are downloaded, validated,
+stored, and used; why two keys are embedded in the agent binary; and how
+root keys can be rotated or revoked, see [Root Key Deep Dive](rootkey-deep-dive.md).
+
 ### Sandboxing (adu-shell)
 
 The main agent process runs with limited privileges. All privileged operations

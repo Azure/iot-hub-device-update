@@ -44,6 +44,7 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 |----------|-------------|
 | [X.509 Authentication](how-to-x509-authentication.md) | Certificate setup, PKCS#11, HSM integration, and testing |
 | [Goal State & Workflow](goal-state-support.md) | Deployment protocol, state machine, and cryptographic validation |
+| [Root Key Deep Dive](rootkey-deep-dive.md) | How the agent verifies update manifests via root keys, the two embedded keys, rotation/revocation flow, and operator runbook |
 
 ### 🔌 Extensibility
 
