@@ -54,7 +54,7 @@ The agent fetches this document on **every** deployment (before any manifest pro
 
 The entity that operates the trust infrastructure for the agent fleet — i.e., whoever owns the private root keys and the package-signing pipeline. In practice:
 
-- **For the standard Microsoft-hosted Azure IoT Hub Device Update service** (what almost all readers are running): **Microsoft** creates, signs, and publishes the packages. Microsoft holds the private root keys in HSMs and publishes the signed JSON documents at well-known HTTPS endpoints under `*.b.nlu.dl.adu.microsoft.com`. The default URL hardcoded into the `rootkey_validator` tool ([`tools/rootkey_validator/main.cpp`](../../tools/rootkey_validator/main.cpp)) confirms this:
+- **For the standard Microsoft-hosted Azure IoT Hub Device Update service** (what almost all readers are running): **Microsoft** creates, signs, and publishes the packages. Microsoft holds the private root keys in HSMs and publishes the signed JSON documents under `*.b.nlu.dl.adu.microsoft.com`. The default URL hardcoded into the `rootkey_validator` tool ([`tools/rootkey_validator/main.cpp`](../../tools/rootkey_validator/main.cpp)) is:
 
   ```
   http://granite-iothub-aat-dui--granite-iothub-aat-du.b.nlu.dl.adu.microsoft.com
