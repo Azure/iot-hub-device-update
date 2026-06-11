@@ -9,23 +9,24 @@ This document explains, end-to-end, **how the ADU agent uses root keys to verify
 ## Table of contents
 
 - [1. Why root keys matter](#1-why-root-keys-matter)
-- [2. The trust chain at a glance](#2-the-trust-chain-at-a-glance)
-- [3. The two hardcoded root keys](#3-the-two-hardcoded-root-keys)
-- [4. Anatomy of a root-key package](#4-anatomy-of-a-root-key-package)
-- [5. How the agent uses the root key for content verification](#5-how-the-agent-uses-the-root-key-for-content-verification)
-  - [5.1 The download trigger](#51-the-download-trigger)
-  - [5.2 Successful download — storage and runtime use](#52-successful-download--storage-and-runtime-use)
-  - [5.3 Failed download or validation](#53-failed-download-or-validation)
-  - [5.4 The "package unchanged" path](#54-the-package-unchanged-path)
-- [6. Root-key rotation and revocation](#6-root-key-rotation-and-revocation)
-  - [6.1 Two independent revocation lists](#61-two-independent-revocation-lists)
-  - [6.2 Revoking a signing key (intermediate)](#62-revoking-a-signing-key-intermediate)
-  - [6.3 Revoking a root key (one of two)](#63-revoking-a-root-key-one-of-two)
-  - [6.4 Introducing a new root key](#64-introducing-a-new-root-key)
-  - [6.5 What if both hardcoded root keys are compromised at once?](#65-what-if-both-hardcoded-root-keys-are-compromised-at-once)
-- [7. Failure-mode reference](#7-failure-mode-reference)
-- [8. Operator runbook (cloud-side rotation)](#8-operator-runbook-cloud-side-rotation)
-- [9. Observations and limitations](#9-observations-and-limitations)
+- [2. What is a root-key package, and who creates it?](#2-what-is-a-root-key-package-and-who-creates-it)
+- [3. The trust chain at a glance](#3-the-trust-chain-at-a-glance)
+- [4. The two hardcoded root keys](#4-the-two-hardcoded-root-keys)
+- [5. Anatomy of a root-key package](#5-anatomy-of-a-root-key-package)
+- [6. How the agent uses the root key for content verification](#6-how-the-agent-uses-the-root-key-for-content-verification)
+  - [6.1 The download trigger](#61-the-download-trigger)
+  - [6.2 Successful download — storage and runtime use](#62-successful-download--storage-and-runtime-use)
+  - [6.3 Failed download or validation](#63-failed-download-or-validation)
+  - [6.4 The "package unchanged" path](#64-the-package-unchanged-path)
+- [7. Root-key rotation and revocation](#7-root-key-rotation-and-revocation)
+  - [7.1 Two independent revocation lists](#71-two-independent-revocation-lists)
+  - [7.2 Revoking a signing key (intermediate)](#72-revoking-a-signing-key-intermediate)
+  - [7.3 Revoking a root key (one of two)](#73-revoking-a-root-key-one-of-two)
+  - [7.4 Introducing a new root key](#74-introducing-a-new-root-key)
+  - [7.5 What if both hardcoded root keys are compromised at once?](#75-what-if-both-hardcoded-root-keys-are-compromised-at-once)
+- [8. Failure-mode reference](#8-failure-mode-reference)
+- [9. Operator runbook (cloud-side rotation)](#9-operator-runbook-cloud-side-rotation)
+- [10. Observations and limitations](#10-observations-and-limitations)
 
 ---
 
@@ -39,7 +40,66 @@ Root keys are the **anchors of trust** that break this circular problem. They ar
 
 Concretely, root keys answer one question: *"Should this update-manifest signature be trusted?"* Without them, the entire JWS chain in [`src/utils/jws_utils/src/jws_utils.c`](../../src/utils/jws_utils/src/jws_utils.c) (`VerifyJWSWithSJWK` → `VerifySJWK` → `VerifyJWSWithKey`) has nothing to anchor against.
 
-## 2. The trust chain at a glance
+## 2. What is a root-key package, and who creates it?
+
+A **root-key package** is a signed JSON document, published by the operator of the Device Update *service* (not by the device or its owner), that tells every agent in the fleet three things:
+
+1. "Here is the current set of trusted root public keys."
+2. "Here are root keys that have been revoked."
+3. "Here are intermediate signing keys that have been revoked."
+
+The agent fetches this document on **every** deployment (before any manifest processing — see [§6.1](#61-the-download-trigger)), validates it against the keys baked into its binary, and replaces its on-disk copy. It is the *only* mutable source of trust state the agent has; everything else (hardcoded keys, code) is fixed at build time.
+
+### Who creates it?
+
+The entity that operates the trust infrastructure for the agent fleet — i.e., whoever owns the private root keys and the package-signing pipeline. In practice:
+
+- **For the standard Microsoft-hosted Azure IoT Hub Device Update service** (what almost all readers are running): **Microsoft** creates, signs, and publishes the packages. Microsoft holds the private root keys in HSMs and publishes the signed JSON documents at well-known HTTPS endpoints under `*.b.nlu.dl.adu.microsoft.com`. The default URL hardcoded into the `rootkey_validator` tool ([`tools/rootkey_validator/main.cpp:39-40`](../../tools/rootkey_validator/main.cpp)) confirms this:
+
+  ```
+  http://granite-iothub-aat-dui--granite-iothub-aat-du.b.nlu.dl.adu.microsoft.com
+    /SouthCentralUS/rootkeypackages/rootkeypackage-2.json
+  ```
+
+- **For private or forked ADU deployments** (e.g., a customer who builds their own agent from this repo with their own root keys embedded): the operator that owns the build owns the package. They would replace the contents of [`src/utils/root_key_utils/src/root_key_list.c`](../../src/utils/root_key_utils/src/root_key_list.c) with their own keys and stand up their own signing and hosting pipeline.
+
+**Customers consuming Azure ADU as a service (Contoso and similar) do *not* create root-key packages.** When a customer publishes an update via the Azure portal, CLI, or REST API, what they upload is the *update content* (e.g., a `.deb` file) and an *update import manifest* describing it. The Microsoft-operated service generates the on-the-wire update manifest, signs it with Microsoft-managed signing keys, and publishes it to the device twin. The root-key package sits one layer above that — it is the infrastructure that lets devices trust *Microsoft's* signing keys, and it is rotated only by Microsoft. A customer who discovers (say) a signing-key compromise would need to escalate to Microsoft; they cannot publish a revocation themselves.
+
+The C2D message that arrives on the device contains a `rootKeyPackageUrl` field ([`update_content.h`](../../src/adu_types/inc/aduc/types/update_content.h)) that the service populates with the URL of the currently-published package. The agent has a build-time `ADUC_ROOTKEY_PKG_URL_OVERRIDE` ([`CMakeLists.txt:273-279`](../../CMakeLists.txt)) that can pin the URL for testing or air-gapped scenarios; if set, it wins over whatever the C2D message says.
+
+### How is the package constructed?
+
+The agent source does not contain package-generation tooling — that lives on the service side and is not open-sourced. From the agent's validation logic (see [§5](#5-anatomy-of-a-root-key-package) for the schema) the process is unambiguous:
+
+1. The service operator builds a `protected` JSON object: current `rootKeys` map, current `disabledRootKeys` / `disabledSigningKeys` lists, incremented `version`, current `published` timestamp, and the `isTest` flag.
+2. The operator serializes `protected` to a deterministic byte sequence (the agent verifies a byte-equivalent copy, so canonicalisation matters — see the equality-check note in [§10](#10-observations-and-limitations)).
+3. For **each** root key whose private half the operator holds *and* whose public half is hardcoded in the deployed agent fleet, the operator signs the serialized `protected` block with RS256 and appends the signature to the `signatures` array (in the same index order as `protected.rootKeys` — see the positional-coupling warning in [§5](#5-anatomy-of-a-root-key-package)).
+4. The signed package is published at the URL the service then advertises via `rootKeyPackageUrl`.
+
+### What is *not* in the package, and why
+
+It is worth being explicit about the negative space:
+
+- **No per-device or per-customer data.** Every device in the fleet downloads the same package. The package is fleet-global; targeting happens at the *update-manifest* layer, not here.
+- **No update content or manifest content.** This package is purely trust infrastructure — keys and revocation lists.
+- **No certificate chains in the PKI sense.** It is a flat list of RSA public keys with key IDs, plus revocation flags. There is no notion of issuer, validity period, or X.509 here.
+- **No customer-controlled signing.** A customer's own signing keys (e.g., the keys that sign the customer's APT repo) live entirely outside this trust chain.
+
+### What does it contain (preview)?
+
+At a high level (full schema and field semantics are in [§5](#5-anatomy-of-a-root-key-package)):
+
+| Field | Purpose |
+|-------|---------|
+| `protected.rootKeys` | Currently-trusted root public keys, keyed by kid |
+| `protected.disabledRootKeys` | Kids of root keys that should be denied at runtime |
+| `protected.disabledSigningKeys` | SHA-256 hashes of intermediate signing-key public keys that should be denied |
+| `protected.version`, `protected.published`, `protected.isTest` | Metadata |
+| `signatures[]` | One RS256 signature per hardcoded root key, over the serialized `protected` block (positional with `rootKeys`) |
+
+The signed document is delivered as a standalone JSON file at the URL above. It is **not** itself a JWS; it is a plain JSON document with a custom signatures array, which the agent validates with its own loop (see [§5](#5-anatomy-of-a-root-key-package) and [§6.2](#62-successful-download--storage-and-runtime-use)). This is a different signing convention than the update manifest (which uses a detached compact JWS — see [§1](#1-why-root-keys-matter)).
+
+## 3. The trust chain at a glance
 
 ```
 [Agent binary]                                [Service / Cloud]
@@ -99,7 +159,7 @@ The independent verification hops are:
 
 Step 2 also runs `IsSigningKeyDisallowed`, which SHA-256-hashes the SJWK public key and rejects it if the hash is in the package's `disabledSigningKeys` list. ([`jws_utils.c:555-625`](../../src/utils/jws_utils/src/jws_utils.c))
 
-## 3. The two hardcoded root keys
+## 4. The two hardcoded root keys
 
 The agent binary embeds exactly **two** RSA root keys, defined in [`src/utils/root_key_utils/src/root_key_list.c`](../../src/utils/root_key_utils/src/root_key_list.c) lines 21–82:
 
@@ -141,10 +201,10 @@ for (size_t i = 0; i < numHardcodedKeys; ++i)
 The practical consequences of "both must sign":
 
 1. **Defence in depth against single-key compromise.** An attacker who steals one private key still cannot forge a root-key package the agent will accept — they need to steal **both** keys, presumably held in separate HSMs / by separate teams.
-2. **Migration runway during key rotation.** When key `K_old` is being retired in favour of `K_new`, the service can publish packages signed by `{K_old, K_new}` for a transition window. Older agents (which only know `K_old, K_other`) keep accepting packages, while newer agents (which know `K_other, K_new`) can also accept them — provided both windows' hardcoded sets overlap with the published signature set. See [§6.4](#64-introducing-a-new-root-key) for the full mechanics.
+2. **Migration runway during key rotation.** When key `K_old` is being retired in favour of `K_new`, the service can publish packages signed by `{K_old, K_new}` for a transition window. Older agents (which only know `K_old, K_other`) keep accepting packages, while newer agents (which know `K_other, K_new`) can also accept them — provided both windows' hardcoded sets overlap with the published signature set. See [§7.4](#74-introducing-a-new-root-key) for the full mechanics.
 3. **No "either-or" laxness.** The agent will not silently fall back to a single key if the other's signature is missing or invalid. This is intentional — it makes the security guarantee easy to reason about.
 
-## 4. Anatomy of a root-key package
+## 5. Anatomy of a root-key package
 
 A root-key package is a JSON document with two top-level objects: `protected` (the data) and `signatures` (an array of RS256 signatures over the serialised `protected` block). The schema is in [`rootkeypackage.schema.json`](../../src/utils/rootkeypackage_utils/inc/aduc/rootkeypackage.schema.json) and the parsed C representation is in [`rootkeypackage_types.h`](../../src/utils/rootkeypackage_utils/inc/aduc/rootkeypackage_types.h).
 
@@ -192,11 +252,11 @@ typedef struct tagADUC_RootKeyPackage {
 
 | Field | Meaning |
 |-------|---------|
-| `isTest` | Tags the package as a test or prod package. The agent enforces a strict match: a prod-build agent **rejects** test packages and a test-build agent rejects prod packages — **unless** the build defines `ADUC_ENABLE_SRVC_E2E_TESTING`, in which case the gating is bypassed entirely. See the precise flag matrix in [§5.2](#52-successful-download--storage-and-runtime-use) and the gate at [`rootkey_workflow.c:122-140`](../../src/rootkey_workflow/src/rootkey_workflow.c). |
-| `version` | Service-assigned, documented as "monotonic increasing" in the type comment. The agent **parses** this but does not enforce monotonicity locally — see [§9](#9-observations-and-limitations) for the security implications. |
+| `isTest` | Tags the package as a test or prod package. The agent enforces a strict match: a prod-build agent **rejects** test packages and a test-build agent rejects prod packages — **unless** the build defines `ADUC_ENABLE_SRVC_E2E_TESTING`, in which case the gating is bypassed entirely. See the precise flag matrix in [§6.2](#62-successful-download--storage-and-runtime-use) and the gate at [`rootkey_workflow.c:122-140`](../../src/rootkey_workflow/src/rootkey_workflow.c). |
+| `version` | Service-assigned, documented as "monotonic increasing" in the type comment. The agent **parses** this but does not enforce monotonicity locally — see [§10](#10-observations-and-limitations) for the security implications. |
 | `published` | Unix timestamp the service published this package. Informational. |
-| `disabledRootKeys` | Array of kids. Any root kid here is **unusable for verifying SJWKs in update manifests**, even if its public key is still listed in `rootKeys`. See [§6.3](#63-revoking-a-root-key-one-of-two). |
-| `disabledSigningKeys` | Array of `{alg, hash}` objects. Each hash is the SHA-256 of an intermediate signing-key public key (the JWK carried in an SJWK). See [§6.2](#62-revoking-a-signing-key-intermediate). |
+| `disabledRootKeys` | Array of kids. Any root kid here is **unusable for verifying SJWKs in update manifests**, even if its public key is still listed in `rootKeys`. See [§7.3](#73-revoking-a-root-key-one-of-two). |
+| `disabledSigningKeys` | Array of `{alg, hash}` objects. Each hash is the SHA-256 of an intermediate signing-key public key (the JWK carried in an SJWK). See [§7.2](#72-revoking-a-signing-key-intermediate). |
 | `rootKeys` | The current set of trusted root keys, keyed by kid. The agent looks here during SJWK validation if the kid is not in the hardcoded list. **The enumeration order of this object matters** — see the signature-positioning note immediately below. |
 | `signatures[]` | RS256 signatures over the byte-exact serialised `protected` block. **The agent requires one valid signature per *hardcoded* root key.** Extra signatures (e.g., from new keys the agent doesn't know) are allowed and ignored. |
 
@@ -204,9 +264,9 @@ typedef struct tagADUC_RootKeyPackage {
 
 > **⚠️ Only RS256 is honoured for package self-validation.** Although the schema permits `RS384` and `RS512` in `signatures[].alg` ([schema lines 46-49](../../src/utils/rootkeypackage_utils/inc/aduc/rootkeypackage.schema.json)) and the parser accepts all three, the validator always calls `CryptoUtils_IsValidSignature(CRYPTO_UTILS_SIGNATURE_VALIDATION_ALG_RS256, ...)` regardless of the parsed `alg` ([`root_key_util.c:340-346`](../../src/utils/root_key_utils/src/root_key_util.c)). Packages signed with RS384/RS512 will be rejected. Treat RS256 as a hard requirement until that hardcoded constant changes.
 
-## 5. How the agent uses the root key for content verification
+## 6. How the agent uses the root key for content verification
 
-### 5.1 The download trigger
+### 6.1 The download trigger
 
 When the cloud sends a deployment via desired-property update, the `OrchestratorUpdateCallback` in [`adu_core_interface.c`](../../src/agent/adu_core_interface/src/adu_core_interface.c) extracts two fields from the *unprotected* portion of the workflow message:
 
@@ -231,12 +291,12 @@ The download itself is delegated to a pluggable downloader (Delivery Optimizatio
 2. Honours the build-time `ADUC_ROOTKEY_PKG_URL_OVERRIDE` if set, otherwise uses the URL from the C2D message. (Useful for pinning during testing — see [`CMakeLists.txt:273-279`](../../CMakeLists.txt).)
 3. **Force-downloads** the file (no hash check at this stage — the package's `signatures` field provides self-referential integrity, so a tampered download will fail signature validation below).
 
-### 5.2 Successful download — storage and runtime use
+### 6.2 Successful download — storage and runtime use
 
 `RootKeyWorkflow_UpdateRootKeys` ([`rootkey_workflow.c:38-217`](../../src/rootkey_workflow/src/rootkey_workflow.c)) drives the post-download pipeline:
 
 1. **Parse** the JSON into an `ADUC_RootKeyPackage` (`ADUC_RootKeyPackageUtils_Parse`).
-2. **Validate signatures with hardcoded keys** (`RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys`). This is the moment of bootstrap — see [§3](#3-the-two-hardcoded-root-keys).
+2. **Validate signatures with hardcoded keys** (`RootKeyUtility_ValidateRootKeyPackageWithHardcodedKeys`). This is the moment of bootstrap — see [§4](#4-the-two-hardcoded-root-keys).
 3. **Enforce test/prod separation** based on `isTest` vs the agent's build-time test flags. The exact behaviour, captured at [`rootkey_workflow.c:122-140`](../../src/rootkey_workflow/src/rootkey_workflow.c), is:
 
    | Build flags defined | Behaviour for prod pkg (`isTest=false`) | Behaviour for test pkg (`isTest=true`) |
@@ -246,7 +306,7 @@ The download itself is delegated to a pluggable downloader (Delivery Optimizatio
    | `ADUC_ENABLE_SRVC_E2E_TESTING` (CMake `-DADUC_ENABLE_SRVC_E2E_TESTING=ON`) | Accept | Accept (entire gate is skipped via `#ifndef`) |
 
    **The test/prod gate is independent of the hardcoded root-key set.** Whether the binary embeds prod or test root keys is controlled by the separate flag `ADUC_USE_TEST_ROOT_KEYS` (compile def `EMBED_TEST_ROOT_KEYS`) — see [`CMakeLists.txt:534-536`](../../CMakeLists.txt) and [`src/CMakeLists.txt:11-15`](../../src/CMakeLists.txt). You can in principle mix and match (e.g. a build with prod root keys but the e2e test gate enabled), though only the matrix above is exercised in CI.
-4. **Compare** to the on-disk store using `ADUC_RootKeyUtility_IsUpdateStoreNeeded` ([`root_key_util.c:881-912`](../../src/utils/root_key_utils/src/root_key_util.c)). This does a full structural equality check via `ADUC_RootKeyPackageUtils_AreEqual`. If equal, the workflow returns `ADUC_Result_RootKey_Continue` with ERC `ADUC_ERC_ROOTKEY_PKG_UNCHANGED` — see [§5.4](#54-the-package-unchanged-path).
+4. **Compare** to the on-disk store using `ADUC_RootKeyUtility_IsUpdateStoreNeeded` ([`root_key_util.c:881-912`](../../src/utils/root_key_utils/src/root_key_util.c)). This does a full structural equality check via `ADUC_RootKeyPackageUtils_AreEqual`. If equal, the workflow returns `ADUC_Result_RootKey_Continue` with ERC `ADUC_ERC_ROOTKEY_PKG_UNCHANGED` — see [§6.4](#64-the-package-unchanged-path).
 5. **Atomic write** via `RootKeyUtility_WriteRootKeyPackageToFileAtomically` — writes to `<store>.json-temp`, then renames over `<store>.json`. ([`root_key_util.c:427-513`](../../src/utils/root_key_utils/src/root_key_util.c))
 6. **Reload** the package into the process-wide `s_localStore` via `RootKeyUtility_ReloadPackageFromDisk(..., validateSignatures=true)` — re-validating signatures on the just-written file as a paranoia check.
 
@@ -273,7 +333,7 @@ ADUC_ROOTKEY_STORE_PACKAGE_PATH = /var/lib/adu/rootkeystore/rootkeys.json  (file
 
 After all that, the manifest can be parsed. Per-payload SHA-256 hashes declared in the manifest are then checked after each file is downloaded — see the Security Model in [architecture-overview.md](architecture-overview.md#security-model).
 
-### 5.3 Failed download or validation
+### 6.3 Failed download or validation
 
 If any step in `RootKeyWorkflow_UpdateRootKeys` fails, the function returns a failure `ADUC_Result` and the orchestrator aborts the deployment **without** attempting manifest verification ([`adu_core_interface.c:445-449`](../../src/agent/adu_core_interface/src/adu_core_interface.c)):
 
@@ -294,9 +354,9 @@ The extended result code is also stashed via `RootKeyUtility_SetReportingErc()` 
 - The previous on-disk store is **not modified** — atomic rename means a failed download/parse/validation leaves the existing `rootkeys.json` intact.
 - The next deployment will re-attempt the download from scratch.
 
-See [§7](#7-failure-mode-reference) for the full list of failure ERCs.
+See [§8](#8-failure-mode-reference) for the full list of failure ERCs.
 
-### 5.4 The "package unchanged" path
+### 6.4 The "package unchanged" path
 
 If the just-downloaded package is structurally equal to the on-disk store, the function short-circuits ([`rootkey_workflow.c:160-167`](../../src/rootkey_workflow/src/rootkey_workflow.c)):
 
@@ -314,11 +374,11 @@ if (!ADUC_RootKeyUtility_IsUpdateStoreNeeded(fileDest, &rootKeyPackage))
 
 ---
 
-## 6. Root-key rotation and revocation
+## 7. Root-key rotation and revocation
 
 This section is what the solution operator (Contoso) needs to plan for. The agent supports two distinct revocation primitives, plus a key-introduction flow that requires careful coordination with agent releases.
 
-### 6.1 Two independent revocation lists
+### 7.1 Two independent revocation lists
 
 A single root-key package carries **two** lists, and they revoke different things:
 
@@ -327,9 +387,9 @@ A single root-key package carries **two** lists, and they revoke different thing
 | Root-key revocation | `protected.disabledRootKeys` | Use of a **root key** (by `kid`) to verify SJWKs in update manifests | `RootKeyUtility_RootKeyIsDisabled` ([`root_key_util.c:630-650`](../../src/utils/root_key_utils/src/root_key_util.c)), called by `RootKeyUtility_GetKeyForKid` ([`root_key_util.c:782-787`](../../src/utils/root_key_utils/src/root_key_util.c)) |
 | Signing-key revocation | `protected.disabledSigningKeys` | Use of a specific **intermediate signing key** (by SHA-256 of public key) | `IsSigningKeyDisallowed` ([`jws_utils.c:555-625`](../../src/utils/jws_utils/src/jws_utils.c)) |
 
-The lists are **completely independent**. Neither has any effect on whether a root-key package is *itself* accepted — package self-validation is performed exclusively against the agent's *hardcoded* keys (see [§3](#3-the-two-hardcoded-root-keys)). This separation is critical: it means a compromised key can be marked disabled in a package that is still validly signed by that same compromised key, without creating a circular dependency.
+The lists are **completely independent**. Neither has any effect on whether a root-key package is *itself* accepted — package self-validation is performed exclusively against the agent's *hardcoded* keys (see [§4](#4-the-two-hardcoded-root-keys)). This separation is critical: it means a compromised key can be marked disabled in a package that is still validly signed by that same compromised key, without creating a circular dependency.
 
-### 6.2 Revoking a signing key (intermediate)
+### 7.2 Revoking a signing key (intermediate)
 
 This is the **routine** case: you've issued a signing certificate, it's used for a while, you want to retire it (scheduled rotation) or you discovered it's compromised. The flow:
 
@@ -341,9 +401,9 @@ This is the **routine** case: you've issued a signing certificate, it's used for
 
 This is the typical operating-procedure response to a signing-key compromise and requires **no** changes to the embedded root keys.
 
-> **⚠️ Revocation is not rollback-resistant.** Step 5's "as long as" is load-bearing. Because the agent does not enforce monotonic `version` (see [§9](#9-observations-and-limitations)), an attacker who can substitute the delivered root-key package URL — e.g. by tampering with the C2D message or hijacking the download URL — can serve an older, still-validly-signed package whose `disabledSigningKeys` list does *not* yet include the compromised key. The agent will accept the older package (it parses, all hardcoded signatures verify) and silently undo the revocation. Operationally this means: signing-key revocation depends on the C2D channel and the package-delivery channel being trustworthy. If those are also compromised, revocation alone cannot save you — see [§9](#9-observations-and-limitations) for mitigations.
+> **⚠️ Revocation is not rollback-resistant.** Step 5's "as long as" is load-bearing. Because the agent does not enforce monotonic `version` (see [§10](#10-observations-and-limitations)), an attacker who can substitute the delivered root-key package URL — e.g. by tampering with the C2D message or hijacking the download URL — can serve an older, still-validly-signed package whose `disabledSigningKeys` list does *not* yet include the compromised key. The agent will accept the older package (it parses, all hardcoded signatures verify) and silently undo the revocation. Operationally this means: signing-key revocation depends on the C2D channel and the package-delivery channel being trustworthy. If those are also compromised, revocation alone cannot save you — see [§10](#10-observations-and-limitations) for mitigations.
 
-### 6.3 Revoking a root key (one of two)
+### 7.3 Revoking a root key (one of two)
 
 Scenario: one of the two currently-active root keys (say `ADU.200702.R`) is compromised or scheduled for retirement. **This is fundamentally harder than signing-key revocation** because of the bootstrap constraint: the agent's hardcoded list still requires the compromised key to sign every new root-key package.
 
@@ -351,7 +411,7 @@ Scenario: one of the two currently-active root keys (say `ADU.200702.R`) is comp
 
 1. Publish a new root-key package whose `disabledRootKeys` array includes `"ADU.200702.R"`.
 2. The package is still signed by **both** `ADU.200702.R` and `ADU.200703.R` (the agent's hardcoded keys); the agent's hardcoded validator does not care that one of them is being disabled.
-3. After the agent stores this new package, `RootKeyUtility_GetKeyForKid` will refuse to return `ADU.200702.R` even though it's hardcoded. New SJWKs that name `ADU.200702.R` in their `kid` will fail with `JWSResult_DisallowedRootKid` — **as long as the agent's on-disk store is the new package** (see the rollback caveat in [§6.2](#62-revoking-a-signing-key-intermediate); it applies equally here).
+3. After the agent stores this new package, `RootKeyUtility_GetKeyForKid` will refuse to return `ADU.200702.R` even though it's hardcoded. New SJWKs that name `ADU.200702.R` in their `kid` will fail with `JWSResult_DisallowedRootKid` — **as long as the agent's on-disk store is the new package** (see the rollback caveat in [§7.2](#72-revoking-a-signing-key-intermediate); it applies equally here).
 4. From now on, the cloud should sign SJWKs only with `ADU.200703.R`. Older SJWKs signed by `ADU.200702.R` (if any are still cached anywhere) become unusable.
 
 **What the operator *cannot* do without an agent rebuild:**
@@ -361,11 +421,11 @@ Scenario: one of the two currently-active root keys (say `ADU.200702.R`) is comp
 
 In summary: **`disabledRootKeys` is a *runtime-deny* mechanism, not a *bootstrap-remove* mechanism**. The hardcoded list is the source of truth for what signs the root-key package. And because there is no monotonic version check, the runtime-deny is only as durable as the integrity of the package-delivery channel.
 
-### 6.4 Introducing a new root key
+### 7.4 Introducing a new root key
 
 Scenario: Contoso wants to add a new root key `ADU.301010.R` to the trust set (for future rotation, or to replace a key being phased out).
 
-The cloud-side aspect of this is relatively cheap: the service can include an extra `K_new` entry in `protected.rootKeys` and an extra `K_new`-signed entry in `signatures[]` of any new package. **Older agents will simply not look at K_new** — their hardcoded loop only verifies signatures for the keys they know, so the extra entry is harmless (subject to the positional-coupling rule called out in [§4](#4-anatomy-of-a-root-key-package): the *order* of `rootKeys` and `signatures` must match).
+The cloud-side aspect of this is relatively cheap: the service can include an extra `K_new` entry in `protected.rootKeys` and an extra `K_new`-signed entry in `signatures[]` of any new package. **Older agents will simply not look at K_new** — their hardcoded loop only verifies signatures for the keys they know, so the extra entry is harmless (subject to the positional-coupling rule called out in [§5](#5-anatomy-of-a-root-key-package): the *order* of `rootKeys` and `signatures` must match).
 
 What requires an **agent binary update** is the moment you want the service to be able to *require* `K_new` — i.e. publish a package that omits one of the older keys' signatures. From then on, only agents whose hardcoded list includes `K_new` will accept the package. The general migration pattern:
 
@@ -381,7 +441,7 @@ What requires an **agent binary update** is the moment you want the service to b
 - Adding a key to an *agent's hardcoded list* makes that key a hard requirement for that agent — so the service must keep signing with it until the agent is retired.
 - Removing a key from an agent's hardcoded list must be sequenced **after** every device has upgraded past the version that required it.
 
-### 6.5 What if both hardcoded root keys are compromised at once?
+### 7.5 What if both hardcoded root keys are compromised at once?
 
 This is the catastrophic case. **Once both private keys are in adversary hands, the root-key package mechanism provides no defence**, because:
 
@@ -399,7 +459,7 @@ This is why **the two hardcoded keys should be managed under fully separated con
 
 ---
 
-## 7. Failure-mode reference
+## 8. Failure-mode reference
 
 ### Root-key workflow ERCs (component `0xa` = `ADUC_COMPONENT_ROOTKEY_WORKFLOW`)
 
@@ -447,31 +507,31 @@ The `rootkey_validator` CLI tool ([`tools/rootkey_validator/README.md`](../../to
 
 ---
 
-## 8. Operator runbook (cloud-side rotation)
+## 9. Operator runbook (cloud-side rotation)
 
 A quick checklist for solution operators (e.g. Contoso) when changes are needed.
 
 ### Scenario A — Rotate a signing key (routine, weekly/monthly cadence)
 
 1. Generate the new signing key in the cloud HSM.
-2. Start signing **new** update manifests' SJWKs with the new key (the SJWK is signed by one of the *root* keys — see [§5.2](#52-successful-download--storage-and-runtime-use)).
+2. Start signing **new** update manifests' SJWKs with the new key (the SJWK is signed by one of the *root* keys — see [§6.2](#62-successful-download--storage-and-runtime-use)).
 3. Publish a new root-key package with the **old** signing key's public-key SHA-256 added to `disabledSigningKeys`, bump `version` and `published`.
 4. Sign the package with both currently-active root keys.
 5. Wait until fleet has picked up the new package. No agent change needed.
-6. **Rollback caveat:** the agent has no monotonic-version check (see [§9](#9-observations-and-limitations)). If the C2D channel or download URL can be tampered with, an attacker can serve an older still-validly-signed package that lacks the new `disabledSigningKeys` entry, silently undoing the revocation. Ensure the package-delivery path is secured.
+6. **Rollback caveat:** the agent has no monotonic-version check (see [§10](#10-observations-and-limitations)). If the C2D channel or download URL can be tampered with, an attacker can serve an older still-validly-signed package that lacks the new `disabledSigningKeys` entry, silently undoing the revocation. Ensure the package-delivery path is secured.
 
 ### Scenario B — Revoke a root key (one of two is compromised)
 
 1. **Immediately** stop signing new SJWKs with the compromised root key. Use only the other root key.
 2. Publish a new root-key package with the compromised `kid` in `disabledRootKeys`, bump `version` and `published`.
-3. Sign the package with **both** hardcoded keys (you still need to — see [§6.3](#63-revoking-a-root-key-one-of-two)).
+3. Sign the package with **both** hardcoded keys (you still need to — see [§7.3](#73-revoking-a-root-key-one-of-two)).
 4. Plan an agent release that drops the compromised key from `root_key_list.c` and adds a replacement (see Scenario C).
 5. **Rollback caveat applies here too** — see Scenario A step 6. Until the compromised key is removed from the agent binary, runtime denial is the only protection, and it can be undone by package rollback.
 
 ### Scenario C — Introduce a new root key (planned rotation)
 
 1. Generate `K_new` in the cloud HSM.
-2. Start including a `K_new` entry in `protected.rootKeys` and a `K_new`-signed entry in `signatures[]` of every new package, **keeping the array ordering consistent** (see [§4](#4-anatomy-of-a-root-key-package)). Older agents will ignore the extras.
+2. Start including a `K_new` entry in `protected.rootKeys` and a `K_new`-signed entry in `signatures[]` of every new package, **keeping the array ordering consistent** (see [§5](#5-anatomy-of-a-root-key-package)). Older agents will ignore the extras.
 3. Release agent `v_next` whose hardcoded list is `{K_old1, K_old2, K_new}`. From now on, any agent at `v_next` requires all three signatures.
 4. Roll out `v_next` to the fleet. The service must continue signing with all three keys throughout the migration.
 5. Once fleet migration is complete and verified, release `v_next+1` that drops the key being retired. Only then can the service stop signing with the retired key. Coordinate carefully — any device left on `v_next` will start failing.
@@ -485,11 +545,11 @@ A quick checklist for solution operators (e.g. Contoso) when changes are needed.
 
 ---
 
-## 9. Observations and limitations
+## 10. Observations and limitations
 
 These are notes for future maintainers — behaviours that the current code exhibits which may surprise an operator or warrant future design work.
 
-- **No version-monotonicity check — and this directly weakens revocation.** The `version` field is parsed (`rootkeypackage_parse.c:165`) but the agent never compares the candidate package's `version` against the on-disk version. A validly-signed older package will be accepted and overwrite a newer on-disk store. The only "did anything change?" check is full structural equality via `ADUC_RootKeyPackageUtils_AreEqual`, which doesn't help with rollback prevention. **The practical impact is that both kinds of package-driven revocation ([§6.2](#62-revoking-a-signing-key-intermediate), [§6.3](#63-revoking-a-root-key-one-of-two)) can be silently undone** by an attacker who can serve a previously-published, still-validly-signed older package — for example by tampering with the C2D message's `rootKeyPackageUrl`, hijacking the download URL, or replaying a captured older package. Mitigations until a monotonic check is added: (1) protect the C2D channel (TLS, IoT Hub authentication), (2) use signed/HTTPS-only download URLs that the service controls, (3) consider setting `ADUC_ROOTKEY_PKG_URL_OVERRIDE` at build time to a pinned trusted URL for high-security deployments.
+- **No version-monotonicity check — and this directly weakens revocation.** The `version` field is parsed (`rootkeypackage_parse.c:165`) but the agent never compares the candidate package's `version` against the on-disk version. A validly-signed older package will be accepted and overwrite a newer on-disk store. The only "did anything change?" check is full structural equality via `ADUC_RootKeyPackageUtils_AreEqual`, which doesn't help with rollback prevention. **The practical impact is that both kinds of package-driven revocation ([§7.2](#72-revoking-a-signing-key-intermediate), [§7.3](#73-revoking-a-root-key-one-of-two)) can be silently undone** by an attacker who can serve a previously-published, still-validly-signed older package — for example by tampering with the C2D message's `rootKeyPackageUrl`, hijacking the download URL, or replaying a captured older package. Mitigations until a monotonic check is added: (1) protect the C2D channel (TLS, IoT Hub authentication), (2) use signed/HTTPS-only download URLs that the service controls, (3) consider setting `ADUC_ROOTKEY_PKG_URL_OVERRIDE` at build time to a pinned trusted URL for high-security deployments.
 
 - **Signatures are positionally coupled to `protected.rootKeys`.** When the validator finds the signature for hardcoded kid `K`, it locates `K` by index within `protected.rootKeys` and then reads `signatures[index]` ([`root_key_util.c:184-214, 307-318`](../../src/utils/root_key_utils/src/root_key_util.c)). This means package authors must keep the two arrays in lock-step. Inserting or reordering entries in `rootKeys` without correspondingly updating `signatures` will break every hardcoded key's verification, even though the signatures themselves are cryptographically valid. The schema does not document this requirement, and the code does not match signatures by `kid` — so be careful when writing tooling that generates packages.
 
