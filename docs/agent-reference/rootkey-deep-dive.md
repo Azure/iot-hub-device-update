@@ -32,7 +32,7 @@ This document explains, end-to-end, **how the ADU agent uses root keys to verify
 
 ## 1. Why root keys matter
 
-The ADU agent receives every update instruction from Azure IoT Hub as a JSON object — the **update manifest** (carried as a stringified JSON in the `updateManifest` field) plus a **detached signature** in the `updateManifestSignature` field. The signature is a compact JWS whose payload is a small object containing the SHA-256 hash of the `updateManifest` string. The agent verifies the JWS, then re-computes the hash of the manifest string and compares it to the hash in the JWS payload (see [`workflow_utils.c`](../../src/utils/workflow_utils/src/workflow_utils.c) — `Json_ValidateManifestHash`). Only after both succeed is the manifest trusted.
+The ADU agent receives every update instruction from Azure IoT Hub as a JSON object — the **update manifest** (carried as a stringified JSON in the `updateManifest` field) plus a signature in the `updateManifestSignature` field. The signature is a compact JWS whose payload is a small object containing the SHA-256 hash of the `updateManifest` string. The agent verifies the JWS, then re-computes the hash of the manifest string and compares it to the hash in the JWS payload (see [`workflow_utils.c`](../../src/utils/workflow_utils/src/workflow_utils.c) — `Json_ValidateManifestHash`). Only after both succeed is the manifest trusted.
 
 The agent has no other way to authenticate the manifest. **If the agent trusted whatever the C2D payload claimed, anyone able to inject a desired-property update on a device twin could install arbitrary code.**
 
