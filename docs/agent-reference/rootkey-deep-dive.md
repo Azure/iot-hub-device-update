@@ -2,7 +2,7 @@
 
 > **Applies to:** ADU agent v1.3.0-rc1
 > **Audience:** Agent maintainers, security engineers, and solution operators who need to understand or operate the root-key trust chain.
-> **Source of truth:** Everything in this doc is verified against the `develop` branch source. File and line references are included for every claim.
+> **Source of truth:** Everything in this doc is verified against the `develop` branch source. Source-file references are included throughout.
 
 This document explains, end-to-end, **how the ADU agent uses root keys to verify update manifests, how the root-key trust chain bootstraps, and how root keys can be rotated or revoked**. It is the companion deep-dive for the Security Model section of [architecture-overview.md](architecture-overview.md#security-model).
 
