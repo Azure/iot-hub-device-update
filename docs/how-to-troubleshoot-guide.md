@@ -34,6 +34,7 @@ Delivery Optimization logs (when using DO content downloader):
 | Symptom | Likely Cause | Resolution |
 |---------|-------------|------------|
 | Download fails | Network issue, storage URL expired, or content downloader error | Check network connectivity; review DO or curl downloader logs |
+| Download appears slow but is making progress after an agent or `deviceupdate-agent.service` restart | Expected — the download is **resuming** from the previous byte offset rather than restarting | No action needed. See [Download Resume Across Agent / Service Restarts](agent-reference/architecture-overview.md#download-resume-across-agent--service-restarts). Do not manually delete `/var/lib/adu/downloads/`; that prevents resume. |
 | Delta download handler errors | Missing delta dependencies or source file not cached | See [Building with Delta Handler](agent-reference/building-with-delta-handler.md) for setup |
 | Installation stuck at "In Progress" | Handler script timeout or crash | Check handler logs; review script permissions |
 | Update reports failure with ExtendedResultCode | Handler or agent error | Decode the result code (see below) |
