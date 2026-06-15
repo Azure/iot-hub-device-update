@@ -15,6 +15,8 @@ The service will ensure the desired action in the digital twin is at the latest 
 
 The agent in turn will evaluate and ensure the device is at the latest goal state whenever a PNP property update is pushed to it (when it first starts up and whenever there is a change to the goal state) and on other events such as plugging in a component (e.g. a camera component device plugging into a host device).
 
+> Note: The agent does not detect component plug/unplug events on its own. The device builder owns reconnect detection and is expected to ask the agent to re-evaluate the current deployment by sending a local IPC command. See [Re-evaluating a deployment after offline components reconnect](reprocessing-deployments.md) for the supported mechanism and a worked example.
+
 #### Changes from CBO (Cloud-based orchestration)
 
 ##### Agent-based vs cloud-based orchestration

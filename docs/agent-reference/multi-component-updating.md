@@ -24,3 +24,15 @@ To provide information about components on the target device to the Device Updat
 ## Proxy Update Example
 
 See [tutorial using the Device Update agent to do Proxy Updates](../../src/extensions/component_enumerators/examples/contoso_component_enumerator/demo/README.md) with sample updates for components connected to a Contoso Virtual Vacuum device.
+
+## Components That Are Offline at Install Time
+
+When a proxy update is deployed but one or more target components are
+unreachable (sensor powered down, peripheral disconnected, MCU busy, …),
+the agent installs the update on whichever components are online, reports
+the bundle as a whole as successful, and goes back to Idle.
+
+If the component reconnects later, the device builder is responsible for
+asking the agent to re-evaluate the current deployment so the missing
+component gets patched. The supported mechanism is described in
+[Re-evaluating a deployment after offline components reconnect](reprocessing-deployments.md).

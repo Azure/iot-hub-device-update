@@ -54,6 +54,7 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 | [Registering Extensions](registering-device-update-extensions.md) | How to register handlers, downloaders, and enumerators |
 | [Extension Contract Versions](extension-contract-versions.md) | Versioning scheme for extension compatibility |
 | [Multi-Component Updates](multi-component-updating.md) | Proxy updates and multi-step ordered execution |
+| [Re-evaluating Deployments](reprocessing-deployments.md) | Trigger re-evaluation of the current deployment after offline peripherals reconnect (proxy / bundle update use case) |
 
 ### 📱 Integration & SDK
 
@@ -89,7 +90,7 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 - **🏭 Production Deployment**: [Configuration Guide](configuration-guide.md) → [X.509 Authentication](how-to-x509-authentication.md)
 - **📦 Delta Updates**: [Building with Delta Handler](building-with-delta-handler.md)
 - **🔧 Custom Update Types**: [Implementing Custom Handlers](how-to-implement-custom-update-handler.md) → [Registering Extensions](registering-device-update-extensions.md)
-- **🌐 Multi-Component Devices**: [Multi-Component Updates](multi-component-updating.md)
+- **🌐 Multi-Component Devices**: [Multi-Component Updates](multi-component-updating.md) → [Re-evaluating Deployments](reprocessing-deployments.md)
 
 ## Key Features by Version
 
