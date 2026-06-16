@@ -99,6 +99,25 @@ The agent authenticates to IoT Hub using either a **connection string** or
 **X.509 client certificates** (new in 1.3.0 —
 see [how-to-x509-authentication.md](how-to-x509-authentication.md)).
 
+### Local IPC
+
+In addition to the cloud-side channels above, the agent exposes two
+local inter-process channels on Linux for cooperating processes on the
+same device:
+
+- **Service Status API (read)** — a shared-library API
+  (`GetAduServiceStatus()`) that lets other processes query the agent's
+  current workflow state without an IoT Hub round-trip. See
+  [GetAduServiceStatus.md](GetAduServiceStatus.md).
+- **Command FIFO (write)** — a named pipe owned by `adu:adu` that
+  accepts a small set of one-shot commands. The `retry-update` command
+  asks the running agent to re-fetch its current goal-state deployment
+  and re-process it; this is the supported way for device-builder code
+  to trigger re-evaluation after a peripheral reconnects or any other
+  device-side change that affects which components the update should
+  apply to. See [Re-evaluating a deployment after offline components
+  reconnect](reprocessing-deployments.md).
+
 ---
 
 ## Extension Plugin Architecture
@@ -357,3 +376,4 @@ agent crashes, the stale lock is removed immediately and the reboot proceeds.
 - [steps-handler.md](steps-handler.md) — Steps Handler (default Update Manifest Handler) phase-by-phase reference
 - [update-manifest-v5-schema.md](update-manifest-v5-schema.md) — Update manifest format reference
 - [device-update-agent-extended-result-codes.md](device-update-agent-extended-result-codes.md) — Error and result code reference
+- [reprocessing-deployments.md](reprocessing-deployments.md) — Local-IPC `retry-update` mechanism for re-evaluating the current deployment (typical use: previously-offline peripherals reconnect)

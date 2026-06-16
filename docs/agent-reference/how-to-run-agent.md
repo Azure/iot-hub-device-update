@@ -61,6 +61,25 @@ DeviceInformation Digital Twin interface. This value can be used to override the
 This option changes the value of 'swVersion' that is reported through the
 DeviceInformation Digital Twin interface.
 
+#### --command \<command-name>
+
+Sends a one-shot command to the long-running Device Update agent daemon
+via its local IPC channel and exits. The most useful command is
+`retry-update`, which asks the running agent to re-fetch its current
+goal-state deployment from the device twin and re-process it — typically
+used after a previously-offline peripheral reconnects, so the agent
+re-runs the install on the now-reachable component.
+
+```sh
+sudo -u adu /usr/bin/AducIotAgent --command retry-update
+```
+
+The IPC channel is a named pipe owned by `adu:adu`, so the caller's
+effective group must be `root` or `adu`. The option is available on
+Linux builds only. See [Re-evaluating a deployment after offline
+components reconnect](reprocessing-deployments.md) for the full pattern,
+worked examples, and operational notes.
+
 ## Daemon
 
 When the Device Update Agent has been installed as a daemon, it will automatically start
