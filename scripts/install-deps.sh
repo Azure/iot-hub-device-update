@@ -671,6 +671,27 @@ do_install_azure_storage_sdk() {
 
     git checkout tags/"$azure_storage_sdk_tag_ref"
 
+    # Pin the vcpkg baseline used to resolve this SDK's manifest dependencies.
+    #
+    # The azure-sdk-for-cpp manifest at tag azure-core_1.6.0 does not declare a
+    # "builtin-baseline" in its vcpkg.json, so vcpkg falls back to whatever
+    # commit happens to be checked out in $VCPKG_ROOT (or HEAD when bootstrapped
+    # fresh). Newer vcpkg baselines ship libxml2 >= 2.13, which marks
+    # _xmlBuffer::content and _xmlBuffer::use as XML_DEPRECATED_MEMBER. The
+    # SDK's sdk/storage/azure-storage-common/src/xml_wrapper.cpp still accesses
+    # those fields directly and is built with -Werror, breaking the build.
+    #
+    # Pin the default registry to vcpkg release 2024.05.24, which still ships
+    # libxml2 2.11.7 (and is contemporaneous with azure-core_1.6.0).
+    cat > vcpkg-configuration.json <<'EOF'
+{
+    "default-registry": {
+        "kind": "builtin",
+        "baseline": "f7423ee180c4b7f40d43402c2feb3859161ef625"
+    }
+}
+EOF
+
     # Apply patch to fix missing cstdint include for GCC 12+ (Ubuntu 24.04, Debian 12)
     # Check GCC version and apply patch only if GCC >= 12
     local gcc_version
