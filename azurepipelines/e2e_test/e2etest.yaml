@@ -1,10 +1,10 @@
 # E2E test pipeline - performs end-to-end tests on the following platforms
-#  - Ubuntu 20.04
+#  - Ubuntu 22.04
 
 resources:
     containers:
         - container: ubuntu
-          image: ubuntu:20.04
+          image: ubuntu:22.04
     repositories:
         - repository: 1ESPipelineTemplates
           type: git
@@ -37,11 +37,11 @@ variables:
     Test_InfraDeploymentName: "e2e-deployment-$(Build.BuildId)" #Composed of e2e-deployment-$(Build.BuildId)
     Test_VmHostname: "" # Set after the VM is created
     Test_Location: "westus3"
-    Test_DeviceName: "ubuntu-2004-x509-test-device"
-    Test_Distro: "ubuntu-20.04"
+    Test_DeviceName: "ubuntu-2204-x509-test-device"
+    Test_Distro: "ubuntu-22.04"
     Test_Arch: "amd64"
     Test_ArtifactUploadContainer: "gen1-debian-packages"
-    Test_Artifacts_Folder: "adu-client-ubuntu-2004-amd64"
+    Test_Artifacts_Folder: "adu-client-ubuntu-2204-amd64"
 
     Test_DeviceGroup: "gen1-test-devices"
     Test_DeploymentId: "aptdeployment-$(Build.BuildId)"
@@ -70,20 +70,20 @@ extends:
         - stage: PerformNativeBuilds
           displayName: Builds all the native architecture builds
           jobs:
-              - job: BuildUbuntu_2004_AMD64
-                displayName: Building the Device Update Package for Ubuntu 20.04 AMD64
+              - job: BuildUbuntu_2204_AMD64
+                displayName: Building the Device Update Package for Ubuntu 22.04 AMD64
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
                     - template: /azurepipelines/build/templates/adu-native-build-steps.yml@self
                       parameters:
-                          targetOs: ubuntu2004
+                          targetOs: ubuntu2204
                           targetArch: amd64
         - stage: PublishPackageUnderTest
           displayName: Publish the Package under Test to the Storage
           jobs:
-              - job: PublishUbuntu2004_AMD64_Package
-                displayName: Publish the Ubuntu 20.04 AMD64 Package to the Storage
+              - job: PublishUbuntu2204_AMD64_Package
+                displayName: Publish the Ubuntu 22.04 AMD64 Package to the Storage
                 continueOnError: False
                 pool: aduc_1es_client_pool
                 steps:
@@ -93,7 +93,7 @@ extends:
                           source: "current"
                           project: "adu-linux-client"
                           pipeline: "Azure.adu-private-preview.e2e-test"
-                          itemPattern: "*ubuntu2004-amd64*/*.deb"
+                          itemPattern: "*ubuntu2204-amd64*/*.deb"
                           path: $(Build.ArtifactStagingDirectory)
                     - bash: |
                         ls -al $(Build.ArtifactStagingDirectory)
@@ -103,13 +103,13 @@ extends:
                       displayName: "Get the path to the package under test"
                       name: pathToPackageUnderTest
                     - task: AzureCLI@2
-                      displayName: "Publish the Ubuntu 20.04 AMD64 Package to the Storage"
+                      displayName: "Publish the Ubuntu 22.04 AMD64 Package to the Storage"
                       inputs:
                           azureSubscription: $(Adu_Arm_Service_Connection)
                           scriptType: bash
                           scriptLocation: inlineScript
                           inlineScript: |
-                              echo "Publishing the Ubuntu 20.04 AMD64 Package to the Storage"
+                              echo "Publishing the Ubuntu 22.04 AMD64 Package to the Storage"
                               az storage blob upload --auth-mode login --account-name $(AZURE_STORAGE_ACCOUNT_NAME) --container-name $(Test_ArtifactUploadContainer) --file $(pathToPackageUnderTest.packagePath) --name deviceupdate-$(Build.BuildId).deb --no-progress
                           failOnStandardError: true
                     - bash: |
@@ -121,12 +121,12 @@ extends:
         - stage: InitializeTestInfra
           displayName: Initializes the Infrastructure for the Automated Tests
           variables:
-              Test_PackageUnderTestName: $[ stageDependencies.PublishPackageUnderTest.PublishUbuntu2004_AMD64_Package.outputs['package_under_test_publisher.packageUnderTest'] ]
+              Test_PackageUnderTestName: $[ stageDependencies.PublishPackageUnderTest.PublishUbuntu2204_AMD64_Package.outputs['package_under_test_publisher.packageUnderTest'] ]
           pool: aduc_1es_client_pool
           jobs:
 
-              - job: SetupUbuntu2004_AMD64_VM
-                displayName: "Setting up VM for Ubuntu 20.04 AMD64 Test VM"
+              - job: SetupUbuntu2204_AMD64_VM
+                displayName: "Setting up VM for Ubuntu 22.04 AMD64 Test VM"
                 timeoutInMinutes: 360
                 cancelTimeoutInMinutes: 360
                 pool: aduc_1es_client_pool
@@ -171,14 +171,14 @@ extends:
                           failOnStandardError: true
 
                     - task: AzureCLI@2
-                      displayName: "Create the Ubuntu 20.04 VM for the E2E Test"
+                      displayName: "Create the Ubuntu 22.04 VM for the E2E Test"
                       inputs:
                           azureSubscription: $(Adu_Arm_Service_Connection)
                           scriptType: bash
                           scriptLocation: inlineScript
                           inlineScript: |
                               echo "Creating the VM for Test"
-                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) msi_resource_id="$(MSI_RESOURCE_ID)" msi_client_id="$(MSI_CLIENT_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro $(Test_Distro) --architecture $(Test_Arch) -s $(AZURE_STORAGE_ACCOUNT_NAME) -p $(Test_PackageUnderTestName)"
+                              az deployment group create --name $(Test_InfraDeploymentName) --resource-group "$(Test_ResourceGroupname)" --template-file ./azurepipelines/e2e_test/templates/az_vm.template.json --parameters adminUsername="$(Test_VmAdmin)" adminKey="$(set_ssh_key.Test_Vm_Ssh_PublicKey)" adminPassword="$(VM_ADMIN_PASS)" vmName="$(Test_VmName)" vmSize=Standard_DS1_v2 location=$(Test_Location) ubuntuOSVersion=Ubuntu-2204 msi_resource_id="$(MSI_RESOURCE_ID)" msi_client_id="$(MSI_CLIENT_ID)" duSetupScriptFileUri="$(VM_SETUP_SCRIPT_URI)" duSetupScriptFileName="$(VM_SETUP_SCRIPT_FILE_NAME)" duSetupScriptFileArgs="--distro $(Test_Distro) --architecture $(Test_Arch) -s $(AZURE_STORAGE_ACCOUNT_NAME) -p $(Test_PackageUnderTestName)"
                           failOnStandardError: true
                     - task: AzureCLI@2
                       displayName: "Get the Public Hostname of the VM"
