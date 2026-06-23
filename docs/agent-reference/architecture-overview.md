@@ -143,9 +143,7 @@ For a deep dive into writing custom extensions, see
 
 ### Cryptographic Verification
 
-Every update manifest received from the service is wrapped in a **JWS (JSON Web
-Signature, RFC 7515)**. The agent validates the signature before any content is
-downloaded or installed.
+Every deployment received from the service arrives as a JSON object with two relevant fields: `updateManifest` (a stringified JSON manifest) and `updateManifestSignature` (a compact **JWS (JSON Web Signature, RFC 7515)** whose payload contains the SHA-256 hash of the `updateManifest` string). The agent validates the JWS signature and re-hashes the manifest string to bind the signature to it, before any content is downloaded or installed.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {
@@ -167,11 +165,18 @@ downloaded or installed.
 flowchart LR
     subgraph Main[" "]
         A["Root Key Package
-        from service"] -->|"Self-verified JWS"| B["Trusted Root Keys"]
+        from service"] -->|"Self-verified
+        (every embedded
+        key must sign)"| B["Trusted Root Keys"]
         B -->|"Verify intermediate SJWK"| C["Signing Key"]
-        C -->|"Verify Update Manifest JWS"| D["Update Manifest
+        C -->|"Verify updateManifest-
+        Signature (detached JWS)"| D["Signature
+        verified"]
+        D -->|"Re-hash updateManifest
+        string, compare to
+        sha256 in JWS payload"| E["Manifest
         trusted"]
-        D -->|"SHA-256 hash per payload"| E["Downloaded Content
+        E -->|"SHA-256 hash per payload"| F["Downloaded Content
         Integrity Check ✓"]
     end
 
@@ -188,6 +193,10 @@ flowchart LR
   trust-chain verification.
 - **Content hashing** — After download, each payload file's SHA-256 hash is
   compared against the hash declared in the verified manifest.
+
+For an end-to-end walkthrough of how root keys are downloaded, validated,
+stored, and used; why two keys are embedded in the agent binary; and how
+root keys can be rotated or revoked, see [Root Key Deep Dive](rootkey-deep-dive.md).
 
 ### Sandboxing (adu-shell)
 
