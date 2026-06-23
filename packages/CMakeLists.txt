@@ -51,8 +51,11 @@ set (CPACK_DEBIAN_PACKAGE_PRIORITY "extra")
 set (CPACK_DEBIAN_PACKAGE_SECTION "admin")
 
 # Component-specific settings for main agent package (Unspecified component)
-# Note: deliveryoptimization-agent creates DO user and group, that expected by preinst maintainer script.
-# If remove deliveryoptimization-agent from dependencies, preinst script must be updated accordingly.
+# Note: When ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION is ON, deliveryoptimization-agent
+# creates the 'do' user and group that the postinst script expects when wiring up
+# the DO content downloader. If you build with DO support but remove the
+# deliveryoptimization-agent dependency below, the DO-related steps in
+# packages/debian/postinst (currently gated on `getent passwd 'do'`) become no-ops.
 
 # See https://www.debian.org/doc/debian-policy/ch-relationships.html#s-binarydeps
 set (CPACK_DEBIAN_UNSPECIFIED_PACKAGE_DEPENDS "curl")
