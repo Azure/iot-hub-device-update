@@ -782,6 +782,23 @@ do_install_delta() {
         sed -i 's/target_link_libraries(dumpextfs PRIVATE ${E2FSPROGS_LIBRARIES})/target_link_libraries(dumpextfs PRIVATE ${E2FSPROGS_LIBRARIES} ${COM_ERR_LIBRARIES})/' "$dumpextfs_cmake"
     fi
 
+    # Patch the delta build.sh so it honors CC/CXX env overrides as fallback
+    # defaults instead of always passing the hard-coded triplet compiler paths
+    # to CMake. This lets us pin a newer GCC (below) on distros whose
+    # triplet-prefixed compiler is too old for C++20 (e.g. Ubuntu 20.04 arm64
+    # ships /usr/bin/aarch64-linux-gnu-g++ at GCC 9, which lacks <span>).
+    # When CC/CXX are unset, the ${CC:-...} fallback evaluates to the original
+    # hard-coded path, so this patch is a no-op on healthy distros.
+    local delta_build_sh="$delta_dir/src/native/build.sh"
+    if [[ -f $delta_build_sh ]] && grep -q '^\s*C_COMPILER="/usr/bin/' "$delta_build_sh"; then
+        echo "Patching delta build.sh to honor CC/CXX env overrides..."
+        # shellcheck disable=SC2016 # Intentional: writing literal ${CC:-...} into the patched script
+        sed -i \
+            -e 's|^\(\s*\)C_COMPILER="\(/usr/bin/[^"]*\)"|\1C_COMPILER="${CC:-\2}"|' \
+            -e 's|^\(\s*\)CXX_COMPILER="\(/usr/bin/[^"]*\)"|\1CXX_COMPILER="${CXX:-\2}"|' \
+            "$delta_build_sh" || return
+    fi
+
     # Patch recompress CMakeLists.txt to link libconfig (required by libconfig++ static lib)
     local recompress_cmake="$delta_dir/src/native/tools/recompress/CMakeLists.txt"
     if [[ -f $recompress_cmake ]] && ! grep -q 'LIBCONFIG_C' "$recompress_cmake"; then
@@ -854,6 +871,35 @@ do_install_delta() {
         ;;
     esac
     echo "Detected architecture: $arch -> using triplet: $vcpkg_triplet"
+
+    # Decide whether the delta build needs an explicit compiler pin.
+    # The delta build.sh selects /usr/bin/{x64,arm-linux-gnueabihf,aarch64-linux-gnu}-g++
+    # per triplet. The unprefixed `update-alternatives` we set above does NOT
+    # affect the triplet-prefixed binaries. On distros where the triplet g++
+    # is older than the gcc_ver we just installed (notably Ubuntu 20.04 arm64:
+    # default aarch64-linux-gnu-g++ is GCC 9, no <span>), pass CC/CXX to the
+    # patched delta build.sh so CMake picks the newer compiler.
+    # delta_cc / delta_cxx stay empty when no pin is needed; the patched
+    # build.sh then falls back to its original hard-coded triplet path.
+    local triplet_cxx="" delta_cc="" delta_cxx=""
+    case "$vcpkg_triplet" in
+        x64-linux)   triplet_cxx="/usr/bin/g++" ;;
+        arm-linux)   triplet_cxx="/usr/bin/arm-linux-gnueabihf-g++" ;;
+        arm64-linux) triplet_cxx="/usr/bin/aarch64-linux-gnu-g++" ;;
+    esac
+    if [[ -n $gcc_ver && -x $triplet_cxx ]]; then
+        local triplet_major
+        triplet_major=$("$triplet_cxx" -dumpversion 2> /dev/null | cut -d. -f1)
+        if [[ -n $triplet_major && $triplet_major -lt $gcc_ver ]]; then
+            if [[ -x "/usr/bin/g++-${gcc_ver}" && -x "/usr/bin/gcc-${gcc_ver}" ]]; then
+                echo "Triplet compiler $triplet_cxx is GCC ${triplet_major}; pinning delta build to gcc-${gcc_ver}/g++-${gcc_ver} for C++20 support"
+                delta_cc="/usr/bin/gcc-${gcc_ver}"
+                delta_cxx="/usr/bin/g++-${gcc_ver}"
+            else
+                echo "Warning: triplet compiler $triplet_cxx is GCC ${triplet_major} but /usr/bin/g++-${gcc_ver} is missing; delta build may fail on C++20 sources"
+            fi
+        fi
+    fi
 
     if [[ $keep_source_code == "true" ]]; then
         build_type="Debug"
@@ -968,11 +1014,12 @@ BSDIFF_PC_EOF
     # Skip vcpkg stage since we already installed dependencies above
     # ./build.sh "$vcpkg_triplet" "$build_type" vcpkg || return
 
-    # Run cmake stage
-    ./build.sh "$vcpkg_triplet" "$build_type" cmake || return
+    # Run cmake stage (CC/CXX scoped to child process; empty values leave the
+    # patched build.sh to fall back to its hard-coded triplet compiler path).
+    CC="$delta_cc" CXX="$delta_cxx" ./build.sh "$vcpkg_triplet" "$build_type" cmake || return
 
     # Run build stage
-    ./build.sh "$vcpkg_triplet" "$build_type" build || return
+    CC="$delta_cc" CXX="$delta_cxx" ./build.sh "$vcpkg_triplet" "$build_type" build || return
 
     # Unset vcpkg environment variables
     unset VCPKG_OVERLAY_TRIPLETS
