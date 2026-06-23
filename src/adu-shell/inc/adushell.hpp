@@ -39,6 +39,7 @@ typedef struct tagADUShell_LaunchArguments
 #define ADUSHELL_EXIT_UNSUPPORTED 3
 #define ADUSHELL_EXIT_BAD_FILE_PERMS 4
 #define ADUSHELL_EXIT_BAD_FILE_OWNERSHIP 5
+#define ADUSHELL_EXIT_FILE_NOT_FOUND 6
 
 /**
  * @brief An exit code for early exit of adu-shell process due to SIGTERM/SIGINT signal handling.

@@ -17,6 +17,7 @@
 #include "aduc/types/adu_core.h" // ADUC_Result_*
 #include "aduc/workflow_data_utils.h" // ADUC_WorkflowData_GetWorkFolder
 #include "aduc/workflow_utils.h" // workflow_*
+#include "adushell.hpp" // ADUSHELL_EXIT_* exit codes
 #include "adushell_const.hpp"
 #include <sstream>
 #include <string>
@@ -665,7 +666,29 @@ ScriptHandler_PerformAction(const std::string& action, const tagADUC_WorkflowDat
 
     if (exitCode != 0)
     {
-        int extendedCode = ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode);
+        // Translate adu-shell's reserved exit codes (see adushell.hpp) into meaningful
+        // extended result codes. Any other value is treated as the script's own exit
+        // code and reported with the generic child-process wrapper.
+        int extendedCode;
+        switch (exitCode)
+        {
+        case ADUSHELL_EXIT_FILE_NOT_FOUND:
+            extendedCode = ADUC_ERC_SCRIPT_HANDLER_EXECUTE_PRIMARY_FILE_NOT_FOUND;
+            break;
+        case ADUSHELL_EXIT_BAD_FILE_PERMS:
+            extendedCode = ADUC_ERC_SCRIPT_HANDLER_EXECUTE_SET_PERMISSIONS_FAILURE;
+            break;
+        case ADUSHELL_EXIT_BAD_FILE_OWNERSHIP:
+            extendedCode = ADUC_ERC_SCRIPT_HANDLER_EXECUTE_SET_OWNERSHIP_FAILURE;
+            break;
+        case ADUSHELL_EXIT_UNSUPPORTED:
+            extendedCode = ADUC_ERC_SCRIPT_HANDLER_EXECUTE_UNSUPPORTED_ACTION;
+            break;
+        default:
+            extendedCode = ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode);
+            break;
+        }
+
         Log_Error("Script failed (%s), extendedResultCode:0x%X (exitCode:%d)", action.c_str(), extendedCode, exitCode);
         results.result.ResultCode = ADUC_Result_Failure;
         results.result.ExtendedResultCode = extendedCode;
