@@ -10,6 +10,8 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -191,6 +193,64 @@ TEST_CASE("LinuxPlatformLayer SandboxCreate callback tests")
             callbacks.SandboxDestroyCallback(callbacks.PlatformLayerHandle, "ut-valid-wf-001", workFolder);
         }
         CHECK(true); // exercised the path
+    }
+
+    SECTION("SandboxCreate preserves existing folder contents to allow download resume (issue #811)")
+    {
+        // Regression test for https://github.com/Azure/iot-hub-device-update/issues/811:
+        // when the agent restarts mid-download, SandboxCreate must NOT wipe the
+        // pre-existing work folder, otherwise partial downloads are destroyed and
+        // curl '-C -' / DO-client resume cannot take effect.
+        //
+        // Use std::filesystem::temp_directory_path() (the same pattern as
+        // adushell_ut.cpp:211) so the test honors TMPDIR/TMP/TEMP and works on
+        // build targets where /tmp is not writable or is not the platform temp dir.
+        namespace fs = std::filesystem;
+        const fs::path workFolderPath = fs::temp_directory_path() / "adu-ut-sandbox-resume";
+
+        // Start clean, then create the folder and drop a sentinel file simulating
+        // a partial download from a previous agent run.
+        std::error_code ec;
+        fs::remove_all(workFolderPath, ec);
+        REQUIRE(fs::create_directories(workFolderPath, ec));
+
+        const fs::path sentinelPath = workFolderPath / "partial.bin";
+        const std::string payload = "partial download data";
+        {
+            std::ofstream sentinel(sentinelPath, std::ios::binary);
+            REQUIRE(sentinel.good());
+            sentinel.write(payload.data(), static_cast<std::streamsize>(payload.size()));
+        }
+        REQUIRE(fs::exists(sentinelPath));
+        const auto originalSize = fs::file_size(sentinelPath);
+
+        // SandboxCreate's signature takes a mutable C-string for workFolder; copy
+        // the resolved path into a fixed-size buffer matching the other sections.
+        char workFolder[256] = {};
+        const std::string workFolderStr = workFolderPath.string();
+        REQUIRE(workFolderStr.size() < sizeof(workFolder));
+        std::strncpy(workFolder, workFolderStr.c_str(), sizeof(workFolder) - 1);
+
+        // Call SandboxCreate against the existing folder, mimicking the
+        // post-restart Download step that previously wiped the folder.
+        ADUC_Result sandboxResult =
+            callbacks.SandboxCreateCallback(callbacks.PlatformLayerHandle, "ut-resume-wf-001", workFolder);
+
+        // The fix returns success early when the folder already exists, regardless
+        // of whether the 'adu' user/group is present on the test host.
+        CHECK(IsAducResultCodeSuccess(sandboxResult.ResultCode));
+
+        // The sentinel must still be there with its contents intact so the
+        // downloader can resume from where it left off.
+        const bool sentinelExists = fs::exists(sentinelPath);
+        CHECK(sentinelExists);
+        if (sentinelExists)
+        {
+            CHECK(fs::file_size(sentinelPath) == originalSize);
+        }
+
+        // Cleanup
+        fs::remove_all(workFolderPath, ec);
     }
 
     ADUC_Unregister(callbacks.PlatformLayerHandle);

@@ -405,18 +405,17 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
         return ADUC_Result{ ADUC_Result_Failure, ADUC_ERC_NOTRECOVERABLE };
     }
 
-    // Try to delete existing directory.
-    int dir_result;
+    // If the work folder already exists, preserve its contents so that any partially
+    // downloaded payloads can be resumed by the underlying downloaders (curl uses
+    // '-C -' to auto-resume; the DO client resumes natively). Cleanup_Previous_Sandboxes
+    // has already removed sandboxes belonging to prior workflowIds before we get here,
+    // so an existing folder at this path belongs to the current workflowId and was
+    // left over from a prior agent/service restart.
     struct stat sb;
-
     if (stat(workFolder, &sb) == 0 && S_ISDIR(sb.st_mode))
     {
-        dir_result = ADUC_SystemUtils_RmDirRecursive(workFolder);
-        if (dir_result != 0)
-        {
-            // Not critical if failed.
-            Log_Info("Unable to remove folder %s, error %d", workFolder, dir_result);
-        }
+        Log_Info("Reusing existing sandbox %s to allow download resume", workFolder);
+        return ADUC_Result{ ADUC_Result_SandboxCreate_Success };
     }
 
     // Note: the return value may point to a static area,
@@ -447,7 +446,7 @@ ADUC_Result LinuxPlatformLayer::SandboxCreate(const char* workflowId, char* work
     // Create the sandbox folder with adu:adu ownership.
     // Permissions are set to u=rwx,g=rwx. We grant read/write/execute to group owner so that partner
     // processes like the DO daemon can download files to our sandbox.
-    dir_result =
+    int dir_result =
         ADUC_SystemUtils_MkDirRecursive(workFolder, aduUserId, aduGroupId, S_IRWXU | S_IRGRP | S_IWGRP | S_IXGRP);
     if (dir_result != 0)
     {

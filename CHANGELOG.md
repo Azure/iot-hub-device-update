@@ -4,6 +4,7 @@
 
 * Fix `edgegatewayCertPath` overwriting X.509 / EIS-x509 auth state — the gateway cert is now applied as a post-processing step that preserves the original authType so client cert, private key, and engine SDK options keep getting set on the IoT Hub handle (previously a non-Edge regression replaced authType with NestedEdgeCert and skipped all mTLS options)
 * Fix AIS + EIS-x509 (no Edge gateway) regression where the EIS-issued identity certificate was never installed as `SU_OPTION_X509_CERT` and was mis-installed as `OPTION_TRUSTED_CERT`, causing the IoT Hub mTLS handshake to fail and the agent to restart-loop during deployments
+* Fix `AducIotAgent` destroying in-progress downloads on restart ([#811](https://github.com/Azure/iot-hub-device-update/issues/811)) — `LinuxPlatformLayer::SandboxCreate` no longer wipes the current workflow's work folder when it already exists, so partial payloads survive an agent or `deviceupdate-agent.service` restart and the curl (`-C -`) and DO downloaders can resume from the existing bytes instead of starting over
 
 ## Release 1.3.0
 

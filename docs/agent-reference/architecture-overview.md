@@ -377,6 +377,50 @@ agent crashes, the stale lock is removed immediately and the reboot proceeds.
 
 ---
 
+## Download Resume Across Agent / Service Restarts
+
+The agent's download sandbox at `/var/lib/adu/downloads/<workflowId>/` is
+preserved across restarts of the `AducIotAgent` process or the
+`deviceupdate-agent.service` unit so that an interrupted download can resume
+from where it left off instead of starting from byte 0.
+
+### How it works
+
+1. On startup of the next workflow step, `Cleanup_Previous_Sandboxes`
+   (`src/adu_workflow/src/agent_workflow.c`) walks `/var/lib/adu/downloads/`
+   and removes every directory **except** the one matching the current
+   `workflowId`. Sandboxes from prior workflows are still purged — only the
+   *current* workflow's folder is kept.
+2. When the Download step calls `SandboxCreateCallback`, the Linux platform
+   layer (`LinuxPlatformLayer::SandboxCreate` in
+   `src/platform_layers/linux_platform_layer/src/linux_adu_core_impl.cpp`)
+   detects the existing folder and reuses it as-is rather than wiping and
+   recreating it.
+3. The shipped content downloaders then pick up the partial files
+   automatically:
+   - `curl_downloader` invokes `curl -L -C -` — `-C -` tells curl to auto-resume
+     from the local file size using an HTTP Range request.
+   - The Delivery Optimization client resumes natively via the
+     `deliveryoptimization-agent` service.
+4. After the resumed download completes, the workflow's existing post-download
+   SHA-256 hash check (`ADUC_HashUtils_IsValidFileHash`) verifies the file
+   against the value declared in the signed manifest before installation, so
+   a corrupted resume cannot silently end up applied.
+
+### Operational notes
+
+- Disk hygiene is unchanged: `Cleanup_Previous_Sandboxes` still runs on the
+  `ProcessDeployment` step of every new deployment, so a failed deployment's
+  sandbox is purged the moment the next deployment arrives.
+- File ownership and permissions on the work folder are set to `adu:adu` /
+  `rwx,rwx,---` on first creation and preserved on reuse; no operator action
+  is needed.
+- If you previously worked around the wipe-on-restart behavior by deleting
+  `/var/lib/adu/downloads/` manually before restarting the agent, that is no
+  longer necessary (and now actively prevents the resume).
+
+---
+
 ## Further Reading
 
 - [how-to-build-agent-code.md](how-to-build-agent-code.md) — Building the agent from source
