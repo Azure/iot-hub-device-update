@@ -31,6 +31,7 @@ target_compile_definitions (
 	PRIVATE ADUC_USE_XLOGGING=1
 			ADUC_FILE_USER="__adu_shell_test_user__"
 			ADUC_FILE_GROUP="__adu_shell_test_group__"
+			ADU_SHELL_TEST_TMP_DIR="${ADUC_TMP_DIR_PATH}/adu/adushell-unit-tests"
 			ADU_SHELL_BIN_PATH="$<TARGET_FILE:adu-shell>")
 
 target_link_libraries (${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain Catch2::Catch2 aduc::string_utils)

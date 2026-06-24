@@ -494,6 +494,22 @@
                         {
                             "name": "ADUC_ERC_SCRIPT_HANDLER_APPLY_FAILURE_UNKNOWNEXCEPTION",
                             "value": 1023
+                        },
+                        {
+                            "name": "ADUC_ERC_SCRIPT_HANDLER_EXECUTE_PRIMARY_FILE_NOT_FOUND",
+                            "value": 1100
+                        },
+                        {
+                            "name": "ADUC_ERC_SCRIPT_HANDLER_EXECUTE_SET_PERMISSIONS_FAILURE",
+                            "value": 1101
+                        },
+                        {
+                            "name": "ADUC_ERC_SCRIPT_HANDLER_EXECUTE_SET_OWNERSHIP_FAILURE",
+                            "value": 1102
+                        },
+                        {
+                            "name": "ADUC_ERC_SCRIPT_HANDLER_EXECUTE_UNSUPPORTED_ACTION",
+                            "value": 1103
                         }
                     ]
                 },

@@ -13,6 +13,8 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <atomic>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -38,6 +40,55 @@ struct LaunchCapture
 };
 
 LaunchCapture g_launchCapture;
+
+// Tests in this file create, chmod/chown, and delete script files at runtime.
+// They must write to a writable scratch directory under the build's configurable
+// work folder (ADU_SHELL_TEST_TMP_DIR is derived from ADUC_TMP_DIR_PATH / the
+// --work-folder), rather than the system temp directory (which may be
+// unavailable) or the read-only test-data fixtures. Each ScopedTempDir is a
+// unique per-run directory that is removed on destruction, keeping the tests
+// hermetic and parallel-safe.
+#ifndef ADU_SHELL_TEST_TMP_DIR
+#    define ADU_SHELL_TEST_TMP_DIR "/tmp/adu/adushell-unit-tests"
+#endif
+
+class ScopedTempDir
+{
+public:
+    ScopedTempDir()
+    {
+        static std::atomic<unsigned long long> counter{ 0 };
+        const auto nonce =
+            static_cast<unsigned long long>(std::chrono::steady_clock::now().time_since_epoch().count());
+        _path = std::filesystem::path(ADU_SHELL_TEST_TMP_DIR)
+            / ("adushell-ut-" + std::to_string(nonce) + "-" + std::to_string(counter.fetch_add(1)));
+
+        std::error_code ec;
+        std::filesystem::create_directories(_path, ec);
+    }
+
+    ~ScopedTempDir()
+    {
+        std::error_code ec;
+        std::filesystem::remove_all(_path, ec);
+    }
+
+    ScopedTempDir(const ScopedTempDir&) = delete;
+    ScopedTempDir& operator=(const ScopedTempDir&) = delete;
+
+    std::filesystem::path file(const char* name) const
+    {
+        return _path / name;
+    }
+
+    const std::filesystem::path& path() const
+    {
+        return _path;
+    }
+
+private:
+    std::filesystem::path _path;
+};
 }
 
 int ADUC_LaunchChildProcess(const std::string& command, std::vector<std::string> args, std::string& output)
@@ -208,7 +259,8 @@ TEST_CASE("Script execute runs script with target options")
 {
     g_launchCapture.Reset();
 
-    const auto scriptPath = std::filesystem::temp_directory_path() / "adushell_script_task_test.sh";
+    ScopedTempDir tmp;
+    const auto scriptPath = tmp.file("script.sh");
     {
         std::ofstream script(scriptPath);
         REQUIRE(script.good());
@@ -230,9 +282,94 @@ TEST_CASE("Script execute runs script with target options")
     REQUIRE(g_launchCapture.args.size() == 2);
     CHECK(g_launchCapture.args[0] == "--first");
     CHECK(g_launchCapture.args[1] == "--second");
+}
 
-    std::error_code err;
-    std::filesystem::remove(scriptPath, err);
+TEST_CASE("Script execute does not run a script that does not exist")
+{
+    g_launchCapture.Reset();
+    g_launchCapture.command = "__NOT_CALLED__";
+
+    ScopedTempDir tmp;
+    const auto missingPath = tmp.file("missing.sh");
+    REQUIRE_FALSE(std::filesystem::exists(missingPath));
+    const std::string missingStr = missingPath.string();
+
+    ADUShell_LaunchArguments launchArgs{};
+    launchArgs.targetData = const_cast<char*>(missingStr.c_str());
+
+    auto taskResult = Adu::Shell::Tasks::Script::Execute(launchArgs);
+
+    // The child process must NOT be launched when the script file is missing (issue #766).
+    CHECK(g_launchCapture.command == "__NOT_CALLED__");
+    // And the task must report a failure exit status.
+    CHECK(taskResult.ExitStatus() != EXIT_SUCCESS);
+}
+
+TEST_CASE("Script execute restores original file permissions")
+{
+    g_launchCapture.Reset();
+
+    ScopedTempDir tmp;
+    const auto scriptPath = tmp.file("script.sh");
+    {
+        std::ofstream script(scriptPath);
+        REQUIRE(script.good());
+        script << "#!/bin/sh\n";
+        script << "echo ok\n";
+    }
+
+    // Original permissions intentionally differ from the 0750 exec mode adu-shell applies.
+    const mode_t originalMode = S_IRUSR | S_IWUSR; // 0600
+    REQUIRE(::chmod(scriptPath.c_str(), originalMode) == 0);
+
+    const std::string scriptStr = scriptPath.string();
+    ADUShell_LaunchArguments launchArgs{};
+    launchArgs.targetData = const_cast<char*>(scriptStr.c_str());
+
+    auto taskResult = Adu::Shell::Tasks::Script::Execute(launchArgs);
+    CHECK(taskResult.ExitStatus() == EXIT_SUCCESS);
+
+    struct stat st = {};
+    REQUIRE(::stat(scriptPath.c_str(), &st) == 0);
+    // After execution the original permissions must be restored (issue #766).
+    CHECK((st.st_mode & 07777) == originalMode);
+}
+
+TEST_CASE("Script execute leaves ownership unchanged when the configured user/group cannot be resolved")
+{
+    // The unit-test build configures ADUC_FILE_USER/ADUC_FILE_GROUP with names
+    // that do not exist on the system, so the ownership-adjustment branch is
+    // skipped and the file's ownership must be left untouched. (Exercising the
+    // full chown-and-restore path requires a resolvable target user and root.)
+    g_launchCapture.Reset();
+
+    ScopedTempDir tmp;
+    const auto scriptPath = tmp.file("script.sh");
+    {
+        std::ofstream script(scriptPath);
+        REQUIRE(script.good());
+        script << "#!/bin/sh\n";
+        script << "echo ok\n";
+    }
+
+    // Use the exact exec mode so the permission path is a no-op and the test
+    // isolates the ownership behavior.
+    REQUIRE(::chmod(scriptPath.c_str(), S_IRWXU | S_IRGRP | S_IXGRP) == 0);
+
+    struct stat before = {};
+    REQUIRE(::stat(scriptPath.c_str(), &before) == 0);
+
+    const std::string scriptStr = scriptPath.string();
+    ADUShell_LaunchArguments launchArgs{};
+    launchArgs.targetData = const_cast<char*>(scriptStr.c_str());
+
+    auto taskResult = Adu::Shell::Tasks::Script::Execute(launchArgs);
+    CHECK(taskResult.ExitStatus() == EXIT_SUCCESS);
+
+    struct stat after = {};
+    REQUIRE(::stat(scriptPath.c_str(), &after) == 0);
+    CHECK(after.st_uid == before.st_uid);
+    CHECK(after.st_gid == before.st_gid);
 }
 
 TEST_CASE("Script do-task handles unsupported action")

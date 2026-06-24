@@ -10,6 +10,8 @@
 #include "aduc/process_utils.hpp"
 #include "common_tasks.hpp"
 
+#include <cerrno>
+#include <cstring> // strerror
 #include <unordered_map>
 
 #include <aducpal/sys_stat.h> // chmod
@@ -47,15 +49,33 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
     const char* path = launchArgs.targetData;
     struct stat st = {};
     bool filePermissionsChanged = false;
-    bool statOk = stat(path, &st) == 0;
+    bool fileOwnershipChanged = false;
     int mode = S_IRWXU | S_IRGRP | S_IXGRP;
-    if (statOk)
-    {
-        // Ensure that the script has the correct ownership.
-        struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
-        struct passwd* p = ADUCPAL_getpwnam(ADUC_FILE_USER);
+    int originalMode = 0;
+    uid_t originalUid = 0;
+    gid_t originalGid = 0;
 
-        if (p != NULL && grp != NULL)
+    // Do not attempt to execute a script that does not exist. Otherwise the
+    // child process launch below would fail with a hard-to-diagnose error.
+    if (stat(path, &st) != 0)
+    {
+        Log_Error("Cannot execute script '%s'. File not found (errno: %d, %s)", path, errno, strerror(errno));
+        taskResult.SetExitStatus(ADUSHELL_EXIT_FILE_NOT_FOUND);
+        return taskResult;
+    }
+
+    // Remember the original permissions and ownership so they can be restored after execution.
+    originalMode = st.st_mode & ~S_IFMT;
+    originalUid = st.st_uid;
+    originalGid = st.st_gid;
+
+    // Ensure that the script has the correct ownership.
+    struct group* grp = ADUCPAL_getgrnam(ADUC_FILE_GROUP);
+    struct passwd* p = ADUCPAL_getpwnam(ADUC_FILE_USER);
+
+    if (p != NULL && grp != NULL)
+    {
+        if (originalUid != p->pw_uid || originalGid != grp->gr_gid)
         {
             // Fix the ownership.
             if (0 != ADUCPAL_chown(path, p->pw_uid, grp->gr_gid))
@@ -64,35 +84,48 @@ ADUShellTaskResult Execute(const ADUShell_LaunchArguments& launchArgs)
                 taskResult.SetExitStatus(ADUSHELL_EXIT_BAD_FILE_OWNERSHIP);
                 goto done;
             }
+
+            // The ownership was successfully changed and must be restored after execution.
+            fileOwnershipChanged = true;
+        }
+    }
+
+    if (originalMode != mode)
+    {
+        // Fix the permissions.
+        if (0 != ADUCPAL_chmod(path, mode))
+        {
+            stat(path, &st);
+            Log_Error(
+                "Failed to set '%s' file permissions (expected:%d, actual: %d)", path, mode, st.st_mode & ~S_IFMT);
+            taskResult.SetExitStatus(ADUSHELL_EXIT_BAD_FILE_PERMS);
+            goto done;
         }
 
-        int perms = st.st_mode & ~S_IFMT;
-        if (perms != mode)
-        {
-            // Fix the permissions.
-            if (0 != ADUCPAL_chmod(path, mode))
-            {
-                filePermissionsChanged = true;
-                stat(path, &st);
-                Log_Error(
-                    "Failed to set '%s' file permissions (expected:%d, actual: %d)", path, mode, st.st_mode & ~S_IFMT);
-                taskResult.SetExitStatus(ADUSHELL_EXIT_BAD_FILE_PERMS);
-                goto done;
-            }
-        }
+        // The permissions were successfully changed and must be restored after execution.
+        filePermissionsChanged = true;
     }
 
     taskResult.SetExitStatus(ADUC_LaunchChildProcess(launchArgs.targetData, args, taskResult.Output()));
 
 done:
-    // Restore the permissions.
+    // Restore the original ownership if it was changed. This is done before
+    // restoring the permissions because chown() may clear the set-user-ID and
+    // set-group-ID permission bits.
+    if (fileOwnershipChanged)
+    {
+        if (0 != ADUCPAL_chown(path, originalUid, originalGid))
+        {
+            Log_Warn("Failed to restore '%s' file ownership", path);
+        }
+    }
+
+    // Restore the original permissions if they were changed.
     if (filePermissionsChanged)
     {
-        // Restore the permissions.
-        if (0 != ADUCPAL_chmod(path, mode))
+        if (0 != ADUCPAL_chmod(path, originalMode))
         {
-            stat(path, &st);
-            Log_Warn("Failed restore '%s' file permissions", path);
+            Log_Warn("Failed to restore '%s' file permissions", path);
         }
     }
 
