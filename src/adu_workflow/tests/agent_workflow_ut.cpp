@@ -1186,6 +1186,34 @@ TEST_CASE("ADUC_Workflow_MethodCall_Cancel")
     workflow_free(workflowData.WorkflowHandle);
 }
 
+TEST_CASE("ADUC_Workflow_IsOperationInProgress")
+{
+    SECTION("Returns false for NULL workflow data")
+    {
+        CHECK_FALSE(ADUC_Workflow_IsOperationInProgress(nullptr));
+    }
+
+    SECTION("Reflects the workflow's operation-in-progress flag")
+    {
+        ADUC_WorkflowHandle handle = CreateTestWorkflowHandle(sample_process_deployment_json);
+        REQUIRE(handle != nullptr);
+
+        ADUC_WorkflowData workflowData;
+        memset(&workflowData, 0, sizeof(workflowData));
+        workflowData.WorkflowHandle = handle;
+
+        CHECK_FALSE(ADUC_Workflow_IsOperationInProgress(&workflowData));
+
+        workflow_set_operation_in_progress(handle, true);
+        CHECK(ADUC_Workflow_IsOperationInProgress(&workflowData));
+
+        workflow_set_operation_in_progress(handle, false);
+        CHECK_FALSE(ADUC_Workflow_IsOperationInProgress(&workflowData));
+
+        workflow_free(workflowData.WorkflowHandle);
+    }
+}
+
 //
 // Unit Tests for ADUC_Workflow_SetInstalledUpdateIdAndGoToIdle
 //

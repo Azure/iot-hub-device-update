@@ -68,6 +68,33 @@ static inline void s_workflow_unlock(void)
     pthread_mutex_unlock(&s_workflow_mutex);
 }
 
+/**
+ * @brief Thread-safe check for whether an operation is currently in progress on the workflow.
+ *
+ * Reads the workflow's OperationInProgress flag while holding the workflow lock so that callers
+ * outside of agent_workflow.c (e.g. the orchestrator property-update callback) do not race with
+ * the worker thread that mutates this flag.
+ *
+ * @param workflowData The workflow data. May be NULL.
+ * @return true if an operation is in progress; false otherwise (including when workflowData or its
+ * handle is NULL).
+ */
+bool ADUC_Workflow_IsOperationInProgress(const ADUC_WorkflowData* workflowData)
+{
+    bool inProgress = false;
+
+    if (workflowData == NULL)
+    {
+        return false;
+    }
+
+    s_workflow_lock();
+    inProgress = workflow_get_operation_in_progress(workflowData->WorkflowHandle);
+    s_workflow_unlock();
+
+    return inProgress;
+}
+
 static const char* ADUC_Workflow_CancellationTypeToString(ADUC_WorkflowCancellationType cancellationType)
 {
     switch (cancellationType)
