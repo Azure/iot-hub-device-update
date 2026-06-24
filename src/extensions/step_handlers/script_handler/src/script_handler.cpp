@@ -783,8 +783,135 @@ ADUC_Result ScriptHandlerImpl::Apply(const tagADUC_WorkflowData* workflowData)
 }
 
 /**
+ * @brief Actively invokes the script's 'cancel' action so the author's CancelUpdate() function runs.
+ *
+ * This is invoked while the workflow's install/apply script may still be running on a different
+ * (worker) thread. To avoid a data race on the workflow handle, this function reads only immutable
+ * workflow data (update manifest properties and the work folder) to build the adu-shell command, and
+ * it intentionally does NOT write any result, result-details, or state back to the shared workflow
+ * handle (unlike ScriptHandler_PerformAction). The 'cancel' action writes to its own dedicated result
+ * file (action_cancel_aduc_result.json), which never collides with the install/apply result files.
+ *
+ * @param workflowData The workflow data for the step whose script should be cancelled.
+ * @return ADUC_Result ADUC_Result_Cancel_Success if the script's cancel action ran and reported
+ * success (or did not report a failure); ADUC_Result_Cancel_UnableToCancel otherwise.
+ */
+static ADUC_Result ScriptHandler_RunCancelAction(const tagADUC_WorkflowData* workflowData)
+{
+    const std::string action = "cancel";
+
+    if (workflowData == nullptr || workflowData->WorkflowHandle == nullptr)
+    {
+        Log_Error("Cancel: workflow data or handle is null.");
+        return ADUC_Result{ ADUC_Result_Cancel_UnableToCancel, ADUC_ERC_SCRIPT_HANDLER_INSTALL_ERROR_NULL_WORKFLOW };
+    }
+
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        Log_Error("Cancel: failed to get config info instance.");
+        return ADUC_Result{ ADUC_Result_Cancel_UnableToCancel,
+                            ADUC_ERC_SCRIPT_HANDLER_INSTALL_FAILED_TO_GET_CONFIG_INSTANCE };
+    }
+
+    char* workFolder = ADUC_WorkflowData_GetWorkFolder(workflowData);
+
+    // Run the work inside a lambda so the config instance and work folder are released exactly once
+    // on every path.
+    ADUC_Result result = [&]() -> ADUC_Result {
+        const char* apiVer = workflow_peek_update_manifest_handler_properties_string(
+            workflowData->WorkflowHandle, HANDLER_PROPERTIES_API_VERSION);
+
+        if (workFolder == nullptr)
+        {
+            Log_Error("Cancel: failed to get work folder.");
+            return ADUC_Result{ ADUC_Result_Cancel_UnableToCancel, 0 };
+        }
+
+        const std::string scriptWorkfolder = workFolder;
+        const std::string scriptResultFile = scriptWorkfolder + "/action_" + action + "_aduc_result.json";
+        std::string scriptFilePath;
+        std::vector<std::string> args;
+
+        ADUC_Result prepareResult = ScriptHandlerImpl::PrepareScriptArguments(
+            workflowData, scriptResultFile, scriptWorkfolder, scriptFilePath, args);
+        if (IsAducResultCodeFailure(prepareResult.ResultCode))
+        {
+            Log_Warn("Cancel: unable to prepare script arguments (erc 0x%08X).", prepareResult.ExtendedResultCode);
+            return ADUC_Result{ ADUC_Result_Cancel_UnableToCancel, prepareResult.ExtendedResultCode };
+        }
+
+        std::vector<std::string> aduShellArgs = { adushconst::config_folder_opt, config->configFolder,
+                                                  adushconst::update_type_opt,   adushconst::update_type_microsoft_script,
+                                                  adushconst::update_action_opt, adushconst::update_action_execute,
+                                                  adushconst::target_data_opt,   scriptFilePath };
+
+        if (apiVer == nullptr || strcmp(apiVer, "1.0") == 0)
+        {
+            std::string backcompatAction = "--action-" + action;
+            aduShellArgs.emplace_back(adushconst::target_options_opt);
+            aduShellArgs.emplace_back(backcompatAction.c_str());
+        }
+        else if (strcmp(apiVer, "1.1") == 0)
+        {
+            aduShellArgs.emplace_back(adushconst::target_options_opt);
+            aduShellArgs.emplace_back(HANDLER_ARG_ACTION);
+            aduShellArgs.emplace_back(adushconst::target_options_opt);
+            aduShellArgs.emplace_back(action.c_str());
+        }
+
+        for (const auto& a : args)
+        {
+            aduShellArgs.emplace_back(adushconst::target_options_opt);
+            aduShellArgs.emplace_back(a);
+        }
+
+        std::string scriptOutput;
+        int exitCode = ADUC_LaunchChildProcess(config->aduShellFilePath, aduShellArgs, scriptOutput);
+        if (!scriptOutput.empty())
+        {
+            Log_Info("%s\n", scriptOutput.c_str());
+        }
+
+        if (exitCode != 0)
+        {
+            Log_Warn("Cancel: script 'cancel' action exited with code %d.", exitCode);
+            return ADUC_Result{ ADUC_Result_Cancel_UnableToCancel,
+                                ADUC_ERC_SCRIPT_HANDLER_CHILD_PROCESS_FAILURE_EXITCODE(exitCode) };
+        }
+
+        // Best-effort: read the cancel action's own result file (does not touch the shared workflow handle).
+        ADUC_Result cancelResult = { ADUC_Result_Cancel_Success, 0 };
+        JSON_Value* actionResultValue = json_parse_file(scriptResultFile.c_str());
+        if (actionResultValue != nullptr)
+        {
+            JSON_Object* actionResultObject = json_object(actionResultValue);
+            int32_t rc = static_cast<int32_t>(json_object_get_number(actionResultObject, "resultCode"));
+            if (IsAducResultCodeFailure(rc))
+            {
+                cancelResult.ResultCode = ADUC_Result_Cancel_UnableToCancel;
+                cancelResult.ExtendedResultCode =
+                    static_cast<int32_t>(json_object_get_number(actionResultObject, "extendedResultCode"));
+            }
+            json_value_free(actionResultValue);
+        }
+
+        return cancelResult;
+    }();
+
+    workflow_free_string(workFolder);
+    ADUC_ConfigInfo_ReleaseInstance(config);
+    return result;
+}
+
+/**
  * @brief Performs 'Cancel' task.
- * @return ADUC_Result The result (always success)
+ *
+ * Marks the workflow (and its children) as cancel-requested, and actively invokes the script's
+ * 'cancel' action so the script author's CancelUpdate() function runs and can interrupt an
+ * in-progress install/download (issue #776).
+ *
+ * @return ADUC_Result ADUC_Result_Cancel_Success when the cancellation request was recorded.
  */
 ADUC_Result ScriptHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
 {
@@ -807,6 +934,17 @@ ADUC_Result ScriptHandlerImpl::Cancel(const tagADUC_WorkflowData* workflowData)
             workflowLevel,
             workflowStep);
         result.ResultCode = ADUC_Result_Cancel_UnableToCancel;
+    }
+
+    // Actively run the script's 'cancel' action so the author's CancelUpdate() runs. This is what
+    // allows a long-running, blocking install/download script to be interrupted on cancellation.
+    ADUC_Result cancelActionResult = ScriptHandler_RunCancelAction(workflowData);
+    if (IsAducResultCodeFailure(cancelActionResult.ResultCode))
+    {
+        Log_Warn(
+            "Script 'cancel' action did not complete successfully (rc %d, erc 0x%08X).",
+            cancelActionResult.ResultCode,
+            cancelActionResult.ExtendedResultCode);
     }
 
     return result;

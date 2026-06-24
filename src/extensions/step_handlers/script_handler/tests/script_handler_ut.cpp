@@ -861,6 +861,10 @@ TEST_CASE("Script Handler wrapper methods backup restore cancel", "[script_handl
     ADUC_Result cancelResult = handler->Cancel(&stepWorkflow);
     CHECK(cancelResult.ResultCode == ADUC_Result_Cancel_Success);
 
+    // Cancel must record the cancellation request on the step's workflow handle so that any
+    // cancellation checks (and the actively-dispatched script 'cancel' action) observe it. See #776.
+    CHECK(workflow_is_cancel_requested(stepHandle));
+
     workflow_free(rootHandle);
     ADUC_ConfigInfo_ReleaseInstance(config);
     ExtensionManager::Uninit();

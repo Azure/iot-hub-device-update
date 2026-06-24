@@ -22,6 +22,7 @@
 #include <azure_c_shared_utility/crt_abstractions.h> // mallocAndStrcpy
 #include <azure_c_shared_utility/strings.h> // STRING_*
 #include <parson.h>
+#include <pthread.h> // pthread_mutex_*
 #include <sstream>
 #include <string>
 
@@ -44,6 +45,68 @@ EXTERN_C_END
 static bool IsStepsHandlerExtraDebugLogsEnabled()
 {
     return (!IsNullOrEmpty(getenv("DU_AGENT_ENABLE_STEPS_HANDLER_EXTRA_DEBUG_LOGS")));
+}
+
+//
+// Active child-step tracking for cooperative cancellation.
+//
+// The steps handler runs each child step's Install/Apply on a worker thread, where the child
+// handler may block for a long time (e.g. a script handler waiting on a child process). A
+// cancellation request, however, arrives on a different (main) thread via StepsHandler_Cancel.
+//
+// To allow a cancel to actively interrupt the in-progress child step (e.g. run a script's
+// CancelUpdate()), the worker records the currently-executing leaf child handler and its workflow
+// handle here while it processes a long-running step phase, and StepsHandler_Cancel dispatches
+// Cancel() to it. Handler instances are long-lived singletons owned by the ExtensionManager and the
+// workflow handle remains valid for the duration of the workflow, so caching these here is safe.
+//
+static pthread_mutex_t s_activeChildStepMutex = PTHREAD_MUTEX_INITIALIZER;
+static ContentHandler* s_activeChildStepHandler = nullptr;
+static ADUC_WorkflowHandle s_activeChildStepWorkflowHandle = nullptr;
+
+/**
+ * @brief Record (or clear) the currently-executing leaf child step so a concurrent cancel can reach it.
+ *
+ * @param handler The child step content handler (or nullptr to clear).
+ * @param handle The child step workflow handle (or nullptr to clear).
+ */
+static void StepsHandler_SetActiveChildStep(ContentHandler* handler, ADUC_WorkflowHandle handle)
+{
+    pthread_mutex_lock(&s_activeChildStepMutex);
+    s_activeChildStepHandler = handler;
+    s_activeChildStepWorkflowHandle = handle;
+    pthread_mutex_unlock(&s_activeChildStepMutex);
+}
+
+/**
+ * @brief Dispatch Cancel() to the currently-executing leaf child step, if any.
+ *
+ * Reads the active child under the lock and invokes its Cancel() so it can actively interrupt the
+ * in-progress operation (e.g. run a script's CancelUpdate()).
+ */
+static void StepsHandler_CancelActiveChildStep()
+{
+    pthread_mutex_lock(&s_activeChildStepMutex);
+    ContentHandler* handler = s_activeChildStepHandler;
+    ADUC_WorkflowHandle handle = s_activeChildStepWorkflowHandle;
+    pthread_mutex_unlock(&s_activeChildStepMutex);
+
+    if (handler == nullptr || handle == nullptr)
+    {
+        return;
+    }
+
+    Log_Info("Dispatching cancel to active child step handler.");
+    ADUC_WorkflowData childWorkflow = {};
+    childWorkflow.WorkflowHandle = handle;
+    try
+    {
+        handler->Cancel(&childWorkflow);
+    }
+    catch (...)
+    {
+        Log_Warn("Active child step handler threw during Cancel().");
+    }
 }
 
 /**
@@ -873,6 +936,15 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
         //
         for (size_t i = 0; i < stepsCount; i++)
         {
+            // Stop starting new step work once a cancellation has been requested.
+            if (workflow_is_cancel_requested(handle))
+            {
+                Log_Info("Install loop: cancellation requested - not starting step #%lu.", i);
+                result.ResultCode = ADUC_Result_Failure_Cancelled;
+                result.ExtendedResultCode = 0;
+                goto done;
+            }
+
             if (IsStepsHandlerExtraDebugLogsEnabled())
             {
                 Log_Debug(
@@ -973,6 +1045,9 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             //
             // Perform 'install' action.
             //
+            // Record the active child step so a concurrent cancel (on another thread) can actively
+            // interrupt this potentially long-running, blocking call (e.g. run a script's CancelUpdate()).
+            StepsHandler_SetActiveChildStep(contentHandler, stepHandle);
             try
             {
                 result = contentHandler->Install(&stepWorkflow);
@@ -1038,6 +1113,7 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
             //
             // Perform 'apply' action.
             //
+            StepsHandler_SetActiveChildStep(contentHandler, stepHandle);
             try
             {
                 result = contentHandler->Apply(&stepWorkflow);
@@ -1135,6 +1211,10 @@ static ADUC_Result StepsHandler_Install(const tagADUC_WorkflowData* workflowData
     }
 
 done:
+
+    // No child step is actively executing anymore; clear the active child so a late cancel does
+    // not dispatch to a step that has already finished.
+    StepsHandler_SetActiveChildStep(nullptr, nullptr);
 
     // NOTE: Do not free child workflow here, so that it can be reused in the next phase.
     // Only free child handle when the workflow is done.
@@ -1254,6 +1334,13 @@ static ADUC_Result StepsHandler_Cancel(const tagADUC_WorkflowData* workflowData)
             workflowStep);
         result.ResultCode = ADUC_Result_Cancel_UnableToCancel;
     }
+
+    // Setting the cancel-requested flag (above) is sufficient for step handlers that poll
+    // workflow_is_cancel_requested() between operations. However, a step handler that is currently
+    // blocked inside a long-running operation (e.g. a script handler waiting on a child process)
+    // cannot observe the flag until it returns. Dispatch Cancel() to the active child step so it can
+    // actively interrupt that operation (e.g. run the script's CancelUpdate()). See issue #776.
+    StepsHandler_CancelActiveChildStep();
 
     return result;
 }
