@@ -24,6 +24,14 @@ void ADUC_Workflow_HandlePropertyUpdate(
 
 void ADUC_Workflow_HandleUpdateAction(ADUC_WorkflowData* workflowData);
 
+/**
+ * @brief Thread-safe check for whether an operation is currently in progress on the workflow.
+ *
+ * @param workflowData The workflow data. May be NULL.
+ * @return true if an operation is in progress; false otherwise.
+ */
+bool ADUC_Workflow_IsOperationInProgress(const ADUC_WorkflowData* workflowData);
+
 void ADUC_Workflow_TransitionWorkflow(ADUC_WorkflowData* workflowData);
 
 void ADUC_Workflow_HandleStartupWorkflowData(ADUC_WorkflowData* currentWorkflowData);

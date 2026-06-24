@@ -421,12 +421,25 @@ void OrchestratorUpdateCallback(
     // that a new deployment has been deployed recently and should be flowing
     // down the pipe soon.
     //
-    // Instead of processing a cancel, just ignore this and wait for normal
-    // cancellation to occur once a "process deployment" action flows down.
+    // However, the cloud sends the *same* "nodeployment" cancel when an operator
+    // cancels a deployment that is already running on the device. In that case we
+    // must process the cancel so the in-progress workflow is actually cancelled
+    // (otherwise the running step handler never observes the cancellation request).
+    // See issue #777.
+    //
+    // So: only ignore the "nodeployment" cancel when there is no operation in
+    // progress (the genuine delay-period NOOP). When an operation is in progress,
+    // fall through and let ADUC_Workflow_HandlePropertyUpdate route the cancel to
+    // the in-progress workflow.
     if (updateAction == ADUCITF_UpdateAction_Cancel && (0 == strcmp(workflowId, "nodeployment")))
     {
-        Log_Info("Received deployment delay period NOOP cancel. Will wait for update deployment to be pushed...");
-        goto done;
+        if (!ADUC_Workflow_IsOperationInProgress(workflowData))
+        {
+            Log_Info("Received deployment delay period NOOP cancel. Will wait for update deployment to be pushed...");
+            goto done;
+        }
+
+        Log_Info("Received 'nodeployment' cancel while an operation is in progress - processing cancel request.");
     }
 
     if (updateAction == ADUCITF_UpdateAction_ProcessDeployment && !IsNullOrEmpty(workflowId))
