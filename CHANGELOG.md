@@ -1,10 +1,53 @@
-## Release 1.3.1
+## Release 1.4.0
+
+### Behavior Changes
+
+* **Delivery Optimization is no longer enabled by default; curl is now the default content downloader.** `ADUC_BUILD_WITH_DELIVERY_OPTIMIZATION` now defaults to `OFF` ([#893](https://github.com/Azure/iot-hub-device-update/pull/893)). Builds and packages produced with default options use the curl downloader. To keep using Delivery Optimization, configure the build with `-DADUC_BUILD_WITH_DELIVERY_OPTIMIZATION=ON`.
+* **Cancelling a running update now actually cancels it, and script-handler scripts' `CancelUpdate()` is now invoked** ([#776](https://github.com/Azure/iot-hub-device-update/issues/776), [#777](https://github.com/Azure/iot-hub-device-update/issues/777)). See *Cancellation Fixes* below and the migration guidance for script-handler authors.
+
+### Cancellation Fixes
+
+* Fix cancellation of a running update being ignored ([#777](https://github.com/Azure/iot-hub-device-update/issues/777)) — the cloud delivers a cancel with the internal workflow id `"nodeployment"` both during the pre-deployment delay period *and* when an operator cancels an update that is already running. The agent previously treated *every* `"nodeployment"` cancel as a no-op, so an in-progress deployment could never be cancelled and a step handler polling `workflow_is_cancel_requested()` never observed the request. The `"nodeployment"` cancel is now ignored only when no operation is in progress; while an operation is in progress it is processed as a real cancellation.
+* Fix `CancelUpdate()` in script-handler scripts never being invoked ([#776](https://github.com/Azure/iot-hub-device-update/issues/776)) — on cancellation the steps handler now dispatches `Cancel()` to the step that is actively running, and the script handler now runs the script's `cancel` action (`--action-cancel`), which invokes the author's `CancelUpdate()` function. This allows a long-running, blocking `download`/`install` script to be interrupted (previously only an internal cancel flag was set, which a blocked script could never observe).
+
+#### Migration guidance for script-handler authors
+
+If you deploy updates that use the **script handler** (`microsoft/script:1`, including the SWUpdate sample scripts derived from `example-installscript.sh`), be aware that your script's `CancelUpdate()` function is now actually called when a deployment is cancelled. Previously it was dead code. Review your script and ensure that:
+
+* `CancelUpdate()` is implemented and returns a success result (`resultCode` `0`/`Cancel_Success`) when there is nothing to cancel. The sample `example-installscript.sh` already does this.
+* `CancelUpdate()` is **idempotent** and safe to run concurrently with an in-progress `InstallUpdate()`/`DownloadUpdate()` — it runs on a separate thread while the in-progress action may still be executing. It should signal the in-progress action to stop (e.g. by writing a stop file or terminating a child process), then return.
+* `CancelUpdate()` does **not** perform destructive work assuming the install completed; it may be invoked at any point during the operation.
+
+No changes are required if you do not author script-handler `CancelUpdate()` logic; the default sample template is already compatible.
 
 ### Other Bug Fixes
 
 * Fix `edgegatewayCertPath` overwriting X.509 / EIS-x509 auth state — the gateway cert is now applied as a post-processing step that preserves the original authType so client cert, private key, and engine SDK options keep getting set on the IoT Hub handle (previously a non-Edge regression replaced authType with NestedEdgeCert and skipped all mTLS options)
 * Fix AIS + EIS-x509 (no Edge gateway) regression where the EIS-issued identity certificate was never installed as `SU_OPTION_X509_CERT` and was mis-installed as `OPTION_TRUSTED_CERT`, causing the IoT Hub mTLS handshake to fail and the agent to restart-loop during deployments
 * Fix `AducIotAgent` destroying in-progress downloads on restart ([#811](https://github.com/Azure/iot-hub-device-update/issues/811)) — `LinuxPlatformLayer::SandboxCreate` no longer wipes the current workflow's work folder when it already exists, so partial payloads survive an agent or `deviceupdate-agent.service` restart and the curl (`-C -`) and DO downloaders can resume from the existing bytes instead of starting over
+* Fix logical bugs in adu-shell script execution ([#766](https://github.com/Azure/iot-hub-device-update/issues/766), [#895](https://github.com/Azure/iot-hub-device-update/pull/895))
+* Fix `SIGABRT` on workflow step transition caused by a re-entrant `TrackWorker` ([#883](https://github.com/Azure/iot-hub-device-update/pull/883))
+* Fix `AducTimer` thread lifecycle and a flaky polling-interval test assumption ([#880](https://github.com/Azure/iot-hub-device-update/pull/880))
+* Fix ADU agent restart loop on transient IoT Hub disconnect ([#879](https://github.com/Azure/iot-hub-device-update/pull/879))
+* Fix Linux platform layer async worker thread lifecycle management ([#858](https://github.com/Azure/iot-hub-device-update/issues/858), [#862](https://github.com/Azure/iot-hub-device-update/pull/862))
+
+### Dependencies and Build
+
+* Upgrade `azure-iot-sdk-c` from `LTS_08_2023` to `LTS_03_2025` ([#882](https://github.com/Azure/iot-hub-device-update/pull/882)). This is a significant transport-stack dependency change; validate your authentication and connectivity modes (SAS, X.509, EIS/AIS, nested Edge, proxy) when upgrading.
+* Pin the vcpkg baseline for the Azure Storage SDK build ([#891](https://github.com/Azure/iot-hub-device-update/pull/891))
+* `install-deps`: pin the delta build to a newer GCC on Ubuntu 20.04 arm64 ([#881](https://github.com/Azure/iot-hub-device-update/pull/881))
+* CI: retry docker-build apt steps to absorb transient mirror failures ([#885](https://github.com/Azure/iot-hub-device-update/pull/885))
+
+### Documentation
+
+* Clarify custom-handler `IsInstalled` call sites and authoring guidance ([#750](https://github.com/Azure/iot-hub-device-update/issues/750), [#896](https://github.com/Azure/iot-hub-device-update/pull/896))
+* Add an engineer-facing deep-dive document ([#886](https://github.com/Azure/iot-hub-device-update/pull/886))
+* Document `retry-update` for proxy-update re-evaluation ([#888](https://github.com/Azure/iot-hub-device-update/pull/888))
+* Update support terms ([#884](https://github.com/Azure/iot-hub-device-update/pull/884))
+
+### Testing
+
+* Add regression tests for issue #765 ([#875](https://github.com/Azure/iot-hub-device-update/pull/875))
 
 ## Release 1.3.0
 

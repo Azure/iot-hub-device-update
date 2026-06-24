@@ -1,6 +1,6 @@
 # Root Key Deep Dive — Verification, Rotation & Revocation
 
-> **Applies to:** ADU agent v1.3.0-rc1
+> **Applies to:** ADU agent v1.4.0
 > **Audience:** Agent maintainers, security engineers, and solution operators who need to understand or operate the root-key trust chain.
 > **Source of truth:** Everything in this doc is verified against the `develop` branch source. Source-file references are included throughout.
 
