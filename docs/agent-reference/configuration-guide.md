@@ -1,7 +1,7 @@
 # Azure Device Update Agent Configuration Guide
 
 The ADU agent is configured through a single JSON file. This guide documents every
-field and connection method available as of v1.3.0-rc1.
+field and connection method available as of v1.4.0.
 
 ## Configuration File Location
 

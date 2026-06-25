@@ -1,4 +1,4 @@
-# Quick Start: Azure Device Update Agent v1.3.0-rc1
+# Quick Start: Azure Device Update Agent v1.4.0
 
 Get the Device Update agent built and running on a Linux device in ~15 minutes.
 

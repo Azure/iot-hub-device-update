@@ -1,6 +1,6 @@
 # Azure Device Update Agent — Architecture Overview
 
-> **Applies to:** ADU agent v1.3.0-rc1
+> **Applies to:** ADU agent v1.4.0
 
 This document provides a high-level overview of the Device Update for IoT Hub agent
 architecture: its components, communication model, extension system, security layers,
