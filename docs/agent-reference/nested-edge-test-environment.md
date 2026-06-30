@@ -153,7 +153,7 @@ In the Azure portal (or in a deployment JSON), add a module:
 }
 ```
 
-Set the module's environment variables as required by MCC (cache node ID, customer ID, etc.) per the [MCC documentation](https://learn.microsoft.com/azure/iot-hub-device-update/connected-cache-overview).
+Set the module's environment variables as required by MCC (cache node ID, customer ID, etc.) per the [MCC documentation](https://learn.microsoft.com/azure/iot-hub-device-update/connected-cache-disconnected-device-update).
 
 ### 6. Register a Child Device Identity in IoT Hub
 

@@ -163,7 +163,6 @@ cd iot-hub-device-update
 
 - **📖 Documentation**: [Microsoft Learn - Device Update](https://learn.microsoft.com/azure/iot-hub-device-update/)
 - **🐛 Issues**: [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/Azure/iot-hub-device-update/discussions)
 - **📧 Support**: [Azure Support](https://azure.microsoft.com/support/)
 - **🤝 Contributing**: [CONTRIBUTING.md](../../CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](../../CODE_OF_CONDUCT.md) · [SECURITY.md](../../SECURITY.md)
 

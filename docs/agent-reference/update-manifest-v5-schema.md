@@ -6,7 +6,7 @@ Please see the [Update Manifest](https://learn.microsoft.com/en-us/azure/iot-hub
 
 ### Official JSON Schemas
 
-The Azure Device Update service publishes JSON Schemas for the **import manifest** (the document you author and submit to Device Update for IoT Hub) on [SchemaStore](https://www.schemastore.org/json/):
+The Azure Device Update service publishes JSON Schemas for the **import manifest** (the document you author and submit to Device Update for IoT Hub) on [SchemaStore](https://www.schemastore.org/):
 
 | Version | JSON Schema URL | Microsoft Learn reference |
 | ------- | --------------- | ------------------------- |

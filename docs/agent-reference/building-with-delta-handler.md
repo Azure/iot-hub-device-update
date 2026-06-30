@@ -203,5 +203,5 @@ ctest -R delta
 ## References
 
 - [iot-hub-device-update-delta GitHub Repository](https://github.com/Azure/iot-hub-device-update-delta)
-- [ADU Agent Documentation](../README.md)
-- [Extension Development Guide](../docs/agent-reference/how-to-implement-custom-update-handler.md)
+- [ADU Agent Documentation](README.md)
+- [Extension Development Guide](how-to-implement-custom-update-handler.md)

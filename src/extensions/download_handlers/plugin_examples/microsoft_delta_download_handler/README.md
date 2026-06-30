@@ -76,6 +76,60 @@ Verification:
   If mismatch: Fail, fallback to full download
 ```
 
+### Agent Call Chain (How `ProcessUpdate` Is Invoked)
+
+The delta handler is **not** a separate workflow phase. It is invoked synchronously from
+inside a leaf step handler's **Download** step (for example `microsoft/swupdate:2`), once for
+every payload file whose update-manifest entry declares a `downloadHandlerId`. The flow chart
+below traces the exact call chain from that step handler down to where this handler processes
+the `relatedFiles` (the deltas). Annotations are `file:line` references into the agent source
+tree.
+
+```mermaid
+flowchart TD
+    A["Agent Download phase (workflow orchestration)"] --> B["Leaf step handler Download()<br/>e.g. SWUpdateHandlerImpl::Download<br/>swupdate_handler_v2.cpp:404"]
+    B --> C["Loop over each payload file<br/>swupdate_handler_v2.cpp:433"]
+    C --> D["ExtensionManager::Download(fileEntity)<br/>swupdate_handler_v2.cpp:446"]
+    D --> E{"Already in sandbox<br/>with valid hash?"}
+    E -->|"yes"| DONE["Skip download (return Success)"]
+    E -->|"no"| F{"entity.DownloadHandlerId set?<br/>extension_manager.cpp:975"}
+    F -->|"no"| FULL["Full content download<br/>extension_manager.cpp:1006"]
+    F -->|"yes"| H["ProcessDownloadHandlerExtensibility()<br/>extension_manager.cpp:977"]
+    H --> I["plugin ProcessUpdate(handle, entity, targetPath)<br/>extension_manager_helper.cpp:106"]
+    I --> J["MicrosoftDeltaDownloadHandler_ProcessUpdate()<br/>microsoft_delta_download_handler.c:44"]
+    J --> K{"entity has relatedFiles?<br/>microsoft_delta_download_handler.c:63"}
+    K -->|"no"| RFD1["return RequiredFullDownload<br/>(payload treated as baseline source)<br/>microsoft_delta_download_handler.c:67"]
+    K -->|"yes"| L["Loop over each relatedFile / diff<br/>microsoft_delta_download_handler.c:80"]
+    L --> M["ProcessRelatedFile() - source-cache lookup<br/>microsoft_delta_download_handler.c:92"]
+    M --> N{"Matching source<br/>in cache?"}
+    N -->|"cache miss"| O["continue to next relatedFile<br/>microsoft_delta_download_handler.c:104"]
+    O --> L
+    N -->|"cache hit"| P["DownloadDeltaUpdate(): ExtensionManager_Download(diff)<br/>microsoft_delta_download_handler_utils.c:280<br/>then reconstruct target via diff API"]
+    P --> Q{"Reconstruct +<br/>hash OK?"}
+    Q -->|"yes"| SKIP["return SuccessSkipDownload<br/>microsoft_delta_download_handler.c:141"]
+    Q -->|"no"| O
+    L -->|"all diffs missed/failed"| RFD2["return RequiredFullDownload<br/>microsoft_delta_download_handler.c:149"]
+    SKIP --> G{"Result handling in<br/>ExtensionManager::Download<br/>extension_manager.cpp:979"}
+    RFD1 --> FULL
+    RFD2 --> FULL
+    G -->|"SuccessSkipDownload"| VERIFY["Skip full download,<br/>then verify payload hash"]
+    FULL --> VERIFY
+    VERIFY --> DONE
+```
+
+**What each `ProcessUpdate` outcome means**
+
+| Result code | When | Agent behavior |
+| --- | --- | --- |
+| `SuccessSkipDownload` | A `relatedFile` diff matched a cached source and the target was reconstructed and hash-verified | Full payload download is **skipped** (`extension_manager.cpp:979`) |
+| `RequiredFullDownload` | No `relatedFiles`, or every diff missed the cache / failed reconstruction | Agent **falls back** to a full payload download (`extension_manager.cpp:991`) |
+| failure code | Plugin or internal error | Download fails; the extended result code is recorded on the workflow |
+
+> **Timing note:** the matching source `.swu` is placed into the cache *after* this Download
+> phase — on `OnUpdateWorkflowCompleted` (post install/apply) or `CacheSourceUpdate`
+> (pre-reboot). That is why the *first* update on a device is always a full download (cache
+> miss) and subsequent updates can use deltas.
+
 ## Key Concepts
 
 ### Source Update Cache

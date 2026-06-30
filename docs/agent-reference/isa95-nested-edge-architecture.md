@@ -310,5 +310,5 @@ For physical test environments, assign each ISA-95 level to a separate VLAN:
 - [ISA-95 / IEC 62443 Standards](https://www.isa.org/standards-and-publications/isa-standards/isa-standards-committees/isa95)
 - [Azure IoT Edge Nested Edge](https://learn.microsoft.com/azure/iot-edge/how-to-connect-downstream-iot-edge-device)
 - [Azure Device Update Documentation](https://learn.microsoft.com/azure/iot-hub-device-update/)
-- [Microsoft Connected Cache](https://learn.microsoft.com/azure/iot-hub-device-update/connected-cache-overview)
+- [Microsoft Connected Cache](https://learn.microsoft.com/azure/iot-hub-device-update/connected-cache-disconnected-device-update)
 - [IoT Edge Certificate Management](https://learn.microsoft.com/azure/iot-edge/how-to-manage-device-certificates)
