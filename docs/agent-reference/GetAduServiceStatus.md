@@ -256,8 +256,8 @@ sequenceDiagram
     Note over ReqFIFO,ViewState: ADU Service Process
 
     Client->>SDK: GetAduServiceStatus()
-    SDK->>SDK: Create per-call response FIFO<br/>at /var/lib/adu/api/resp_<random>.fifo
-    SDK->>ReqFIFO: Write GET_STATE request<br/>(ver=1,type=1,len,&lt;respFifoPath&gt;)
+    SDK->>SDK: Create per-call response FIFO<br/>at /var/lib/adu/api/resp_[random].fifo
+    SDK->>ReqFIFO: Write GET_STATE request<br/>(ver=1, type=1, len, [respFifoPath])
 
     ReqFIFO->>ApiSvcReqHandler: Read request
     ApiSvcThread->>ApiSvcReqHandler: Process GET_STATE command
