@@ -181,6 +181,63 @@ endif()
 ### Yocto Integration
 For Yocto integration see [README-Yocto-Integration.md](../../src/sdk/README-Yocto-Integration.md)
 
+## Implementation (How It Works)
+
+`GetAduServiceStatus()` is a thin client-side wrapper that performs a request/response
+exchange with a listener thread inside the running agent over named-pipe (FIFO) IPC. The
+value it returns originates from a single mutex-protected "view state" variable that the
+agent's workflow engine keeps up to date — there is no IoT Hub round-trip.
+
+### Components
+
+| Component | Source | Role |
+| --- | --- | --- |
+| Client SDK | [aducsdk.c](../../src/sdk/src/aducsdk.c) | Implements `GetAduServiceStatus()`: creates the response FIFO, sends the request, reads the reply. Linked into the caller as `libaducsdk.a`. |
+| Wire protocol | [apiproto.c](../../src/utils/apiproto_utils/src/apiproto.c) / [apiproto.h](../../src/utils/apiproto_utils/inc/aduc/apiproto.h) | Frames and sends/receives the request and response messages (network byte order, `select()` timeouts). Shared by both processes. |
+| View-state store | [viewstatemgr.c](../../src/viewstatemgr/src/viewstatemgr.c) | Global `g_vsm` holding the current `ADUC_ServiceStatus`, guarded by a `pthread_mutex`. Initial value is `Initializing`. |
+| API service | [apisvc.c](../../src/agent/api/src/apisvc.c) | Dedicated agent thread (`init_api_svc` → `aduc_apisvc_thread_proc`) that owns the request FIFO, handles `GET_STATE`, and writes the reply. |
+| State producers | [agent_workflow.c](../../src/adu_workflow/src/agent_workflow.c), [adu_core_interface.c](../../src/agent/adu_core_interface/src/adu_core_interface.c) | Call `viewstatemgr_svcstatus_set()` at each workflow phase to keep `g_vsm` current. |
+
+The API service thread is started at agent startup from [main.c](../../src/agent/src/main.c)
+(`init_api_svc`) and stopped on shutdown (`uninit_api_svc`).
+
+### End-to-end GET_STATE flow
+
+**Client — `GetAduServiceStatus()` ([aducsdk.c](../../src/sdk/src/aducsdk.c))**
+
+1. Security-check the request FIFO (default `/var/lib/adu/api/apireq.fifo`): it must be a FIFO owned by the caller's euid/egid with mode `0660`. Missing → `ADUC_ServiceStatus_ERROR_AgentServiceNotRunning`; not writable → `..._ERROR_AgentServicePermission`.
+2. `mkfifo` a private, randomly-named response FIFO `.../api/resp_<12 chars>.fifo` (chmod `0660`).
+3. Open the request FIFO for write, and the response FIFO for read *before* sending (so the writer never sees EOF).
+4. Send `{ver=1, type=GET_STATE, len, data=<respFifoPath>}`.
+5. Wait for the `{code, ret_val}` reply (`select`, 3 s timeout), verify `code == GET_STATE`, and return `(ADUC_ServiceStatus)ret_val`.
+6. Always close and `unlink` the private response FIFO.
+
+**Agent — `aduc_apisvc_thread_proc()` ([apisvc.c](../../src/agent/api/src/apisvc.c))**
+
+1. Create/verify the request FIFO and open it for read (non-blocking).
+2. `msg_recv_req` reads a request; its `data` field is the client's response-FIFO path, which is itself security-checked with the same ownership/mode rules.
+3. Open that response FIFO for write.
+4. For `GET_STATE`: read the current status via `viewstatemgr_svcstatus_get(&g_vsm, ...)`, reply `{code=1, ret_val=status}`, flush, then close.
+
+### How the state is produced
+
+`g_vsm` is updated by `viewstatemgr_svcstatus_set()` throughout the deployment lifecycle. For
+example, in [agent_workflow.c](../../src/adu_workflow/src/agent_workflow.c): ProcessDeployment
+→ `Initializing`, Download → `Downloading`, Install → `Installing`, Apply → `Applying`, reboot
+points → `Rebooting`; and on returning to idle it sets `Paused` (when `idlePauseMilliseconds >
+0`, which also starts the idle-pause timer) or `Idle`.
+[adu_core_interface.c](../../src/agent/adu_core_interface/src/adu_core_interface.c) sets
+`Reporting` and `Failed`. Because both the workflow thread (writer) and the API service thread
+(reader) touch `g_vsm`, all access is serialized by its mutex.
+
+### Security properties
+
+- Both processes verify FIFO **type + euid/egid ownership + `0660` permissions** before trusting a path.
+- The response FIFO is per-call, randomly named, and always unlinked.
+- The client validates that the response `code` matches its request type — a spoofed or mismatched reply is reported as `ADUC_ServiceStatus_ERROR_AgentServiceInternal` rather than being returned as a status.
+- The SDK uses `secure_getenv()` for its debug flag (safe under setuid/setgid); the service ignores `SIGPIPE` so a client disconnect cannot kill the agent thread.
+- The request FIFO path is build-time configurable via `-DADUC_API_DEFAULT_FIFO_PATH`.
+
 ## Sequence Diagram for in-proc Wrapper API and GET_STATE cross-proc
 
 
