@@ -33,7 +33,6 @@ ADUC_Result Download_curl(
     std::string output;
     int exitCode = 1;
     std::stringstream fullFilePath;
-    bool isValidHash;
     bool reportProgress = false;
 
     if (entity == nullptr)
@@ -48,59 +47,7 @@ ADUC_Result Download_curl(
         goto done;
     }
 
-    if (entity->HashCount == 0)
-    {
-        Log_Error("File entity does not contain a file hash! Cannot validate cancelling download.");
-        result.ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_IS_EMPTY;
-        if (downloadProgressCallback != nullptr)
-        {
-            downloadProgressCallback(
-                workflowId,
-                entity->FileId,
-                ADUC_DownloadProgressState_Error,
-                result.ResultCode,
-                result.ExtendedResultCode);
-        }
-        goto done;
-    }
-
     fullFilePath << workFolder << "/" << entity->TargetFilename;
-
-    if (!ADUC_HashUtils_GetShaVersionForTypeString(
-            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0), &algVersion))
-    {
-        Log_Error(
-            "FileEntity for %s has unsupported hash type %s",
-            fullFilePath.str().c_str(),
-            ADUC_HashUtils_GetHashType(entity->Hash, entity->HashCount, 0));
-        result.ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_TYPE_NOT_SUPPORTED;
-
-        if (downloadProgressCallback != nullptr)
-        {
-            downloadProgressCallback(
-                workflowId,
-                entity->FileId,
-                ADUC_DownloadProgressState_Error,
-                result.ResultCode,
-                result.ExtendedResultCode);
-        }
-        goto done;
-    }
-
-    // If target file exists, validate file hash.
-    // If file is valid, then skip the download.
-    isValidHash = ADUC_HashUtils_IsValidFileHash(
-        fullFilePath.str().c_str(),
-        ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
-        algVersion,
-        false /* suppressErrorLog */);
-
-    if (isValidHash)
-    {
-        result = { ADUC_Result_Download_Skipped_FileExists };
-        reportProgress = true;
-        goto done;
-    }
 
     Log_Info(
         "Downloading File '%s' from '%s' to '%s'",
@@ -138,30 +85,6 @@ ADUC_Result Download_curl(
     }
 
     Log_Info("Download output:: \n%s", output.c_str());
-
-    // If we downloaded successfully, validate the file hash.
-    if (IsAducResultCodeSuccess(result.ResultCode))
-    {
-        // Note: Currently we expect there to be only one hash, but
-        // support for multiple hashes is already built in.
-        Log_Info("Validating file hash");
-
-        const bool isValid = ADUC_HashUtils_IsValidFileHash(
-            fullFilePath.str().c_str(),
-            ADUC_HashUtils_GetHashValue(entity->Hash, entity->HashCount, 0),
-            algVersion,
-            true /* suppressErrorLog */);
-
-        if (!isValid)
-        {
-            Log_Error("Hash for %s is not valid", entity->TargetFilename);
-
-            result.ResultCode = ADUC_Result_Failure;
-            result.ExtendedResultCode = ADUC_ERC_VALIDATION_FILE_HASH_INVALID_HASH;
-            reportProgress = true;
-            goto done;
-        }
-    }
 
 done:
 
