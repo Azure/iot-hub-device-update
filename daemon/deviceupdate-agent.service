@@ -2,6 +2,11 @@
 Description=Device Update Agent daemon.
 After=network-online.target
 Wants=network-online.target
+# Cap the respawn budget to 8 failures per 30 minutes. A device that
+# fails harder than that is genuinely broken and should stop hammering
+# the cloud control plane.
+StartLimitIntervalSec=1800
+StartLimitBurst=8
 
 [Service]
 Type=simple
@@ -14,11 +19,6 @@ Restart=on-failure
 # disconnect that the SDK can recover from in tens of seconds would cause
 # multiple agent restarts and burn IoT Hub connect-rate quota per device.
 RestartSec=60s
-# Cap the respawn budget to 8 failures per 30 minutes. A device that
-# fails harder than that is genuinely broken and should stop hammering
-# the cloud control plane.
-StartLimitIntervalSec=1800
-StartLimitBurst=8
 User=adu
 Group=adu
 # systemd will try to start the ADU executable 5 times and then give up.
