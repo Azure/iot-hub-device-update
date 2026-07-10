@@ -20,6 +20,7 @@
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/workflow_internal.h>
 #include <aduc/workflow_utils.h>
+#include <cstdio> // std::rename
 #include <fstream>
 #include <memory>
 #include <parson.h>
@@ -57,6 +58,33 @@ struct ExtMgrCleanup
         ExtensionManager::SetContentDownloaderLibrary(nullptr);
         ExtensionManager::Uninit();
     }
+};
+
+// RAII guard that temporarily hides a file by renaming it so that
+// tests do not accidentally pick up real extension registrations
+// installed on the host (e.g. /var/lib/adu/extensions/…/extension.json).
+struct ScopedHideFile
+{
+    std::string original;
+    std::string hidden;
+    bool renamed = false;
+
+    explicit ScopedHideFile(const std::string& path)
+        : original(path), hidden(path + ".hidden_by_test")
+    {
+        renamed = (std::rename(original.c_str(), hidden.c_str()) == 0);
+    }
+
+    ~ScopedHideFile()
+    {
+        if (renamed)
+        {
+            std::rename(hidden.c_str(), original.c_str());
+        }
+    }
+
+    ScopedHideFile(const ScopedHideFile&) = delete;
+    ScopedHideFile& operator=(const ScopedHideFile&) = delete;
 };
 
 } // namespace
@@ -417,6 +445,7 @@ TEST_CASE("LoadContentDownloaderLibrary returns cached downloader")
 TEST_CASE("LoadContentDownloaderLibrary fails when extension load fails and no cached")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_CONTENT_DOWNLOADER_EXTENSION_PATH);
     ExtensionManager::SetContentDownloaderLibrary(nullptr);
 
     void* lib = nullptr;
@@ -431,6 +460,7 @@ TEST_CASE("LoadContentDownloaderLibrary fails when extension load fails and no c
 TEST_CASE("IsComponentsEnumeratorRegistered returns false when no enumerator loaded")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_COMPONENT_ENUMERATOR_EXTENSION_PATH);
     bool registered = ExtensionManager::IsComponentsEnumeratorRegistered();
     CHECK_FALSE(registered);
 }
@@ -442,6 +472,7 @@ TEST_CASE("IsComponentsEnumeratorRegistered returns false when no enumerator loa
 TEST_CASE("LoadComponentEnumeratorLibrary fails when extension not found")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_COMPONENT_ENUMERATOR_EXTENSION_PATH);
     void* lib = nullptr;
     ADUC_Result result = ExtensionManager::LoadComponentEnumeratorLibrary(&lib);
     CHECK(result.ResultCode == 0);
@@ -454,6 +485,7 @@ TEST_CASE("LoadComponentEnumeratorLibrary fails when extension not found")
 TEST_CASE("InitializeContentDownloader fails when downloader lib not loaded")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_CONTENT_DOWNLOADER_EXTENSION_PATH);
     ExtensionManager::SetContentDownloaderLibrary(nullptr);
 
     ADUC_Result result = ExtensionManager::InitializeContentDownloader("test", ADUC_LOG_DEBUG);
@@ -481,6 +513,7 @@ TEST_CASE("InitializeContentDownloader fails when contract version is unsupporte
 TEST_CASE("GetAllComponents fails when component enumerator not loadable")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_COMPONENT_ENUMERATOR_EXTENSION_PATH);
     std::string output;
     ADUC_Result result = ExtensionManager::GetAllComponents(output);
     CHECK(result.ResultCode == 0);
@@ -490,6 +523,7 @@ TEST_CASE("GetAllComponents fails when component enumerator not loadable")
 TEST_CASE("SelectComponents fails when component enumerator not loadable")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_COMPONENT_ENUMERATOR_EXTENSION_PATH);
     std::string output;
     ADUC_Result result = ExtensionManager::SelectComponents("{}", output);
     CHECK(result.ResultCode == 0);
@@ -508,6 +542,7 @@ TEST_CASE("ExtensionManager_Uninit wraps Uninit")
 TEST_CASE("ExtensionManager_InitializeContentDownloader wrapper returns failure when no downloader")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_CONTENT_DOWNLOADER_EXTENSION_PATH);
     ExtensionManager::SetContentDownloaderLibrary(nullptr);
 
     ADUC_Result result = ExtensionManager_InitializeContentDownloader("test", ADUC_LOG_DEBUG);
@@ -761,6 +796,7 @@ TEST_CASE("Download returns hash-type-not-supported when entity has no hashes")
 TEST_CASE("ExtensionManager_Download C wrapper fails when no downloader library loaded")
 {
     ExtMgrCleanup cleanup;
+    ScopedHideFile hideExtJson(ADUC_CONTENT_DOWNLOADER_EXTENSION_PATH);
     ExtensionManager::SetContentDownloaderLibrary(nullptr);
 
     const std::string testWorkfolder = std::string{ ADUC_TEST_DATA_FOLDER } + "/extension_manager";
