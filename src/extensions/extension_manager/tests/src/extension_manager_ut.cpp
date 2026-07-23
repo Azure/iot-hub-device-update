@@ -344,6 +344,37 @@ TEST_CASE("SetContentDownloaderContractVersion overwrites previous value")
     CHECK(getInfo.minorVer == 1);
 }
 
+TEST_CASE("Uninit clears the content downloader so a repeat Uninit cannot reuse a freed handle")
+{
+    // Regression for the shutdown SIGSEGV: Uninit runs twice at shutdown, and the
+    // second UnloadAllExtensions used to dlsym "Cleanup" on the content downloader
+    // handle that the first call had already unloaded, faulting in the loader.
+    // Uninit must reset the content downloader state so the second call is a no-op.
+    ExtMgrCleanup cleanup;
+
+    // A valid handle with no "Cleanup" symbol, so the first Uninit's dlsym is a
+    // harmless no-op (libc is always loaded).
+    void* handle = dlopen("libc.so.6", RTLD_LAZY | RTLD_NOLOAD);
+    REQUIRE(handle != nullptr);
+    ExtensionManager::SetContentDownloaderLibrary(handle);
+    ExtensionManager::SetContentDownloaderContractVersion(
+        ADUC_ExtensionContractInfo{ ADUC_V2_CONTRACT_MAJOR_VER, ADUC_V2_CONTRACT_MINOR_VER });
+
+    ExtensionManager::Uninit();
+
+    // State must be cleared after unload (fails before the fix).
+    ADUC_ExtensionContractInfo info{ 9, 9 };
+    ExtensionManager::GetContentDownloaderContractVersion(&info);
+    CHECK(info.majorVer == 0);
+    CHECK(info.minorVer == 0);
+
+    // Second Uninit must not dlsym the stale handle again.
+    ExtensionManager::Uninit();
+    SUCCEED("second Uninit did not reuse the content downloader handle");
+
+    dlclose(handle);
+}
+
 // =====================================================================
 // GetComponentEnumeratorContractVersion tests
 // =====================================================================
@@ -863,6 +894,10 @@ TEST_CASE("Uninit clears both handlers and downloader library state")
 
     int fakeLib = 99;
     ExtensionManager::SetContentDownloaderLibrary(&fakeLib);
+    // V1 so Uninit does not dlsym the fake handle; the point here is that Uninit
+    // resets the downloader state.
+    ExtensionManager::SetContentDownloaderContractVersion(
+        ADUC_ExtensionContractInfo{ ADUC_V1_CONTRACT_MAJOR_VER, ADUC_V1_CONTRACT_MINOR_VER });
 
     ExtensionManager::Uninit();
 
@@ -872,10 +907,10 @@ TEST_CASE("Uninit clears both handlers and downloader library state")
     CHECK(result.ResultCode == 0);
     CHECK(retrieved == nullptr);
 
-    // Downloader lib is NOT cleared by Uninit (it only clears _libs map and _contentHandlers).
-    // Verify it's still accessible.
-    void* lib = nullptr;
-    result = ExtensionManager::LoadContentDownloaderLibrary(&lib);
-    CHECK(result.ResultCode == 1);
-    CHECK(lib == &fakeLib);
+    // Uninit also clears the content downloader state, so a repeat Uninit cannot
+    // dlsym a freed handle (the shutdown crash).
+    ADUC_ExtensionContractInfo info{ 9, 9 };
+    ExtensionManager::GetContentDownloaderContractVersion(&info);
+    CHECK(info.majorVer == 0);
+    CHECK(info.minorVer == 0);
 }
