@@ -36,6 +36,7 @@ No changes are required if you do not author script-handler `CancelUpdate()` log
 * Upgrade `azure-iot-sdk-c` from `LTS_08_2023` to `LTS_03_2025` ([#882](https://github.com/Azure/iot-hub-device-update/pull/882)). This is a significant transport-stack dependency change; validate your authentication and connectivity modes (SAS, X.509, EIS/AIS, nested Edge, proxy) when upgrading.
 * Pin the vcpkg baseline for the Azure Storage SDK build ([#891](https://github.com/Azure/iot-hub-device-update/pull/891))
 * `install-deps`: pin the delta build to a newer GCC on Ubuntu 20.04 arm64 ([#881](https://github.com/Azure/iot-hub-device-update/pull/881))
+* `install-deps`: pre-seed the bzip2 source archive from an allowlisted distro mirror so vcpkg delta-dependency builds succeed under 1ES network isolation ([#910](https://github.com/Azure/iot-hub-device-update/pull/910))
 * CI: retry docker-build apt steps to absorb transient mirror failures ([#885](https://github.com/Azure/iot-hub-device-update/pull/885))
 
 ### Documentation
