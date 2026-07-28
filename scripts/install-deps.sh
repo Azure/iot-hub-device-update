@@ -952,6 +952,58 @@ EOF
             --x-install-root="$vcpkg_root/installed" || return 1
     }
 
+    # ---------------------------------------------------------------------
+    # Network-isolation workaround: pre-seed the bzip2 source archive.
+    #
+    # Every vcpkg port installed below fetches its sources from github.com
+    # EXCEPT bzip2, whose port downloads bzip2-<ver>.tar.gz from sourceware.org
+    # (with a www.mirrorservice.org fallback). Under 1ES network isolation the
+    # amd64 build pool only reaches an allowlist of mirrors; neither sourceware
+    # host is on it, so the fetch times out and "vcpkg install bzip2" fails with
+    # BUILD_FAILED, breaking the whole dependency install.
+    #
+    # Drop the byte-for-byte identical tarball into vcpkg's download cache under
+    # the exact name the port expects. The distro archive pools carry it as
+    # bzip2_<ver>.orig.tar.gz and are on the isolation allowlist -- deb.debian.org
+    # for Debian containers, azure.archive.ubuntu.com for Ubuntu containers -- so
+    # one of the mirrors below is always reachable. vcpkg then validates the
+    # SHA512 and skips its upstream download. If no mirror is reachable or the
+    # hash mismatches we leave the cache untouched and let vcpkg try upstream
+    # (no worse than before).
+    #
+    # bzip2 1.0.8 has been the latest release since 2019; if the pinned vcpkg
+    # baseline ever bumps the version, update bzip2_ver / bzip2_sha512.
+    # ---------------------------------------------------------------------
+    local bzip2_ver="1.0.8"
+    local bzip2_sha512="083f5e675d73f3233c7930ebe20425a533feedeaaa9d8cc86831312a6581cefbe6ed0d08d2fa89be81082f2a5abdabca8b3c080bf97218a1bd59dc118a30b9f3"
+    local vcpkg_downloads="$vcpkg_root/downloads"
+    local bzip2_cache="$vcpkg_downloads/bzip2-${bzip2_ver}.tar.gz"
+    if [[ -f $bzip2_cache ]] && echo "${bzip2_sha512}  ${bzip2_cache}" | sha512sum --check --status; then
+        echo "bzip2-${bzip2_ver}.tar.gz already cached for vcpkg; skipping pre-seed."
+    else
+        echo "Pre-seeding vcpkg download cache with bzip2-${bzip2_ver}.tar.gz from an allowlisted distro mirror..."
+        mkdir -p "$vcpkg_downloads"
+        local bzip2_mirror bzip2_seeded=false
+        for bzip2_mirror in \
+            "http://deb.debian.org/debian/pool/main/b/bzip2/bzip2_${bzip2_ver}.orig.tar.gz" \
+            "http://azure.archive.ubuntu.com/ubuntu/pool/main/b/bzip2/bzip2_${bzip2_ver}.orig.tar.gz" \
+            "http://archive.ubuntu.com/ubuntu/pool/main/b/bzip2/bzip2_${bzip2_ver}.orig.tar.gz" \
+            "https://sourceware.org/pub/bzip2/bzip2-${bzip2_ver}.tar.gz"; do
+            echo "  trying ${bzip2_mirror}"
+            if curl -fsSL --connect-timeout 15 --max-time 180 "$bzip2_mirror" -o "${bzip2_cache}.tmp" \
+                && echo "${bzip2_sha512}  ${bzip2_cache}.tmp" | sha512sum --check --status; then
+                mv -f "${bzip2_cache}.tmp" "$bzip2_cache"
+                echo "  pre-seeded ${bzip2_cache} (SHA512 verified)"
+                bzip2_seeded=true
+                break
+            fi
+            rm -f "${bzip2_cache}.tmp"
+        done
+        if [[ $bzip2_seeded != "true" ]]; then
+            echo "  WARNING: could not pre-seed bzip2; vcpkg will attempt its normal upstream download."
+        fi
+    fi
+
     # Install required packages
     vcpkg_install_classic zlib || return
     vcpkg_install_classic zstd || return
