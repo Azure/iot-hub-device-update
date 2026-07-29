@@ -16,12 +16,15 @@
 #include "aduc/viewstatemgr.h"
 
 #include <arpa/inet.h>
+#include <atomic>
 #include <catch2/catch_all.hpp>
 #include <chrono>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <poll.h>
+#include <pthread.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -83,6 +86,24 @@ static int open_fifo_with_timeout(const char* path, int flags, int timeout_ms)
 using Catch::Matchers::Equals;
 
 ViewStateManager g_vsm = { 0 };
+
+// Counts joins attempted on the zero-initialized thread handle. Joins of real
+// threads are forwarded to libc, so the other sections behave as before.
+static std::atomic<int> g_joinsOnZeroHandle{ 0 };
+
+extern "C" int pthread_join(pthread_t thread, void** retval)
+{
+    using JoinFn = int (*)(pthread_t, void**);
+    static auto realJoin = reinterpret_cast<JoinFn>(dlsym(RTLD_NEXT, "pthread_join"));
+
+    if (thread == static_cast<pthread_t>(0))
+    {
+        ++g_joinsOnZeroHandle;
+        return ESRCH;
+    }
+
+    return realJoin(thread, retval);
+}
 
 TEST_CASE("apisvc crossproc tests")
 {
@@ -153,6 +174,30 @@ TEST_CASE("apisvc crossproc tests")
         CHECK(resp.ret_val == (uint16_t)ADUC_ServiceStatus_Installing);
 
         CHECK(uninit_api_svc());
+    }
+
+    SECTION("uninit without init")
+    {
+        // Joining the zero-initialized handle dereferences a NULL thread
+        // descriptor, which crashes on aarch64 glibc (agent shutdown after a
+        // failed startup).
+        g_joinsOnZeroHandle = 0;
+
+        CHECK_FALSE(uninit_api_svc());
+        CHECK(g_joinsOnZeroHandle == 0);
+    }
+
+    SECTION("uninit twice")
+    {
+        const std::string reqFifoPath = TEST_DATA_DIR + "/test_req_fifo";
+
+        REQUIRE(init_api_svc(reqFifoPath.c_str()));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        g_joinsOnZeroHandle = 0;
+
+        CHECK(uninit_api_svc());
+        CHECK_FALSE(uninit_api_svc());
+        CHECK(g_joinsOnZeroHandle == 0);
     }
 
     SECTION("GetAduServiceStatus via SDK API")
