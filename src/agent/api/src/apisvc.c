@@ -90,7 +90,15 @@ bool uninit_api_svc()
     void* threadRet = NULL;
     FifoThreadRetVal* retVal = NULL;
 
-    atomic_store(&g_api_svc_thread_running, false);
+    // The flag is set only after the thread was created, so a false value means
+    // g_api_svc_thread still holds the zero-initialized handle. Joining that
+    // dereferences a NULL thread descriptor.
+    if (!atomic_exchange(&g_api_svc_thread_running, false))
+    {
+        Log_Info("api service thread was not started, nothing to uninit");
+        return false;
+    }
+
     int res = pthread_join(g_api_svc_thread, (void**)&threadRet);
     if (res != 0)
     {
