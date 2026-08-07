@@ -6,6 +6,7 @@
  * Licensed under the MIT License.
  */
 
+#include <aduc/config_utils.h>
 #include <aduc/extension_manager_download_options.h>
 #include <aduc/extension_manager_helper.hpp>
 #include <aduc/result.h>
@@ -13,7 +14,59 @@
 
 #include <catch2/catch_all.hpp>
 
+#include <cstdlib> // setenv, getenv
 #include <cstring> // memset
+#include <string>
+
+namespace
+{
+
+// RAII guard that forces ADUC_ConfigInfo_GetInstance() to return nullptr by
+// temporarily pointing the config folder env var at a non-existent directory
+// and draining any existing singleton refcount.
+struct ScopedInvalidateConfig
+{
+    std::string savedEnv;
+    bool hadEnv = false;
+
+    ScopedInvalidateConfig()
+    {
+        const char* env = getenv("ADUC_CONF_FOLDER");
+        if (env != nullptr)
+        {
+            hadEnv = true;
+            savedEnv = env;
+        }
+        // Drain any existing singleton so re-init is attempted next time
+        // (ReleaseInstance is a no-op once refCount reaches 0).
+        const ADUC_ConfigInfo* cfg = ADUC_ConfigInfo_GetInstance();
+        if (cfg != nullptr)
+        {
+            // Release the ref we just took
+            ADUC_ConfigInfo_ReleaseInstance(cfg);
+            // Release again to drop refcount to 0 and uninit the singleton
+            ADUC_ConfigInfo_ReleaseInstance(cfg);
+        }
+        setenv("ADUC_CONF_FOLDER", "/nonexistent_path_for_test", 1);
+    }
+
+    ~ScopedInvalidateConfig()
+    {
+        if (hadEnv)
+        {
+            setenv("ADUC_CONF_FOLDER", savedEnv.c_str(), 1);
+        }
+        else
+        {
+            unsetenv("ADUC_CONF_FOLDER");
+        }
+    }
+
+    ScopedInvalidateConfig(const ScopedInvalidateConfig&) = delete;
+    ScopedInvalidateConfig& operator=(const ScopedInvalidateConfig&) = delete;
+};
+
+} // namespace
 
 // =====================================================================
 // ProcessDownloadHandlerExtensibility - Bad argument tests
@@ -130,15 +183,14 @@ TEST_CASE("GetDownloadTimeoutInMinutes returns default when downloadOptions is n
 
 TEST_CASE("GetDownloadTimeoutInMinutes returns downloadOptions value when config has zero timeout")
 {
+    ScopedInvalidateConfig noConfig;
     ExtensionManager_Download_Options options{};
     options.timeoutInMinutes = 42;
 
     unsigned int timeout = GetDownloadTimeoutInMinutes(&options);
 
-    // When config singleton is not initialized, it falls through to the
-    // downloadOptions path but config is nullptr so we get default.
-    // The config singleton returns nullptr if not initialized, so we
-    // get the default value.
+    // Config singleton is not initialized (env points to invalid path),
+    // so the function returns the default.
     CHECK(timeout == CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT);
 }
 
@@ -166,6 +218,7 @@ TEST_CASE("Default_ExtensionManager_Download_Options has default timeout")
 
 TEST_CASE("GetDownloadTimeoutInMinutes returns default when downloadOptions has zero timeout")
 {
+    ScopedInvalidateConfig noConfig;
     ExtensionManager_Download_Options options{};
     options.timeoutInMinutes = 0;
 
@@ -177,6 +230,7 @@ TEST_CASE("GetDownloadTimeoutInMinutes returns default when downloadOptions has 
 
 TEST_CASE("GetDownloadTimeoutInMinutes returns default for large timeout value in options")
 {
+    ScopedInvalidateConfig noConfig;
     ExtensionManager_Download_Options options{};
     options.timeoutInMinutes = 99999;
 
@@ -188,6 +242,7 @@ TEST_CASE("GetDownloadTimeoutInMinutes returns default for large timeout value i
 
 TEST_CASE("Default_ExtensionManager_Download_Options can be modified and used")
 {
+    ScopedInvalidateConfig noConfig;
     ExtensionManager_Download_Options opts = Default_ExtensionManager_Download_Options;
     opts.timeoutInMinutes = 120;
 
