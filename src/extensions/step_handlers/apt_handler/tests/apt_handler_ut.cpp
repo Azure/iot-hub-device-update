@@ -258,8 +258,8 @@ TEST_CASE("APT handler install/apply/cancel paths with local apt manifest", "[ap
     REQUIRE(stepHandle != nullptr);
 
     const std::string aptManifestDir =
-        std::string(ADUC_TEST_DATA_FOLDER)
-        + "/../../../src/extensions/component_enumerators/examples/contoso_component_enumerator/demo/sample-updates/data-files/APT";
+        std::string(ADUC_SOURCE_DIR)
+        + "/src/extensions/component_enumerators/examples/contoso_component_enumerator/demo/sample-updates/data-files/APT";
     REQUIRE(workflow_set_workfolder(stepHandle, aptManifestDir.c_str()));
 
     std::unique_ptr<ContentHandler> handler(AptHandlerImpl::CreateContentHandler());
