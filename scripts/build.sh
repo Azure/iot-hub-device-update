@@ -236,12 +236,6 @@ determine_distro() {
 
 determine_distro
 
-# Ensure work folder exists
-if [[ ! -d $work_folder ]]; then
-    echo "Creating work folder: $work_folder"
-    mkdir -p "$work_folder" || $ret 1
-fi
-
 while [[ $1 != "" ]]; do
     case $1 in
     -c | --clean)
@@ -418,6 +412,12 @@ while [[ $1 != "" ]]; do
     esac
     shift
 done
+
+# Ensure work folder exists
+if [[ ! -d $work_folder ]]; then
+    echo "Creating work folder: $work_folder"
+    mkdir -p "$work_folder" || $ret 1
+fi
 
 # Set cmake_dir_path if not explicitly provided via --cmake-path.
 # Note: This must be done after argument parsing is complete so that
