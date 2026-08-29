@@ -21,14 +21,14 @@ jobs:
       options: --platform linux/${{ matrix.arch }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Make artifact name valid
         id: make-artifact-name-valid
         run: |
           OS_NAME=$(echo "${{ matrix.os }}" | tr ':' '-')
           echo "os_name=$OS_NAME" >> $GITHUB_OUTPUT
       - name: Set up vcpkg binary cache
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/vcpkg/archives
           key: vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-${{ hashFiles('vcpkg.json') }}
@@ -90,14 +90,14 @@ jobs:
         continue-on-error: true
       - name: Upload Valgrind results
         if: always() && (matrix.os == 'ubuntu:22.04' || startsWith(matrix.os, 'ubuntu:2') && matrix.os >= 'ubuntu:22.04')
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: valgrind-results-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}
           path: out/Testing/Temporary/MemoryChecker.*.log
           retention-days: 7
           if-no-files-found: ignore
       - name: Upload Debian packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: deb-packages-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}
           path: out/*.deb
