@@ -34,7 +34,8 @@ target_compile_definitions (
     ${PROJECT_NAME}
     PRIVATE ADUC_INSTALLEDCRITERIA_FILE_PATH="/${ADUC_TMP_DIR_PATH}/adu-test-installedcriteria"
             ADUSHELL_FILE_PATH="${ADUSHELL_FILE_PATH}"
-            ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}")
+            ADUC_TEST_DATA_FOLDER="${ADUC_TEST_DATA_FOLDER}"
+            ADUC_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 
 target_link_libraries (
     ${PROJECT_NAME}
