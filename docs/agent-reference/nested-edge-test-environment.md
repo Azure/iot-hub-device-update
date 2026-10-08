@@ -35,7 +35,7 @@ The test environment consists of two nodes (VMs or containers) and a cloud endpo
 |---|---|
 | 2 VMs or containers | One for the leaf device, one for the parent edge device. Ubuntu 20.04 or 22.04 recommended. |
 | Azure IoT Hub | An IoT Hub instance with an IoT Edge device identity registered. |
-| ADU agent | Built from source or installed via `.deb` package on the leaf device. |
+| ADU agent | Built from source for the leaf device, installed directly or as a locally built `.deb` package. |
 | IoT Edge runtime | `aziot-edge` and `aziot-identity-service` packages for the parent device. |
 | Certificates | A root CA and gateway server certificate for TLS between leaf and parent. |
 | Network configuration | Ability to create isolated networks (iptables, Docker networks, or hypervisor internal networks). |
@@ -186,13 +186,13 @@ sudo iotedge list
 
 ### 1. Install the ADU Agent
 
-Install from a `.deb` package or from a local build:
+Select a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and follow [Building the Agent](how-to-build-agent-code.md) in that tag for the leaf device's Linux distribution and architecture. Current agent releases are not published to PMC; see [Obtaining the Agent](../../README.md#obtaining-the-agent). Install your locally built `.deb` package or use the binary from that build:
 
 ```bash
-# From .deb package
+# From a locally built .deb package
 sudo apt-get install -y ./deviceupdate-agent_<version>_amd64.deb
 
-# Or if built from source, copy the binary to /usr/bin
+# Or copy the binary from the same source build to /usr/bin
 sudo cp out/bin/AducIotAgent /usr/bin/AducIotAgent
 ```
 
@@ -478,7 +478,7 @@ services:
       "
 ```
 
-Before running, prepare the required files:
+Before running, prepare the required files. Use the agent package built for the leaf container's distribution and architecture as `packages/deviceupdate-agent.deb`:
 
 ```
 .

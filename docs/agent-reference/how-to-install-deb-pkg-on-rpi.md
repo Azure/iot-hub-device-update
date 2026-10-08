@@ -1,70 +1,75 @@
-# Install from Debian packages hosted on packages.microsoft.com
+# Historical agent packages on PMC
+
+ADU no longer publishes new versions of `deviceupdate-agent` to [packages.microsoft.com](https://packages.microsoft.com) (PMC). Previously published packages may still be available there, but they do not track current GitHub releases.
+
+For current releases, select a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases), check out that tag, and follow [Building the Agent](how-to-build-agent-code.md) as provided in that tag for your target Linux distribution and architecture. See [Obtaining the Agent](../../README.md#obtaining-the-agent) for the scope of this distribution policy.
 
 ## Prerequisites
 
-- A Raspberry Pi 3 or 4 with a supported OS image
+- A Raspberry Pi 3 or 4 with an OS image compatible with the historical package you intend to install
 - Network connectivity
 - Access to [packages.microsoft.com](https://packages.microsoft.com)
 
 > **Note**: Debian 10 (Buster) has reached end of life and is no longer supported.
-> Ubuntu 18.04 has also reached end of life. Use Ubuntu 22.04+ or Debian 11+ for new deployments.
+> Ubuntu 18.04 has also reached end of life. For new deployments, follow the current-release source-build path above.
 
-## Raspberry Pi 3
+## Historical Installation Examples
 
-### Ubuntu Server 22.04 LTS (64-bit)
+The commands below are retained only for previously published packages, if available. Verify package availability and compatibility for your exact distribution and architecture before proceeding; these examples do not guarantee present or future availability on the listed platforms. Do not assume historical packages include features described for current GitHub releases.
+
+### Raspberry Pi 3
+
+#### Ubuntu Server 22.04 LTS (64-bit)
 
 1. From RPi Imager, choose `Other general-purpose OS -> Ubuntu Server 22.04 LTS (64-bit)`
 2. [Setup packages.microsoft.com apt repository](https://learn.microsoft.com/en-us/windows-server/administration/linux-package-repository-for-microsoft-software#ubuntu)
-3. Install the agent:
+3. Install the historical agent package, if available:
 
 ```bash
 sudo apt update
 sudo apt install deviceupdate-agent
 ```
 
-### Debian 11 (Bullseye) armhf
+#### Debian 11 (Bullseye) armhf
 
 1. From RPi Imager, choose `Raspberry Pi OS -> Raspberry Pi OS Lite`
 2. [Setup packages.microsoft.com apt repository for Debian 11](https://learn.microsoft.com/en-us/windows-server/administration/linux-package-repository-for-microsoft-software#debian)
-3. Install the agent:
+3. Install the historical agent package, if available:
 
 ```bash
 sudo apt update
 sudo apt install deviceupdate-agent
 ```
 
-## Raspberry Pi 4
+### Raspberry Pi 4
 
-### Ubuntu 22.04 LTS (aarch64)
+#### Ubuntu 22.04 LTS (aarch64)
 
 1. From RPi Imager, choose `Other general-purpose OS -> Ubuntu Server 22.04 LTS (64-bit)`
 2. [Setup packages.microsoft.com apt repository](https://learn.microsoft.com/en-us/windows-server/administration/linux-package-repository-for-microsoft-software#ubuntu)
-3. Install the agent:
+3. Install the historical agent package, if available:
 
 ```bash
 sudo apt update
 sudo apt install deviceupdate-agent
 ```
 
-### Ubuntu 24.04 LTS (aarch64)
+#### Ubuntu 24.04 LTS (aarch64)
 
 1. From RPi Imager, choose `Other general-purpose OS -> Ubuntu Server 24.04 LTS (64-bit)`
 2. [Setup packages.microsoft.com apt repository](https://learn.microsoft.com/en-us/windows-server/administration/linux-package-repository-for-microsoft-software#ubuntu)
-3. Install the agent:
+3. Install the historical agent package, if available:
 
 ```bash
 sudo apt update
 sudo apt install deviceupdate-agent
 ```
 
-> **Note**: On Ubuntu 24.04, the agent uses the curl content downloader by default
-> since Delivery Optimization packages are not yet available for this release.
-
-### Debian 12 (Bookworm) arm64
+#### Debian 12 (Bookworm) arm64
 
 1. Flash Debian 12 arm64 image for Raspberry Pi 4
 2. [Setup packages.microsoft.com apt repository for Debian 12](https://learn.microsoft.com/en-us/windows-server/administration/linux-package-repository-for-microsoft-software#debian)
-3. Install the agent:
+3. Install the historical agent package, if available:
 
 ```bash
 sudo apt update
@@ -73,8 +78,7 @@ sudo apt install deviceupdate-agent
 
 ## Building from Source
 
-If pre-built packages are not available for your platform, you can build the agent from source.
-See [Building the Agent](how-to-build-agent-code.md) for complete instructions.
+Current releases require building the agent from source for your target Linux distribution and architecture, regardless of whether older PMC packages are available. Select a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and follow [Building the Agent](how-to-build-agent-code.md) in the selected tag.
 
 ## Next Steps
 
