@@ -363,11 +363,13 @@ ADU no longer publishes new versions of `deviceupdate-agent` to packages.microso
     sudo apt-get update
     ```
 
-- Install the locally built **deviceupdate-agent** package on the test device. From the repository root:
+- After a successful build, select exactly one generated **deviceupdate-agent** package for the intended release, distribution, and architecture. The default output directory is `out/` under the repository root; builds without `-c` can leave older packages there. On a test device where you built the package, run the following from that repository root, replacing `AGENT_PACKAGE_FILENAME.deb` with the exact generated filename, not a wildcard:
 
   ```sh
-  sudo apt-get install ./out/deviceupdate-agent_*.deb
+  sudo apt-get install "./out/AGENT_PACKAGE_FILENAME.deb"
   ```
+
+  If you built elsewhere, transfer that selected package to the test device and replace the quoted path with the package's path on that device.
 
 Note: this installs the local agent package, not the agent from PMC. APT can still install dependencies from configured repositories.
 

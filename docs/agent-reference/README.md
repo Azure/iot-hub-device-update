@@ -127,18 +127,14 @@ See the repository's [distribution notice](../../README.md#obtaining-the-agent) 
 
 ### Quick Start
 
-Choose a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and replace `RELEASE_TAG` below with that exact tag. Follow the build instructions that accompany the selected release. A default clone checks out `develop`, which is development code, not a release.
+Choose a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and replace `RELEASE_TAG` below with that exact tag. Follow the build instructions that accompany the selected release. A default clone checks out `develop`, which is development code, not a release. The `&&` chain stops if any command fails.
 
 ```bash
 # Clone the repository and select a release
-git clone https://github.com/Azure/iot-hub-device-update.git
-cd iot-hub-device-update
-git checkout --detach RELEASE_TAG
-
-# Install all dependencies
-./scripts/install-deps.sh -a
-
-# Build the agent
+git clone https://github.com/Azure/iot-hub-device-update.git &&
+cd iot-hub-device-update &&
+git checkout --detach "refs/tags/RELEASE_TAG" &&
+./scripts/install-deps.sh -a &&
 ./scripts/build.sh -c
 ```
 

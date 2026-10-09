@@ -14,14 +14,13 @@ Current agent releases must be built from source for your target Linux distribut
 
 ## 1. Clone & Install Dependencies
 
-Choose a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and replace `RELEASE_TAG` below with that exact tag. Follow the build instructions that accompany the selected release. A default clone checks out `develop`, which is development code, not a release.
+Choose a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and replace `RELEASE_TAG` in both command blocks below with that exact tag. Follow the build instructions that accompany the selected release. A default clone checks out `develop`, which is development code, not a release. The `&&` chains stop if any command fails.
 
 ```bash
-git clone https://github.com/Azure/iot-hub-device-update.git
-cd iot-hub-device-update
-git checkout --detach RELEASE_TAG
-
 # Install all dependencies (packages, Azure IoT SDK, Delivery Optimization, cmake)
+git clone https://github.com/Azure/iot-hub-device-update.git &&
+cd iot-hub-device-update &&
+git checkout --detach "refs/tags/RELEASE_TAG" &&
 sudo ./scripts/install-deps.sh -a
 ```
 
@@ -31,8 +30,11 @@ sudo ./scripts/install-deps.sh -a
 
 ## 2. Build the Agent
 
+From the repository root, use the same `RELEASE_TAG` as in step 1. Reselect the tag before building so this standalone block also stops if tag checkout fails.
+
 ```bash
 # Clean build in Debug mode (default)
+git checkout --detach "refs/tags/RELEASE_TAG" &&
 ./scripts/build.sh -c
 ```
 

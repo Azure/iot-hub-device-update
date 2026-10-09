@@ -56,6 +56,8 @@ sudo apt install deviceupdate-agent
 
 #### Ubuntu 24.04 LTS (aarch64)
 
+> **Source builds**: Consult the [platform compatibility matrix](how-to-build-agent-code.md#platform-compatibility-matrix) in your selected release's build guide for Ubuntu 24.04 platform and content-downloader requirements. This source-build guidance does not establish the defaults or features of historical PMC packages.
+
 1. From RPi Imager, choose `Other general-purpose OS -> Ubuntu Server 24.04 LTS (64-bit)`
 2. [Setup packages.microsoft.com apt repository](https://learn.microsoft.com/en-us/windows-server/administration/linux-package-repository-for-microsoft-software#ubuntu)
 3. Install the historical agent package, if available:
