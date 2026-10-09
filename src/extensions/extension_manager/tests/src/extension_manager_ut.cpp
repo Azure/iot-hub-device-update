@@ -89,6 +89,29 @@ TEST_CASE("ExtensionManager::Download failure should return failure ResultCode a
     CHECK(actual_result.ExtendedResultCode == expected_result.ExtendedResultCode);
 }
 
+TEST_CASE("ExtensionManager::Download rejects oversized paths before downloading", "[workflow-filepath]")
+{
+    ExtensionManagerDownloadTestCase testCase{ DownloadTestScenario::OversizedTargetFilename };
+    REQUIRE_NOTHROW(testCase.RunScenario());
+
+    const ADUC_Result result = testCase.GetActualResult();
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH);
+    CHECK(testCase.GetSuccessDownloadProcCallCount() == 0);
+    CHECK(testCase.GetFailureDownloadProcCallCount() == 0);
+}
+
+TEST_CASE("ExtensionManager::Download rejects a null workflow safely", "[workflow-filepath]")
+{
+    char filename[] = "update.swu";
+    ADUC_FileEntity entity{};
+    entity.TargetFilename = filename;
+
+    const ADUC_Result result = ExtensionManager::Download(&entity, nullptr, nullptr, nullptr);
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH);
+}
+
 //
 // Regression tests for issue #765:
 // https://github.com/Azure/iot-hub-device-update/issues/765

@@ -25,6 +25,7 @@ enum class DownloadTestScenario
     UnsupportedContractVersion,
     MissingDownloadProc,
     UnsupportedHashType,
+    OversizedTargetFilename,
     // Regression coverage for issue #765: when a file already exists at the
     // target download path but its hash does not match the manifest, the file
     // must be removed and a real download must be attempted. The final result

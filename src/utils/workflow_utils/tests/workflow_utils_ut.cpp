@@ -335,6 +335,98 @@ TEST_CASE("Add and remove children")
     workflow_free(handle);
 }
 
+TEST_CASE("workflow file paths preserve complete names or reject oversized paths", "[workflow-filepath]")
+{
+    const auto filename = GENERATE(
+        std::string("update.swu"),
+        std::string("payload % +.swu"),
+        std::string("payload-\xc3\xa9.swu"),
+        std::string(1004, 'A'),
+        std::string(1005, 'A'),
+        std::string(1006, 'A'),
+        std::string(2000, 'A'));
+    const auto workfolder = GENERATE(
+        std::string("/tmp/adu_workflow"),
+        std::string("/tmp/adu_workflow/"),
+        std::string("/tmp/") + std::string(995, 'W'));
+    const std::string expectedPath = workfolder + "/" + filename;
+    CAPTURE(filename.size(), workfolder.size(), expectedPath.size());
+
+    std::string action = action_parent_update;
+    const std::string originalFilename = "apt-manifest-tree-1.0.json";
+    const auto offset = action.find(originalFilename);
+    REQUIRE(offset != std::string::npos);
+    action.replace(offset, originalFilename.size(), filename);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result result = workflow_init(action.c_str(), false /* validateManifest */, &handle);
+    aduc::Defer freeWorkflow([&] { workflow_free(handle); });
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    REQUIRE(workflow_set_workfolder(handle, "%s", workfolder.c_str()));
+
+    ADUC_FileEntity entity{};
+    aduc::Defer freeEntity([&] { ADUC_FileEntity_Uninit(&entity); });
+    REQUIRE(workflow_get_update_file(handle, 0, &entity));
+    REQUIRE_THAT(entity.TargetFilename, Equals(filename));
+
+    ADUC::StringUtils::STRING_HANDLE_wrapper path{ nullptr };
+    const bool shouldFit = expectedPath.size() < 1024;
+    REQUIRE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()) == shouldFit);
+    if (shouldFit)
+    {
+        REQUIRE_FALSE(path.is_null());
+        CHECK_THAT(path.c_str(), Equals(expectedPath));
+    }
+    else
+    {
+        CHECK(path.is_null());
+    }
+}
+
+TEST_CASE("workflow file paths reject invalid arguments", "[workflow-filepath]")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    aduc::Defer freeWorkflow([&] { workflow_free(handle); });
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    REQUIRE(workflow_set_workfolder(handle, "/tmp/adu_workflow"));
+
+    char filename[] = "update.swu";
+    ADUC_FileEntity entity{};
+    entity.TargetFilename = filename;
+    ADUC::StringUtils::STRING_HANDLE_wrapper path{ nullptr };
+
+    SECTION("null output")
+    {
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, nullptr));
+    }
+    SECTION("null workflow")
+    {
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(nullptr, &entity, path.address_of()));
+    }
+    SECTION("null entity")
+    {
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, nullptr, path.address_of()));
+    }
+    SECTION("null filename")
+    {
+        entity.TargetFilename = nullptr;
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()));
+    }
+    SECTION("empty filename")
+    {
+        filename[0] = '\0';
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()));
+    }
+    SECTION("empty work folder")
+    {
+        REQUIRE(workflow_set_workfolder(handle, ""));
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()));
+    }
+
+    CHECK(path.is_null());
+}
+
 TEST_CASE("Set workflow result")
 {
     ADUC_WorkflowHandle bundle = nullptr;

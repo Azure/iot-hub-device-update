@@ -29,6 +29,7 @@
 
 #include <parson.h>
 #include <stdarg.h> // for va_*
+#include <stdio.h> // for snprintf
 #include <stdlib.h> // for malloc, atoi
 #include <string.h>
 
@@ -4160,33 +4161,50 @@ char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool p
  *
  * @param workflowHandle The workflow handle.
  * @param entity The file entity.
- * @param outFilePath The resultant work folder file path to the file entity.
- * @return bool true if success
- * @remark Caller will own the STRING_HANDLE outFilePath and must call STRING_delete on it.
+ * @param outFilePath An empty output slot for the path, set to NULL on failure.
+ * @return bool true on success, false on invalid input, formatting failure, or allocation failure.
+ * @remark Paths of 1024 bytes or more, excluding the terminating NUL, are rejected rather than truncated.
+ * @remark On success, the caller owns *outFilePath and must call STRING_delete on it.
  */
 bool workflow_get_entity_workfolder_filepath(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, STRING_HANDLE* outFilePath)
 {
     bool result = false;
     char dir[1024] = { 0 };
-    char* workFolder = workflow_get_workfolder(workflowHandle);
-    if (workFolder == NULL)
+    char* workFolder = NULL;
+
+    if (outFilePath == NULL)
     {
+        Log_Error("Cannot construct workflow file path without an output parameter.");
+        goto done;
+    }
+    *outFilePath = NULL;
+
+    if (workflowHandle == NULL || entity == NULL || IsNullOrEmpty(entity->TargetFilename))
+    {
+        Log_Error("Cannot construct workflow file path with an invalid workflow or file entity.");
         goto done;
     }
 
-    sprintf(dir, "%s/%s", workFolder, entity->TargetFilename);
-
-    if (dir[0] != 0)
+    workFolder = workflow_get_workfolder(workflowHandle);
+    if (IsNullOrEmpty(workFolder))
     {
-        STRING_HANDLE temp = STRING_construct(dir);
+        Log_Error("Cannot construct workflow file path without a work folder.");
+        goto done;
+    }
 
-        if (temp == NULL)
-        {
-            goto done;
-        }
+    int written = snprintf(dir, sizeof(dir), "%s/%s", workFolder, entity->TargetFilename);
+    if (written < 0 || (size_t)written >= sizeof(dir))
+    {
+        Log_Error("Cannot construct workflow file path: formatting failed or path exceeds the buffer.");
+        goto done;
+    }
 
-        *outFilePath = temp;
+    *outFilePath = STRING_construct(dir);
+    if (*outFilePath == NULL)
+    {
+        Log_Error("Cannot allocate workflow file path.");
+        goto done;
     }
 
     result = true;

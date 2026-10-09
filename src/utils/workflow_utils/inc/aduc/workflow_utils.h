@@ -761,9 +761,10 @@ char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool p
  *
  * @param workflowHandle The workflow handle.
  * @param entity The file entity.
- * @param outFilePath The resultant work folder file path to the file entity.
- * @return bool true if success
- * @remark Caller will own the STRING_HANDLE outFilePath and must call STRING_delete on it.
+ * @param outFilePath An empty output slot for the path, set to NULL on failure.
+ * @return bool true on success, false on invalid input, formatting failure, or allocation failure.
+ * @remark Paths of 1024 bytes or more, excluding the terminating NUL, are rejected rather than truncated.
+ * @remark On success, the caller owns *outFilePath and must call STRING_delete on it.
  */
 bool workflow_get_entity_workfolder_filepath(
     ADUC_WorkflowHandle workflowHandle, const ADUC_FileEntity* entity, STRING_HANDLE* outFilePath);

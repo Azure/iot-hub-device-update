@@ -179,6 +179,12 @@ void ExtensionManagerDownloadTestCase::RunScenario()
         expected_result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_FILE_HASH_TYPE_NOT_SUPPORTED;
         break;
 
+    case DownloadTestScenario::OversizedTargetFilename:
+        mockProcResolver = mockDownloadSuccessProcResolver;
+        expected_result.ResultCode = ADUC_Result_Failure;
+        expected_result.ExtendedResultCode = ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH;
+        break;
+
     case DownloadTestScenario::ExistingFileInvalidHashRedownload:
         // Pre-seed a stale file whose content hash will not match the manifest.
         SeedCorruptedTargetFile();
@@ -219,6 +225,16 @@ void ExtensionManagerDownloadTestCase::InitCommon()
     JSON_Object* msgObj = json_value_get_object(msgValue.get());
     REQUIRE(json_object_has_value(msgObj, "updateManifest"));
 
+    if (download_scenario == DownloadTestScenario::OversizedTargetFilename)
+    {
+        REQUIRE(
+            JSONSuccess
+            == json_object_dotset_string(
+                json_value_get_object(updateManifestValue.get()),
+                "files.f722b9ffefaaac577.fileName",
+                std::string(2000, 'A').c_str()));
+    }
+
     ADUC::StringUtils::cstr_wrapper serializedUpdateManifest{ json_serialize_to_string(updateManifestValue.get()) };
     REQUIRE(JSONSuccess == json_object_dotset_string(msgObj, "updateManifest", serializedUpdateManifest.get()));
 
@@ -256,6 +272,15 @@ void ExtensionManagerDownloadTestCase::RunCommon()
         &downloadOptions,
         nullptr, // downloadProgressCallback
         mockProcResolver);
+
+    if (download_scenario == DownloadTestScenario::OversizedTargetFilename)
+    {
+        const char* details = workflow_peek_result_details(workflowHandle);
+        REQUIRE(details != nullptr);
+        CHECK_THAT(
+            details,
+            Catch::Matchers::ContainsSubstring("Download of '<unavailable>' failed with extended result code"));
+    }
 }
 
 void ExtensionManagerDownloadTestCase::Cleanup()
