@@ -15,6 +15,57 @@ using ADUC::StringUtils::cstr_wrapper;
 using ADUC::StringUtils::STRING_HANDLE_wrapper;
 using Catch::Matchers::Equals;
 
+TEST_CASE("PathUtils preserves lexically contained path suffixes", "[workflow-traversal]")
+{
+    const char* path = GENERATE(
+        "payload.swu",
+        "images/payload.swu",
+        "images/../payload.swu",
+        "images/./nested/../../payload.swu",
+        "./images//payload.swu",
+        "/images/payload.swu",
+        "payload % +.swu",
+        "payload-\xc3\xa9.swu",
+        "firmware..swu",
+        "..hidden/payload.swu",
+        "%2e%2e/payload.swu",
+        ".",
+        "/",
+        "images/..");
+    CAPTURE(path);
+    CHECK(PathUtils_IsPathLexicallyContained(path));
+}
+
+TEST_CASE("PathUtils rejects path suffixes that climb above their base", "[workflow-traversal]")
+{
+    const char* path = GENERATE(
+        "",
+        "..",
+        "../outside/payload.swu",
+        "./../outside/payload.swu",
+        "/../outside/payload.swu",
+        "images/../../outside/payload.swu",
+        "images//..//..//outside/payload.swu",
+        "../work/payload.swu");
+    CAPTURE(path);
+    CHECK_FALSE(PathUtils_IsPathLexicallyContained(path));
+    CHECK_FALSE(PathUtils_IsPathLexicallyContained(nullptr));
+}
+
+TEST_CASE("PathUtils uses native path separator semantics", "[workflow-traversal]")
+{
+    CHECK(PathUtils_IsPathLexicallyContained("images\\..\\payload.swu"));
+#if defined(WIN32)
+    CHECK_FALSE(PathUtils_IsPathLexicallyContained("..\\outside\\payload.swu"));
+    CHECK_FALSE(PathUtils_IsPathLexicallyContained("images\\../..\\payload.swu"));
+    CHECK(PathUtils_IsPathLexicallyContained("images\\nested/../../payload.swu"));
+#else
+    CHECK(PathUtils_IsPathLexicallyContained("..\\outside\\payload.swu"));
+    CHECK(PathUtils_IsPathLexicallyContained("images\\../..\\payload.swu"));
+    CHECK_FALSE(PathUtils_IsPathLexicallyContained("images\\nested/../../payload.swu"));
+#endif
+}
+
 TEST_CASE("PathUtils_ConcatenateDirAndFolderPaths")
 {
     SECTION("NULL dirPath")

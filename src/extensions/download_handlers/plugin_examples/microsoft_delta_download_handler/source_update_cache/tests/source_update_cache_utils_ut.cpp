@@ -310,10 +310,12 @@ TEST_CASE("ADUC_SourceUpdateCacheUtils_MoveToUpdateCache")
 // MoveToUpdateCache - additional coverage tests
 // -------------------------------------------------------------------
 
-TEST_CASE("MoveToUpdateCache rejects oversized paths even after a successful move", "[workflow-filepath]")
+TEST_CASE(
+    "MoveToUpdateCache rejects unsafe paths even after a successful move", "[workflow-filepath][workflow-traversal]")
 {
     const bool afterSuccessfulMove = GENERATE(false, true);
-    CAPTURE(afterSuccessfulMove);
+    const std::string rejectedFilename = GENERATE(std::string(2000, 'A'), std::string("../outside.swu"));
+    CAPTURE(afterSuccessfulMove, rejectedFilename.size());
 
     AutoDir testBaseDir(TEST_DIR "_oversized_path");
     AutoDir testSandbox((testBaseDir.GetDir() + "/sandbox").c_str());
@@ -347,7 +349,7 @@ TEST_CASE("MoveToUpdateCache rejects oversized paths even after a successful mov
     }
     JSON_Object* rejectedFile = json_object_get_object(files, rejectedFileId);
     REQUIRE(rejectedFile != nullptr);
-    REQUIRE(json_object_set_string(rejectedFile, "fileName", std::string(2000, 'A').c_str()) == JSONSuccess);
+    REQUIRE(json_object_set_string(rejectedFile, "fileName", rejectedFilename.c_str()) == JSONSuccess);
     REQUIRE(json_object_dotset_string(rejectedFile, "hashes.sha256", "rejected") == JSONSuccess);
     REQUIRE(json_object_dotset_string(desiredObject, "fileUrls.fileId2", "http://hostname/rejected") == JSONSuccess);
     REQUIRE(json_object_dotset_string(desiredObject, "workflow.id", TEST_WORKFLOW_ID) == JSONSuccess);

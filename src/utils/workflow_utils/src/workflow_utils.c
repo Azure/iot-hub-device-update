@@ -502,6 +502,11 @@ ADUC_RelatedFile* ADUC_RelatedFileArray_AllocAndInit(
 
         // fileName
         fileName = json_object_get_string(relatedFileValueObj, "fileName");
+        if (!PathUtils_IsPathLexicallyContained(fileName))
+        {
+            Log_Error("Related file path traverses outside the work folder or is empty.");
+            goto done;
+        }
 
         // hashes
         {
@@ -2292,6 +2297,11 @@ bool workflow_get_update_file(ADUC_WorkflowHandle handle, size_t index, ADUC_Fil
     }
 
     name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
+    if (!PathUtils_IsPathLexicallyContained(name))
+    {
+        Log_Error("Update file path traverses outside the work folder or is empty.");
+        goto done;
+    }
     arguments = json_object_get_string(file, ADUCITF_FIELDNAME_ARGUMENTS);
 
     const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
@@ -2407,6 +2417,11 @@ bool workflow_get_update_file_by_name(ADUC_WorkflowHandle handle, const char* fi
     }
 
     name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
+    if (!PathUtils_IsPathLexicallyContained(name))
+    {
+        Log_Error("Update file path traverses outside the work folder or is empty.");
+        goto done;
+    }
     arguments = json_object_get_string(file, ADUCITF_FIELDNAME_ARGUMENTS);
 
     const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
@@ -4094,6 +4109,11 @@ bool workflow_get_step_detached_manifest_file(ADUC_WorkflowHandle handle, size_t
     }
 
     name = json_object_get_string(file, ADUCITF_FIELDNAME_FILENAME);
+    if (!PathUtils_IsPathLexicallyContained(name))
+    {
+        Log_Error("Referenced manifest path traverses outside the work folder or is empty.");
+        goto done;
+    }
     const JSON_Object* hashObj = json_object_get_object(file, ADUCITF_FIELDNAME_HASHES);
 
     tempHash = ADUC_HashArray_AllocAndInit(hashObj, &tempHashCount);
@@ -4164,6 +4184,7 @@ char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool p
  * @param outFilePath An empty output slot for the path, set to NULL on failure.
  * @return bool true on success, false on invalid input, formatting failure, or allocation failure.
  * @remark Paths of 1024 bytes or more, excluding the terminating NUL, are rejected rather than truncated.
+ * @remark Nested paths are preserved, but parent components cannot climb above the work folder. Symlinks are not resolved.
  * @remark On success, the caller owns *outFilePath and must call STRING_delete on it.
  */
 bool workflow_get_entity_workfolder_filepath(
@@ -4183,6 +4204,12 @@ bool workflow_get_entity_workfolder_filepath(
     if (workflowHandle == NULL || entity == NULL || IsNullOrEmpty(entity->TargetFilename))
     {
         Log_Error("Cannot construct workflow file path with an invalid workflow or file entity.");
+        goto done;
+    }
+
+    if (!PathUtils_IsPathLexicallyContained(entity->TargetFilename))
+    {
+        Log_Error("Workflow file path traverses outside the work folder.");
         goto done;
     }
 

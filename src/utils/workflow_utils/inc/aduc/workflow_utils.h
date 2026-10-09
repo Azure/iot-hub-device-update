@@ -764,6 +764,7 @@ char* workflow_get_serialized_update_manifest(ADUC_WorkflowHandle handle, bool p
  * @param outFilePath An empty output slot for the path, set to NULL on failure.
  * @return bool true on success, false on invalid input, formatting failure, or allocation failure.
  * @remark Paths of 1024 bytes or more, excluding the terminating NUL, are rejected rather than truncated.
+ * @remark Nested paths are preserved, but parent components cannot climb above the work folder. Symlinks are not resolved.
  * @remark On success, the caller owns *outFilePath and must call STRING_delete on it.
  */
 bool workflow_get_entity_workfolder_filepath(
