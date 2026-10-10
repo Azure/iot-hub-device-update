@@ -351,7 +351,9 @@ Prerequisites
 - Connection to the internet
 #### Install the Device Update Agent and Dependencies
 
-- Register packages.microsoft.com in APT package repository
+ADU no longer publishes new versions of `deviceupdate-agent` to packages.microsoft.com (PMC); older PMC packages do not track current GitHub releases. For a current release, select a tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and follow [Building the Agent](../../../../../../docs/agent-reference/how-to-build-agent-code.md) in that tag to create a local Debian package for the test device with `--build-packages`. See [Obtaining the Agent](../../../../../../README.md#obtaining-the-agent) for the distribution policy.
+
+- Register packages.microsoft.com in APT for dependencies such as Delivery Optimization, if required by your build:
 
     ```sh
     curl https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb > ~/packages-microsoft-prod.deb
@@ -361,14 +363,15 @@ Prerequisites
     sudo apt-get update
     ```
 
-- Install **deviceupdate-agent** package on the test device.
-e.g.
+- After a successful build, select exactly one generated **deviceupdate-agent** package for the intended release, distribution, and architecture. The default output directory is `out/` under the repository root; builds without `-c` can leave older packages there. On a test device where you built the package, run the following from that repository root, replacing `AGENT_PACKAGE_FILENAME.deb` with the exact generated filename, not a wildcard:
 
   ```sh
-  sudo apt-get install deviceupdate-agent
+  sudo apt-get install "./out/AGENT_PACKAGE_FILENAME.deb"
   ```
 
-Note: this will automatically install the delivery-optimization-agent package from packages.microsoft.com
+  If you built elsewhere, transfer that selected package to the test device and replace the quoted path with the package's path on that device.
+
+Note: this installs the local agent package, not the agent from PMC. APT can still install dependencies from configured repositories.
 
 - Specify a connection string in /etc/adu/du-config.json
 

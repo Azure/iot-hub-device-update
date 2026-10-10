@@ -32,6 +32,16 @@ Customers are responsible for building, validating, and adapting this code for u
  
 We encourage you to extend and modify the implementation to fit your scenarios. If you have ideas, suggestions, or encounter issues, please use [GitHub Issues](https://github.com/Azure/iot-hub-device-update/issues) or the [Discussion Forum](https://github.com/Azure/iot-hub-device-update/discussions).
 
+## Obtaining the Agent
+
+ADU no longer publishes new versions of `deviceupdate-agent` to [packages.microsoft.com](https://packages.microsoft.com) (PMC). Previously published packages may still be available there, but they do not track current GitHub releases.
+
+To use a current release, select its release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases), check out that tag, and follow the [build instructions](./docs/agent-reference/how-to-build-agent-code.md) that accompany the selected release. Build the agent from source for your target Linux distribution and architecture. Building the `develop` branch instead uses development code, not a selected release.
+
+The [supported-platform list](#supported-platforms) describes platforms supported by the reference implementation; it does not indicate availability of current prebuilt agent packages on PMC.
+
+This distribution notice does not change support or end-of-life policies and applies only to the reference agent, not other products or dependencies hosted on PMC.
+
 ## Getting Started
 
 * [Device Update for IoT Hub](https://aka.ms/iot-hub-device-update-docs)
@@ -39,13 +49,15 @@ We encourage you to extend and modify the implementation to fit your scenarios. 
 * More details on building the agent here: [How to build agent code](./docs/agent-reference/how-to-build-agent-code.md)
 * For remote diagnostics and log collection: [Diagnostics Log Collection](./docs/diagnostics-log-collection.md)
 
-For users familiar with the build process:
+To build and install a local Debian package, first check out your selected release tag and consult its build instructions, then run:
 
 ```sh
 ./scripts/install-deps.sh -a
 ./scripts/build.sh -c -u --build-packages
 sudo apt install ./out/deviceupdate-agent_*.deb
 ```
+
+`sudo apt install ./out/deviceupdate-agent_*.deb` installs the local build output, not the agent from PMC.
 
 > **Note**: For detailed build instructions, troubleshooting, and advanced options, see [How to Build the Agent](./docs/agent-reference/how-to-build-agent-code.md)
 
