@@ -34,6 +34,16 @@ jobs:
           key: vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
             vcpkg-${{ steps.make-artifact-name-valid.outputs.os_name }}-${{ matrix.arch }}-
+      - name: Configure Debian 11 archive sources
+        if: matrix.os == 'debian:11'
+        shell: bash
+        run: |
+          # Debian 11 LTS has ended; retain compatibility coverage using its archive.
+          cat > /etc/apt/sources.list <<'EOF'
+          deb http://archive.debian.org/debian bullseye main
+          deb http://archive.debian.org/debian bullseye-updates main
+          deb http://archive.debian.org/debian-security bullseye-security main
+          EOF
       - name: Install prereqs
         shell: bash
         run: |
@@ -44,6 +54,10 @@ jobs:
             apt-get update -o Acquire::Retries=5 \
               && DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-missing -o Acquire::Retries=5 tzdata \
               && break
+            if [ "$i" -eq 3 ]; then
+              echo "::error::Install prereqs failed after 3 attempts"
+              exit 1
+            fi
             echo "::warning::Install prereqs failed, retry $i/3"
             apt-get clean || true
             rm -rf /var/lib/apt/lists/* || true
@@ -57,6 +71,10 @@ jobs:
           set -eo pipefail
           for i in 1 2 3; do
             scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --install-valgrind apt --work-folder $GITHUB_WORKSPACE/.workspace && break
+            if [ "$i" -eq 3 ]; then
+              echo "::error::install-deps.sh failed after 3 attempts"
+              exit 1
+            fi
             echo "::warning::install-deps.sh failed, retry $i/3"
             apt-get update -o Acquire::Retries=5 || true
             sleep $((i * 10))
@@ -68,6 +86,10 @@ jobs:
           set -eo pipefail
           for i in 1 2 3; do
             scripts/install-deps.sh --install-aduc-deps --install-do --install-cmake --install-shellcheck --work-folder $GITHUB_WORKSPACE/.workspace && break
+            if [ "$i" -eq 3 ]; then
+              echo "::error::install-deps.sh failed after 3 attempts"
+              exit 1
+            fi
             echo "::warning::install-deps.sh failed, retry $i/3"
             apt-get update -o Acquire::Retries=5 || true
             sleep $((i * 10))
