@@ -180,6 +180,8 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
         if (!workflow_get_update_file(workflowHandle, index, &fileEntity))
         {
             Log_Error("[DELTA] Failed to get update file %d", index);
+            result.ResultCode = ADUC_Result_Failure;
+            result.ExtendedResultCode = ADUC_ERC_NOTRECOVERABLE;
             goto done;
         }
 
@@ -200,11 +202,10 @@ ADUC_Result ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(
             goto done;
         }
 
-        workflow_get_entity_workfolder_filepath(workflowHandle, &fileEntity, &sandboxUpdatePayloadFile);
-
-        if (sandboxUpdatePayloadFile == NULL)
+        if (!workflow_get_entity_workfolder_filepath(workflowHandle, &fileEntity, &sandboxUpdatePayloadFile))
         {
             Log_Error("[DELTA] Failed to get workfolder filepath for file %d", index);
+            result.ResultCode = ADUC_Result_Failure;
             result.ExtendedResultCode = ADUC_ERC_NOTRECOVERABLE;
             goto done;
         }

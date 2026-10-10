@@ -14,6 +14,53 @@
 #include <aducpal/limits.h> // for PATH_MAX
 
 #define STR_PATH_MAX PATH_MAX - 1
+
+static bool IsPathSeparator(char c)
+{
+#if defined(WIN32)
+    return c == '/' || c == '\\';
+#else
+    return c == '/';
+#endif
+}
+
+bool PathUtils_IsPathLexicallyContained(const char* path)
+{
+    if (IsNullOrEmpty(path))
+    {
+        return false;
+    }
+
+    size_t depth = 0;
+    const char* component = path;
+    while (*component != '\0')
+    {
+        const char* end = component;
+        while (*end != '\0' && !IsPathSeparator(*end))
+        {
+            ++end;
+        }
+
+        size_t length = (size_t)(end - component);
+        if (length == 2 && component[0] == '.' && component[1] == '.')
+        {
+            if (depth == 0)
+            {
+                return false;
+            }
+            --depth;
+        }
+        else if (length != 0 && !(length == 1 && component[0] == '.'))
+        {
+            ++depth;
+        }
+
+        component = *end == '\0' ? end : end + 1;
+    }
+
+    return true;
+}
+
 /**
  * @brief Replaces non-alphunumeric chars with _ (underscore) char for use in path segments of a file path.
  * @param unsanitized The string to be sanitized

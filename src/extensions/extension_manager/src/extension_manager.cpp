@@ -1037,10 +1037,14 @@ ADUC_Result ExtensionManager::Download(
     result.ExtendedResultCode = 0;
 
 done:
-    if (IsAducResultCodeFailure(result.ResultCode) && strlen(workflow_peek_result_details(workflowHandle)) == 0)
+    if (IsAducResultCodeFailure(result.ResultCode) && IsNullOrEmpty(workflow_peek_result_details(workflowHandle)))
     {
-        workflow_set_result_details(workflowHandle, "Download of '%s' failed with extended result code 0x%x",
-                                    targetUpdateFilePath.c_str(), result.ExtendedResultCode);
+        const char* targetPath = targetUpdateFilePath.c_str();
+        workflow_set_result_details(
+            workflowHandle,
+            "Download of '%s' failed with extended result code 0x%x",
+            targetPath == nullptr ? "<unavailable>" : targetPath,
+            result.ExtendedResultCode);
     }
     return result;
 }

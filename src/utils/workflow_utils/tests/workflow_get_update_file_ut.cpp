@@ -15,6 +15,7 @@ using Catch::Matchers::Equals;
 #include "root_key_store.h"
 #undef ENABLE_MOCKS
 
+#include <aduc/defer.hpp>
 #include <aduc/file_test_utils.hpp>
 #include <aduc/parser_utils.h>
 #include <aduc/workflow_utils.h>
@@ -23,6 +24,7 @@ using Catch::Matchers::Equals;
 #include <regex>
 #include <sstream>
 #include <string>
+#include <utility>
 
 static std::string get_update_manifest_json_path()
 {
@@ -135,6 +137,54 @@ TEST_CASE("workflow_get_update_file with download handler")
     ADUC_FileEntity_Uninit(&fileEntity);
     workflow_free(handle);
     json_value_free(updateManifestJson);
+}
+
+TEST_CASE("workflow related filenames reject escapes but preserve subpaths", "[workflow-traversal]")
+{
+    const auto testCase = GENERATE(
+        std::make_pair("deltas/update.delta", true),
+        std::make_pair("deltas/../update.delta", true),
+        std::make_pair("../outside/update.delta", false));
+    CAPTURE(testCase.first);
+
+    JSON_Value* manifest = json_parse_file(get_update_manifest_json_path().c_str());
+    aduc::Defer freeManifest([&] { json_value_free(manifest); });
+    REQUIRE(manifest != nullptr);
+    REQUIRE(
+        json_object_dotset_string(
+            json_value_get_object(manifest),
+            "files.TARGET_UPDATE_FILE_ID.relatedFiles.DELTA_UPDATE_FILE_ID.fileName",
+            testCase.first)
+        == JSONSuccess);
+    char* serializedManifest = json_serialize_to_string(manifest);
+    aduc::Defer freeSerializedManifest([&] { json_free_serialized_string(serializedManifest); });
+    REQUIRE(serializedManifest != nullptr);
+
+    JSON_Value* desired = json_parse_file(get_twin_desired_json_path().c_str());
+    aduc::Defer freeDesired([&] { json_value_free(desired); });
+    REQUIRE(desired != nullptr);
+    REQUIRE(
+        json_object_set_string(json_value_get_object(desired), "updateManifest", serializedManifest) == JSONSuccess);
+    char* serializedDesired = json_serialize_to_string(desired);
+    aduc::Defer freeSerializedDesired([&] { json_free_serialized_string(serializedDesired); });
+    REQUIRE(serializedDesired != nullptr);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result result = workflow_init(serializedDesired, false /* validateManifest */, &handle);
+    aduc::Defer freeWorkflow([&] { workflow_free(handle); });
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+
+    ADUC_FileEntity entity{};
+    aduc::Defer freeEntity([&] {
+        workflow_free_file_entity(&entity);
+        ADUC_FileEntity_Uninit(&entity);
+    });
+    REQUIRE(workflow_get_update_file(handle, 0, &entity) == testCase.second);
+    if (testCase.second)
+    {
+        REQUIRE(entity.RelatedFileCount == 1);
+        CHECK_THAT(entity.RelatedFiles[0].FileName, Equals(testCase.first));
+    }
 }
 
 // clang-format off

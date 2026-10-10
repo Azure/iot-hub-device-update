@@ -19,6 +19,7 @@ using Catch::Matchers::Equals;
 #include <parson.h>
 #include <sstream>
 #include <string>
+#include <utility>
 
 // clang-format off
 
@@ -333,6 +334,155 @@ TEST_CASE("Add and remove children")
     CHECK(c0 == c5);
 
     workflow_free(handle);
+}
+
+TEST_CASE("workflow file paths preserve complete names or reject oversized paths", "[workflow-filepath]")
+{
+    const auto filename = GENERATE(
+        std::string("update.swu"),
+        std::string("payload % +.swu"),
+        std::string("payload-\xc3\xa9.swu"),
+        std::string(1004, 'A'),
+        std::string(1005, 'A'),
+        std::string(1006, 'A'),
+        std::string(2000, 'A'));
+    const auto workfolder = GENERATE(
+        std::string("/tmp/adu_workflow"),
+        std::string("/tmp/adu_workflow/"),
+        std::string("/tmp/") + std::string(995, 'W'));
+    const std::string expectedPath = workfolder + "/" + filename;
+    CAPTURE(filename.size(), workfolder.size(), expectedPath.size());
+
+    std::string action = action_parent_update;
+    const std::string originalFilename = "apt-manifest-tree-1.0.json";
+    const auto offset = action.find(originalFilename);
+    REQUIRE(offset != std::string::npos);
+    action.replace(offset, originalFilename.size(), filename);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result result = workflow_init(action.c_str(), false /* validateManifest */, &handle);
+    aduc::Defer freeWorkflow([&] { workflow_free(handle); });
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    REQUIRE(workflow_set_workfolder(handle, "%s", workfolder.c_str()));
+
+    ADUC_FileEntity entity{};
+    aduc::Defer freeEntity([&] { ADUC_FileEntity_Uninit(&entity); });
+    REQUIRE(workflow_get_update_file(handle, 0, &entity));
+    REQUIRE_THAT(entity.TargetFilename, Equals(filename));
+
+    ADUC::StringUtils::STRING_HANDLE_wrapper path{ nullptr };
+    const bool shouldFit = expectedPath.size() < 1024;
+    REQUIRE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()) == shouldFit);
+    if (shouldFit)
+    {
+        REQUIRE_FALSE(path.is_null());
+        CHECK_THAT(path.c_str(), Equals(expectedPath));
+    }
+    else
+    {
+        CHECK(path.is_null());
+    }
+}
+
+TEST_CASE("workflow file extraction and paths reject escapes but preserve subpaths", "[workflow-traversal]")
+{
+    const auto testCase = GENERATE(
+        std::make_pair("images/payload.swu", true),
+        std::make_pair("images/../payload.swu", true),
+        std::make_pair("../outside/payload.swu", false),
+        std::make_pair("images/../../outside/payload.swu", false));
+    const std::string filename = testCase.first;
+    const bool expected = testCase.second;
+    const bool referenceStep = GENERATE(false, true);
+    CAPTURE(filename, referenceStep);
+
+    const std::string originalFilename =
+        referenceStep ? "contoso.contoso-virtual-motors.1.1.updatemanifest.json" : "apt-manifest-tree-1.0.json";
+    std::string action = action_parent_update;
+    const auto offset = action.find(originalFilename);
+    REQUIRE(offset != std::string::npos);
+    action.replace(offset, originalFilename.size(), filename);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result result = workflow_init(action.c_str(), false /* validateManifest */, &handle);
+    aduc::Defer freeWorkflow([&] { workflow_free(handle); });
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    REQUIRE(workflow_set_workfolder(handle, "/tmp/adu_workflow"));
+
+    ADUC_FileEntity entity{};
+    aduc::Defer freeEntity([&] { ADUC_FileEntity_Uninit(&entity); });
+    CHECK(workflow_get_update_file(handle, referenceStep ? 1 : 0, &entity) == expected);
+    if (expected)
+    {
+        REQUIRE_THAT(entity.TargetFilename, Equals(filename));
+    }
+    ADUC_FileEntity_Uninit(&entity);
+
+    CHECK(workflow_get_update_file_by_name(handle, filename.c_str(), &entity) == expected);
+    ADUC_FileEntity_Uninit(&entity);
+    if (referenceStep)
+    {
+        CHECK(workflow_get_step_detached_manifest_file(handle, 1, &entity) == expected);
+        ADUC_FileEntity_Uninit(&entity);
+    }
+
+    std::string directFilename = filename;
+    ADUC_FileEntity directEntity{};
+    directEntity.TargetFilename = &directFilename[0];
+    ADUC::StringUtils::STRING_HANDLE_wrapper path{ nullptr };
+    REQUIRE(workflow_get_entity_workfolder_filepath(handle, &directEntity, path.address_of()) == expected);
+    if (expected)
+    {
+        CHECK_THAT(path.c_str(), Equals("/tmp/adu_workflow/" + filename));
+    }
+    else
+    {
+        CHECK(path.is_null());
+    }
+}
+
+TEST_CASE("workflow file paths reject invalid arguments", "[workflow-filepath]")
+{
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result result = workflow_init(action_parent_update, false /* validateManifest */, &handle);
+    aduc::Defer freeWorkflow([&] { workflow_free(handle); });
+    REQUIRE(IsAducResultCodeSuccess(result.ResultCode));
+    REQUIRE(workflow_set_workfolder(handle, "/tmp/adu_workflow"));
+
+    char filename[] = "update.swu";
+    ADUC_FileEntity entity{};
+    entity.TargetFilename = filename;
+    ADUC::StringUtils::STRING_HANDLE_wrapper path{ nullptr };
+
+    SECTION("null output")
+    {
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, nullptr));
+    }
+    SECTION("null workflow")
+    {
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(nullptr, &entity, path.address_of()));
+    }
+    SECTION("null entity")
+    {
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, nullptr, path.address_of()));
+    }
+    SECTION("null filename")
+    {
+        entity.TargetFilename = nullptr;
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()));
+    }
+    SECTION("empty filename")
+    {
+        filename[0] = '\0';
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()));
+    }
+    SECTION("empty work folder")
+    {
+        REQUIRE(workflow_set_workfolder(handle, ""));
+        CHECK_FALSE(workflow_get_entity_workfolder_filepath(handle, &entity, path.address_of()));
+    }
+
+    CHECK(path.is_null());
 }
 
 TEST_CASE("Set workflow result")

@@ -16,14 +16,16 @@
 #include <extension_manager_download_test_case.hpp>
 #include <string>
 
+#include <aduc/auto_dir.hpp>
 #include <aduc/auto_file_entity.hpp>
+#include <aduc/auto_workflowhandle.hpp>
 #include <aduc/calloc_wrapper.hpp>
 #include <aduc/workflow_internal.h>
 #include <aduc/workflow_utils.h>
+#include <aducpal/stdio.h> // remove
 #include <fstream>
 #include <memory>
 #include <parson.h>
-#include <aducpal/stdio.h> // remove
 
 bool operator==(ADUC_Result a, ADUC_Result b)
 {
@@ -87,6 +89,29 @@ TEST_CASE("ExtensionManager::Download failure should return failure ResultCode a
 
     CHECK(actual_result.ResultCode == expected_result.ResultCode);
     CHECK(actual_result.ExtendedResultCode == expected_result.ExtendedResultCode);
+}
+
+TEST_CASE("ExtensionManager::Download rejects oversized paths before downloading", "[workflow-filepath]")
+{
+    ExtensionManagerDownloadTestCase testCase{ DownloadTestScenario::OversizedTargetFilename };
+    REQUIRE_NOTHROW(testCase.RunScenario());
+
+    const ADUC_Result result = testCase.GetActualResult();
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH);
+    CHECK(testCase.GetSuccessDownloadProcCallCount() == 0);
+    CHECK(testCase.GetFailureDownloadProcCallCount() == 0);
+}
+
+TEST_CASE("ExtensionManager::Download rejects a null workflow safely", "[workflow-filepath]")
+{
+    char filename[] = "update.swu";
+    ADUC_FileEntity entity{};
+    entity.TargetFilename = filename;
+
+    const ADUC_Result result = ExtensionManager::Download(&entity, nullptr, nullptr, nullptr);
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH);
 }
 
 //
@@ -626,6 +651,55 @@ static ADUC_Result DummyDownloadProc(
 static DownloadProc dummyProcResolver(void* /*lib*/)
 {
     return DummyDownloadProc;
+}
+
+TEST_CASE("Download rejects traversal before deleting an outside file", "[workflow-traversal]")
+{
+    ExtMgrCleanup cleanup;
+    int fakeLib = 42;
+    ExtensionManager::SetContentDownloaderLibrary(&fakeLib);
+    ExtensionManager::SetContentDownloaderContractVersion({ 1, 0 });
+
+    const std::string root = std::string{ ADUC_TEST_DATA_FOLDER } + "/extension_manager/traversal";
+    aduc::AutoDir testRoot(root.c_str());
+    aduc::AutoDir work((root + "/work").c_str());
+    REQUIRE(work.CreateDir());
+    const std::string outside = root + "/outside.bin";
+    {
+        std::ofstream stream(outside);
+        stream << "outside-sentinel";
+        REQUIRE(stream.good());
+    }
+
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result initialized = workflow_init(
+        R"({"workflow":{"action":3,"id":"traversal"},"updateManifest":"{\"manifestVersion\":\"5\",\"files\":{}}"})",
+        false /* validateManifest */,
+        &handle);
+    aduc::AutoWorkflowHandle freeWorkflow(handle);
+    REQUIRE(IsAducResultCodeSuccess(initialized.ResultCode));
+    REQUIRE(workflow_set_workfolder(handle, "%s", work.GetDir().c_str()));
+
+    char filename[] = "../outside.bin";
+    char hashType[] = "sha256";
+    char expectedHash[] = "LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=";
+    ADUC_Hash hash{};
+    hash.type = hashType;
+    hash.value = expectedHash;
+    ADUC_FileEntity entity{};
+    entity.TargetFilename = filename;
+    entity.Hash = &hash;
+    entity.HashCount = 1;
+    g_downloadProcCalled = false;
+
+    const ADUC_Result result = ExtensionManager::Download(&entity, handle, nullptr, nullptr, dummyProcResolver);
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_CONTENT_DOWNLOADER_BAD_CHILD_MANIFEST_FILE_PATH);
+    CHECK_FALSE(g_downloadProcCalled);
+    std::ifstream stream(outside);
+    std::string contents;
+    std::getline(stream, contents);
+    CHECK(contents == "outside-sentinel");
 }
 
 TEST_CASE("Download skips download when target file exists with valid hash")

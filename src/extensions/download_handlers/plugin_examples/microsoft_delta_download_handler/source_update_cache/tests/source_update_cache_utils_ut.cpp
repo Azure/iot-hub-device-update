@@ -310,6 +310,75 @@ TEST_CASE("ADUC_SourceUpdateCacheUtils_MoveToUpdateCache")
 // MoveToUpdateCache - additional coverage tests
 // -------------------------------------------------------------------
 
+TEST_CASE(
+    "MoveToUpdateCache rejects unsafe paths even after a successful move", "[workflow-filepath][workflow-traversal]")
+{
+    const bool afterSuccessfulMove = GENERATE(false, true);
+    const std::string rejectedFilename = GENERATE(std::string(2000, 'A'), std::string("../outside.swu"));
+    CAPTURE(afterSuccessfulMove, rejectedFilename.size());
+
+    AutoDir testBaseDir(TEST_DIR "_oversized_path");
+    AutoDir testSandbox((testBaseDir.GetDir() + "/sandbox").c_str());
+    AutoDir testCache((testBaseDir.GetDir() + "/cache").c_str());
+    REQUIRE(testSandbox.CreateDir());
+
+    const std::string payloadFilePath = testSandbox.GetDir() + "/" UPDATE_PAYLOAD_FILENAME;
+    {
+        std::ofstream payload{ payloadFilePath };
+        payload << updateContentData;
+        REQUIRE(payload.good());
+    }
+
+    using JsonValue = std::unique_ptr<JSON_Value, decltype(&json_value_free)>;
+    JsonValue manifest{ json_parse_string(updateManifest.c_str()), json_value_free };
+    JsonValue desired{ json_parse_string(desiredTemplate.c_str()), json_value_free };
+    REQUIRE(manifest != nullptr);
+    REQUIRE(desired != nullptr);
+
+    JSON_Object* files = json_object_get_object(json_value_get_object(manifest.get()), "files");
+    JSON_Object* desiredObject = json_value_get_object(desired.get());
+    REQUIRE(files != nullptr);
+    REQUIRE(desiredObject != nullptr);
+
+    const char* rejectedFileId = afterSuccessfulMove ? "fileId2" : "fileId1";
+    if (afterSuccessfulMove)
+    {
+        REQUIRE(
+            json_object_set_value(files, rejectedFileId, json_value_deep_copy(json_object_get_value(files, "fileId1")))
+            == JSONSuccess);
+    }
+    JSON_Object* rejectedFile = json_object_get_object(files, rejectedFileId);
+    REQUIRE(rejectedFile != nullptr);
+    REQUIRE(json_object_set_string(rejectedFile, "fileName", rejectedFilename.c_str()) == JSONSuccess);
+    REQUIRE(json_object_dotset_string(rejectedFile, "hashes.sha256", "rejected") == JSONSuccess);
+    REQUIRE(json_object_dotset_string(desiredObject, "fileUrls.fileId2", "http://hostname/rejected") == JSONSuccess);
+    REQUIRE(json_object_dotset_string(desiredObject, "workflow.id", TEST_WORKFLOW_ID) == JSONSuccess);
+
+    using JsonString = std::unique_ptr<char, decltype(&json_free_serialized_string)>;
+    JsonString serializedManifest{ json_serialize_to_string(manifest.get()), json_free_serialized_string };
+    REQUIRE(serializedManifest != nullptr);
+    REQUIRE(json_object_set_string(desiredObject, "updateManifest", serializedManifest.get()) == JSONSuccess);
+    JsonString serializedDesired{ json_serialize_to_string(desired.get()), json_free_serialized_string };
+    REQUIRE(serializedDesired != nullptr);
+
+    ADUC_WorkflowHandle handle = nullptr;
+    const ADUC_Result initResult = workflow_init(serializedDesired.get(), false /* validateManifest */, &handle);
+    aduc::AutoWorkflowHandle freeWorkflow{ handle };
+    REQUIRE(IsAducResultCodeSuccess(initResult.ResultCode));
+    REQUIRE(workflow_get_update_files_count(handle) == (afterSuccessfulMove ? 2U : 1U));
+    REQUIRE(workflow_set_workfolder(handle, "%s", testSandbox.GetDir().c_str()));
+
+    const ADUC_Result result = ADUC_SourceUpdateCacheUtils_MoveToUpdateCache(handle, testCache.GetDir().c_str());
+    CHECK(IsAducResultCodeFailure(result.ResultCode));
+    CHECK(result.ExtendedResultCode == ADUC_ERC_NOTRECOVERABLE);
+    CHECK(SystemUtils_IsFile(payloadFilePath.c_str(), nullptr) == !afterSuccessfulMove);
+
+    const std::string cachedPayload = testCache.GetDir() + "/" PROVIDER_NAME "/sha256-hash1_2F_2B_3D_3D";
+    CHECK(SystemUtils_IsFile(cachedPayload.c_str(), nullptr) == afterSuccessfulMove);
+    const std::string rejectedPayload = testCache.GetDir() + "/" PROVIDER_NAME "/sha256-rejected";
+    CHECK_FALSE(SystemUtils_IsFile(rejectedPayload.c_str(), nullptr));
+}
+
 TEST_CASE("MoveToUpdateCache returns success with zero payloads when workflowHandle is NULL")
 {
     // When workflowHandle is NULL, workflow_get_update_files_count returns 0,
