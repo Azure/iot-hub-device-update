@@ -52,6 +52,7 @@ static const char* CONFIG_MANUFACTURER = "manufacturer";
 static const char* CONFIG_MODEL = "model";
 static const char* CONFIG_SCHEMA_VERSION = "schemaVersion";
 static const char* CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES = "downloadTimeoutInMinutes";
+static const char* CONFIG_DOWNLOAD_NO_PROGRESS_TIMEOUT_IN_MINUTES = "downloadNoProgressTimeoutInMinutes";
 static const char* CONFIG_API_REQUEST_FIFO_PATH = "apiRequestFifoPath";
 static const char* CONFIG_IDLE_PAUSE_MILLISECONDS = "idlePauseMilliseconds";
 
@@ -565,6 +566,12 @@ bool ADUC_ConfigInfo_Init(ADUC_ConfigInfo* config, const char* configFolder)
     // Note: download timeout is optional.
     ADUC_JSON_GetUnsignedIntegerField(
         config->rootJsonValue, CONFIG_DOWNLOAD_TIMEOUT_IN_MINUTES, &(config->downloadTimeoutInMinutes));
+
+    // Note: download no-progress timeout is optional.
+    ADUC_JSON_GetUnsignedIntegerField(
+        config->rootJsonValue,
+        CONFIG_DOWNLOAD_NO_PROGRESS_TIMEOUT_IN_MINUTES,
+        &(config->downloadNoProgressTimeoutInMinutes));
 
     // Note: API request FIFO path is optional.
     config->apiRequestFifoPath = ADUC_JSON_GetStringFieldPtr(config->rootJsonValue, CONFIG_API_REQUEST_FIFO_PATH);

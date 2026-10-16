@@ -90,6 +90,9 @@ typedef struct tagADUC_ConfigInfo
     unsigned int
         downloadTimeoutInMinutes; /**< The timeout for downloading an update payload. A value of zero means to use the default. */
 
+    unsigned int
+        downloadNoProgressTimeoutInMinutes; /**< How long the Delivery Optimization content downloader keeps retrying a download that makes no progress. A value of zero means to use the Delivery Optimization default. */
+
     const char* aduShellFolder; /**< The folder where ADU shell is installed. */
 
     char* aduShellFilePath; /**< The full path to ADU shell binary. */

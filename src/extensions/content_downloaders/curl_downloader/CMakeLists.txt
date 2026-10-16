@@ -14,7 +14,8 @@ target_include_directories (${target_name} PUBLIC ${ADU_EXTENSION_INCLUDES} ${AD
 
 target_link_libraries (
     ${target_name}
-    PRIVATE aduc::contract_utils
+    PRIVATE aduc::config_utils
+            aduc::contract_utils
             aduc::hash_utils
             aduc::logging
             aduc::process_utils)
