@@ -181,7 +181,7 @@ Set to `0` (the default) to disable the pause.
 | `iotHubProtocol` | ❌ | `"mqtt"` | `"mqtt"` or `"mqtt/ws"` |
 | `idlePauseMilliseconds` | ❌ | `0` | Quiet-period duration in ms |
 | `downloadTimeoutInMinutes` | ❌ | `0` | Download timeout (0 = the default of 8 hours) |
-| `downloadNoProgressTimeoutInMinutes` | ❌ | `0` | How long a download that receives no bytes keeps being retried, e.g. while the network interface is up but the internet is unreachable. Bounded by `downloadTimeoutInMinutes`. 0 = the Delivery Optimization default of 5 minutes, and a single attempt for the curl downloader |
+| `downloadNoProgressTimeoutInMinutes` | ❌ | `0` | How long a download that receives no bytes keeps being retried, e.g. while the network interface is up but the internet is unreachable. Capped by the download timeout, so set `downloadTimeoutInMinutes` at least as high; the agent logs a warning at startup when it is not. 0 = the Delivery Optimization default of 5 minutes, and a single attempt for the curl downloader |
 | `compatPropertyNames` | ❌ | — | Backward-compat property names |
 | `edgegatewayCertPath` | ❌ | — | Edge gateway certificate path |
 | `aduShellFolder` | ❌ | build default | ADU shell binary directory |

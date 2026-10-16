@@ -1053,6 +1053,7 @@ EXTERN_C_BEGIN
 
 ADUC_Result ExtensionManager_InitializeContentDownloader(const char* initializeData, ADUC_LOG_SEVERITY logLevel)
 {
+    WarnIfNoProgressTimeoutIsCapped();
     return ExtensionManager::InitializeContentDownloader(initializeData, logLevel);
 }
 
