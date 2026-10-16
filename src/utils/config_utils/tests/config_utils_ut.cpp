@@ -282,6 +282,7 @@ static const char* validConfigContentDownloadTimeout =
         R"("manufacturer": "device_info_manufacturer",)"
         R"("model": "device_info_model",)"
         R"("downloadTimeoutInMinutes": 1440,)"
+        R"("downloadNoProgressTimeoutInMinutes": 60,)"
         R"("compatPropertyNames": "manufacturer,model",)"
         R"("agents": [)"
             R"({ )"
@@ -349,6 +350,7 @@ static const char* invalidConfigContentDownloadTimeout =
         R"("manufacturer": "device_info_manufacturer",)"
         R"("model": "device_info_model",)"
         R"("downloadTimeoutInMinutes": -1,)"
+        R"("downloadNoProgressTimeoutInMinutes": -1,)"
         R"("compatPropertyNames": "manufacturer,model",)"
         R"("agents": [)"
             R"({ )"
@@ -520,6 +522,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.downloadTimeoutInMinutes == 1440);
+        CHECK(config.downloadNoProgressTimeoutInMinutes == 60);
 
         ADUC_ConfigInfo_UnInit(&config);
     }
@@ -533,6 +536,7 @@ TEST_CASE_METHOD(GlobalMockHookTestCaseFixture, "ADUC_ConfigInfo_Init Functional
 
         CHECK(ADUC_ConfigInfo_Init(&config, "/etc/adu"));
         CHECK(config.downloadTimeoutInMinutes == 0);
+        CHECK(config.downloadNoProgressTimeoutInMinutes == 0);
         ADUC_ConfigInfo_UnInit(&config);
     }
 

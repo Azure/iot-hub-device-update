@@ -20,6 +20,7 @@
 #include <aduc/types/download.h>
 #include <aduc/types/update_content.h>
 
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -462,6 +463,89 @@ TEST_CASE("Initialize returns success")
 {
     ADUC_Result result = Initialize(nullptr);
     CHECK(result.ResultCode == ADUC_GeneralResult_Success);
+}
+
+TEST_CASE("IsTransientCurlExitCode")
+{
+    SECTION("network failures are transient")
+    {
+        CHECK(IsTransientCurlExitCode(6)); // Couldn't resolve host
+        CHECK(IsTransientCurlExitCode(7)); // Failed to connect
+        CHECK(IsTransientCurlExitCode(28)); // Timed out
+        CHECK(IsTransientCurlExitCode(56)); // Receive failure
+    }
+
+    SECTION("other failures are not transient")
+    {
+        CHECK_FALSE(IsTransientCurlExitCode(0));
+        CHECK_FALSE(IsTransientCurlExitCode(3)); // Malformed URL
+        CHECK_FALSE(IsTransientCurlExitCode(22)); // HTTP error with --fail
+        CHECK_FALSE(IsTransientCurlExitCode(37)); // Couldn't read file
+    }
+}
+
+static ADUC_FileEntity MakeUnreachableEntity(ADUC_Hash& hash)
+{
+    hash.type = const_cast<char*>("sha256");
+    hash.value = const_cast<char*>("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
+
+    ADUC_FileEntity entity;
+    memset(&entity, 0, sizeof(entity));
+    // Nothing listens on port 1, so curl fails to connect (exit code 7).
+    entity.DownloadUri = const_cast<char*>("http://127.0.0.1:1/curl_ut_unreachable.bin");
+    entity.TargetFilename = const_cast<char*>("curl_ut_unreachable.bin");
+    entity.FileId = const_cast<char*>("fid-curl-unreachable");
+    entity.HashCount = 1;
+    entity.Hash = &hash;
+    entity.SizeInBytes = 1;
+    return entity;
+}
+
+TEST_CASE("Download_curl_WithNoProgressTimeout does not retry without a no-progress timeout")
+{
+    ADUC_Hash hash;
+    ADUC_FileEntity entity = MakeUnreachableEntity(hash);
+
+    const auto start = std::chrono::steady_clock::now();
+    ADUC_Result result =
+        Download_curl_WithNoProgressTimeout(&entity, "wf-curl-no-retry", "/tmp", 60, 0 /* noProgress */, nullptr);
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(7));
+    CHECK(elapsed < std::chrono::seconds(3));
+}
+
+TEST_CASE("Download_curl_WithNoProgressTimeout retries a transient failure until the no-progress timeout")
+{
+    ADUC_Hash hash;
+    ADUC_FileEntity entity = MakeUnreachableEntity(hash);
+
+    const auto start = std::chrono::steady_clock::now();
+    ADUC_Result result =
+        Download_curl_WithNoProgressTimeout(&entity, "wf-curl-retry", "/tmp", 60, 4 /* noProgress */, nullptr);
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(7));
+    // Attempts at about 0, 1, 3 and 7 seconds: the last one is past the 4 second no-progress timeout.
+    CHECK(elapsed >= std::chrono::seconds(4));
+    CHECK(elapsed < std::chrono::seconds(20));
+}
+
+TEST_CASE("Download_curl_WithNoProgressTimeout stops retrying at the download timeout")
+{
+    ADUC_Hash hash;
+    ADUC_FileEntity entity = MakeUnreachableEntity(hash);
+
+    const auto start = std::chrono::steady_clock::now();
+    ADUC_Result result = Download_curl_WithNoProgressTimeout(
+        &entity, "wf-curl-timeout", "/tmp", 2 /* timeout */, 3600 /* noProgress */, nullptr);
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+
+    CHECK(result.ResultCode == ADUC_Result_Failure);
+    CHECK(result.ExtendedResultCode == ADUC_ERROR_CURL_DOWNLOADER_EXTERNAL_FAILURE(7));
+    CHECK(elapsed < std::chrono::seconds(15));
 }
 
 TEST_CASE("Initialize returns success with non-null data")

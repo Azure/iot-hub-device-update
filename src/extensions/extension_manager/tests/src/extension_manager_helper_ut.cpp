@@ -197,3 +197,27 @@ TEST_CASE("Default_ExtensionManager_Download_Options can be modified and used")
     CHECK(timeout == CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT);
     CHECK(opts.timeoutInMinutes == 120);
 }
+
+// =====================================================================
+// IsNoProgressTimeoutCappedByDownloadTimeout
+// =====================================================================
+
+TEST_CASE("IsNoProgressTimeoutCappedByDownloadTimeout")
+{
+    SECTION("not configured is never capped")
+    {
+        CHECK_FALSE(IsNoProgressTimeoutCappedByDownloadTimeout(0, CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT));
+    }
+
+    SECTION("up to the download timeout is not capped")
+    {
+        CHECK_FALSE(IsNoProgressTimeoutCappedByDownloadTimeout(60, 43200));
+        CHECK_FALSE(IsNoProgressTimeoutCappedByDownloadTimeout(480, 480));
+    }
+
+    SECTION("longer than the download timeout is capped")
+    {
+        CHECK(IsNoProgressTimeoutCappedByDownloadTimeout(481, 480));
+        CHECK(IsNoProgressTimeoutCappedByDownloadTimeout(43200, CONTENT_DOWNLOADER_MAX_TIMEOUT_IN_MINUTES_DEFAULT));
+    }
+}

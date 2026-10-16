@@ -25,7 +25,8 @@ target_include_directories (
 
 target_link_libraries (
     ${PROJECT_NAME}
-    PRIVATE aduc::contract_utils
+    PRIVATE aduc::config_utils
+            aduc::contract_utils
             aduc::hash_utils
             aduc::logging
             aduc::process_utils
