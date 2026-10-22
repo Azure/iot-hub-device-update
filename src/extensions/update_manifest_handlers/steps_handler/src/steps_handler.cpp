@@ -114,6 +114,9 @@ static void StepsHandler_CancelActiveChildStep()
  */
 StepsHandlerImpl::~StepsHandlerImpl() // override
 {
+    // This library has its own statically-linked ExtensionManager, whose handler cache
+    // (step handlers loaded by this handler) is not reachable from the agent's Uninit().
+    ExtensionManager::UnloadAllUpdateContentHandlers();
     ADUC_Logging_Uninit();
 }
 

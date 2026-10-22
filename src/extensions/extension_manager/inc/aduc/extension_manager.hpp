@@ -46,6 +46,14 @@ public:
     static void Uninit();
 
     /**
+     * @brief Deletes every cached update content handler owned by this module's ExtensionManager instance.
+     *
+     * @remark ExtensionManager is statically linked into each extension library that uses it, so each
+     * library has its own handler cache that the agent's Uninit() cannot reach.
+     */
+    static void UnloadAllUpdateContentHandlers();
+
+    /**
      * @brief Returns all components information in JSON format.
      * @param[out] outputComponentsData An output string containing components data.
      */
@@ -91,7 +99,6 @@ public:
         ADUC_DownloadProcResolver downloadProcResolver = DefaultDownloadProcResolver);
 
 private:
-    static void UnloadAllUpdateContentHandlers();
     static void UnloadAllExtensions();
 
     static void _FreeComponentsDataString(char* componentsJson);
