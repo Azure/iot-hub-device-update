@@ -923,7 +923,7 @@ void ShutdownAgent()
  */
 void OnShutdownSignal(int sig)
 {
-    Log_Warn("Shutdown signal detected: %d", sig);
+    (void)sig;
     ADUC_ShutdownService_RequestShutdown();
 }
 
