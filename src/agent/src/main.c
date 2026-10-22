@@ -737,6 +737,7 @@ static const char* get_api_request_fifo_path()
 bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
 {
     bool succeeded = false;
+    char* basedir = NULL;
 
     ADUC_ConnectionInfo info;
     memset(&info, 0, sizeof(info));
@@ -760,7 +761,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     }
 
     const char* req_fifo = get_api_request_fifo_path();
-    char* basedir = RmvAfterLastChar(req_fifo, '/');
+    basedir = RmvAfterLastChar(req_fifo, '/');
     if (basedir == NULL)
     {
         goto done;
@@ -876,6 +877,7 @@ bool StartupAgent(const ADUC_LaunchArguments* launchArgs)
     succeeded = true;
 
 done:
+    free(basedir);
 
     ADUC_ConnectionInfo_DeAlloc(&info);
     return succeeded;
