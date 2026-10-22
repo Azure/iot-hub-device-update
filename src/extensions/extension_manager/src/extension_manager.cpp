@@ -348,6 +348,12 @@ done:
 
     if (IsAducResultCodeFailure(result.ResultCode))
     {
+        if (*handler != nullptr)
+        {
+            delete *handler;
+            *handler = nullptr;
+        }
+
         if (libHandle != nullptr)
         {
             ADUCPAL_dlclose(libHandle);
@@ -367,6 +373,7 @@ done:
 ADUC_Result ExtensionManager::SetUpdateContentHandlerExtension(const std::string& updateType, ContentHandler* handler)
 {
     ADUC_Result result = { ADUC_Result_Failure };
+    std::unordered_map<std::string, ContentHandler*>::iterator existing;
 
     Log_Info("Setting handler for '%s'.", updateType.c_str());
 
@@ -378,8 +385,12 @@ ADUC_Result ExtensionManager::SetUpdateContentHandlerExtension(const std::string
         goto done;
     }
 
-    // Remove existing one.
-    _contentHandlers.erase(updateType);
+    existing = _contentHandlers.find(updateType);
+    if (existing != _contentHandlers.end())
+    {
+        delete existing->second;
+        _contentHandlers.erase(existing);
+    }
 
     _contentHandlers.emplace(updateType, handler);
 
@@ -391,13 +402,15 @@ done:
 
 void ExtensionManager::UnloadAllUpdateContentHandlers()
 {
-    for (auto& contentHandler : _contentHandlers)
+    // Take ownership of the cache first: a handler's destructor may re-enter this function.
+    std::unordered_map<std::string, ContentHandler*> handlers;
+    handlers.swap(_contentHandlers);
+
+    for (auto& contentHandler : handlers)
     {
         Log_Debug("Deleting handler for '%s'.", contentHandler.first.c_str());
         delete (contentHandler.second); // NOLINT(cppcoreguidelines-owning-memory)
     }
-
-    _contentHandlers.clear();
 }
 
 /**
