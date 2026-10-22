@@ -11,6 +11,7 @@
 #include <aduc/config_utils.h>
 #include <aduc/download_handler_factory.hpp>
 #include <aduc/download_handler_plugin.hpp>
+#include <aduc/logging.h>
 #include <aduc/result.h>
 #include <aduc/string_c_utils.h>
 #include <aduc/workflow_utils.h>
@@ -147,4 +148,34 @@ unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options
     ADUC_ConfigInfo_ReleaseInstance(config);
 done:
     return ret;
+}
+
+bool IsNoProgressTimeoutCappedByDownloadTimeout(
+    unsigned int noProgressTimeoutInMinutes, unsigned int downloadTimeoutInMinutes) noexcept
+{
+    return noProgressTimeoutInMinutes > downloadTimeoutInMinutes;
+}
+
+void WarnIfNoProgressTimeoutIsCapped() noexcept
+{
+    const ADUC_ConfigInfo* config = ADUC_ConfigInfo_GetInstance();
+    if (config == nullptr)
+    {
+        return;
+    }
+
+    const unsigned int noProgressTimeoutInMinutes = config->downloadNoProgressTimeoutInMinutes;
+    ADUC_ConfigInfo_ReleaseInstance(config);
+
+    const unsigned int downloadTimeoutInMinutes = GetDownloadTimeoutInMinutes(nullptr);
+    if (IsNoProgressTimeoutCappedByDownloadTimeout(noProgressTimeoutInMinutes, downloadTimeoutInMinutes))
+    {
+        Log_Warn(
+            "downloadNoProgressTimeoutInMinutes (%u) is longer than the download timeout (%u minutes), so downloads "
+            "stop retrying after %u minutes. Set downloadTimeoutInMinutes to at least %u.",
+            noProgressTimeoutInMinutes,
+            downloadTimeoutInMinutes,
+            downloadTimeoutInMinutes,
+            noProgressTimeoutInMinutes);
+    }
 }

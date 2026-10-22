@@ -24,6 +24,20 @@ ADUC_Result ProcessDownloadHandlerExtensibility(
 
 unsigned int GetDownloadTimeoutInMinutes(const ExtensionManager_Download_Options* downloadOptions) noexcept;
 
+/**
+ * @brief Returns whether the download timeout ends a download before downloadNoProgressTimeoutInMinutes would.
+ * @param noProgressTimeoutInMinutes The configured no-progress timeout, 0 when not configured.
+ * @param downloadTimeoutInMinutes The download timeout in effect, see GetDownloadTimeoutInMinutes.
+ */
+bool IsNoProgressTimeoutCappedByDownloadTimeout(
+    unsigned int noProgressTimeoutInMinutes, unsigned int downloadTimeoutInMinutes) noexcept;
+
+/**
+ * @brief Logs a warning when downloadNoProgressTimeoutInMinutes is longer than the download timeout, which caps it.
+ * @remark This function requires that the ADUC_ConfigInfo singleton has been initialized.
+ */
+void WarnIfNoProgressTimeoutIsCapped() noexcept;
+
 EXTERN_C_END
 
 #endif // ADUC_EXTENSION_MANAGER_HELPER_HPP

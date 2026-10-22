@@ -17,8 +17,15 @@ target_include_directories (${target_name} PUBLIC ${ADU_EXTENSION_INCLUDES} ${AD
 target_link_aziotsharedutil (${target_name} PRIVATE)
 target_link_dosdk (${target_name} PRIVATE)
 
-target_link_libraries (${target_name} PRIVATE aduc::c_utils aduc::contract_utils aduc::hash_utils
-                                              aduc::logging aduc::process_utils aduc::string_utils)
+target_link_libraries (
+    ${target_name}
+    PRIVATE aduc::c_utils
+            aduc::config_utils
+            aduc::contract_utils
+            aduc::hash_utils
+            aduc::logging
+            aduc::process_utils
+            aduc::string_utils)
 
 if (WIN32)
     target_link_libraries (${target_name} PRIVATE libaducpal)
