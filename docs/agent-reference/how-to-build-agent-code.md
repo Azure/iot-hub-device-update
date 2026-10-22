@@ -2,6 +2,10 @@
 
 This guide provides comprehensive instructions for building the Device Update agent, including dependency management, platform-specific guidance, and customization options.
 
+ADU no longer publishes new versions of `deviceupdate-agent` to packages.microsoft.com (PMC). Previously published packages may still be available there, but they do not track current GitHub releases. See [Obtaining the Agent](../../README.md#obtaining-the-agent) for the distribution policy.
+
+To build a current release, choose its exact tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and check out that tag before installing dependencies or building for your target Linux distribution and architecture. Follow the build instructions that accompany the selected tag. The `develop` branch contains development code, not a selected release.
+
 ## Quick Navigation
 
 -   [Dependencies Overview](#dependencies-of-device-update-agent) - Complete dependency reference
@@ -1051,7 +1055,7 @@ After building the Debian package using `build.sh --build-packages`, do:
 sudo apt install ./out/{PKG_NAME}.deb
 ```
 
-
+This command installs a locally built package from `out`, not the agent from PMC. APT can still resolve dependencies from the configured package repositories.
 
 ## Dependency Build Strategy and Cross-Platform Considerations
 

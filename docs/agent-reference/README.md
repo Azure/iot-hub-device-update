@@ -6,6 +6,12 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 
 > 📖 **For service documentation and tutorials**, visit [Device Update for IoT Hub on Microsoft Learn](https://learn.microsoft.com/azure/iot-hub-device-update/)
 
+## Obtaining the Agent
+
+ADU no longer publishes new versions of `deviceupdate-agent` to packages.microsoft.com (PMC). Previously published packages may still be available, but they do not track current GitHub releases. For current releases, select a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and follow [Building the Agent](how-to-build-agent-code.md) in that tag for your target Linux distribution and architecture.
+
+See the repository's [distribution notice](../../README.md#obtaining-the-agent) for the scope of this policy and [Historical PMC Packages](how-to-install-deb-pkg-on-rpi.md) for previously published package instructions.
+
 ## What's New in 1.3.0
 
 | Feature | Description | Documentation |
@@ -33,10 +39,10 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 
 | Document | Description |
 |----------|-------------|
-| [Building the Agent](how-to-build-agent-code.md) | Dependencies, platform support, build options, and CMake configuration |
+| [Building the Agent](how-to-build-agent-code.md) | Source-build path for current releases, including dependencies, platform support, build options, and CMake configuration |
 | [Building with Delta Handler](building-with-delta-handler.md) | Enable the optional Microsoft Delta Download Handler |
 | [Running the Agent](how-to-run-agent.md) | Daemon setup, user/group configuration, command-line options |
-| [Installing from Packages](how-to-install-deb-pkg-on-rpi.md) | Install pre-built Debian packages on Raspberry Pi |
+| [Historical PMC Packages](how-to-install-deb-pkg-on-rpi.md) | Previously published agent packages that do not track current GitHub releases |
 
 ### 🔐 Authentication & Security
 
@@ -121,15 +127,14 @@ Device Update for IoT Hub is an Azure service that enables secure, scalable over
 
 ### Quick Start
 
+Choose a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and replace `RELEASE_TAG` below with that exact tag. Follow the build instructions that accompany the selected release. A default clone checks out `develop`, which is development code, not a release. The `&&` chain stops if any command fails.
+
 ```bash
-# Clone the repository
-git clone https://github.com/Azure/iot-hub-device-update.git
-cd iot-hub-device-update
-
-# Install all dependencies
-./scripts/install-deps.sh -a
-
-# Build the agent
+# Clone the repository and select a release
+git clone https://github.com/Azure/iot-hub-device-update.git &&
+cd iot-hub-device-update &&
+git checkout --detach "refs/tags/RELEASE_TAG" &&
+./scripts/install-deps.sh -a &&
 ./scripts/build.sh -c
 ```
 

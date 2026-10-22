@@ -35,7 +35,7 @@ The test environment consists of two nodes (VMs or containers) and a cloud endpo
 |---|---|
 | 2 VMs or containers | One for the leaf device, one for the parent edge device. Ubuntu 20.04 or 22.04 recommended. |
 | Azure IoT Hub | An IoT Hub instance with an IoT Edge device identity registered. |
-| ADU agent | Built from source or installed via `.deb` package on the leaf device. |
+| ADU agent | Built from source for the leaf device and installed as a locally built `.deb` package. |
 | IoT Edge runtime | `aziot-edge` and `aziot-identity-service` packages for the parent device. |
 | Certificates | A root CA and gateway server certificate for TLS between leaf and parent. |
 | Network configuration | Ability to create isolated networks (iptables, Docker networks, or hypervisor internal networks). |
@@ -186,15 +186,15 @@ sudo iotedge list
 
 ### 1. Install the ADU Agent
 
-Install from a `.deb` package or from a local build:
+Select a release tag from [GitHub Releases](https://github.com/Azure/iot-hub-device-update/releases) and follow [Building the Agent](how-to-build-agent-code.md) in that tag for the leaf device's Linux distribution and architecture. Current agent releases are not published to PMC; see [Obtaining the Agent](../../README.md#obtaining-the-agent). Build a Debian package with `--build-packages` and install it so the service and supporting runtime files required by later steps are set up.
+
+After a successful build, select exactly one generated `deviceupdate-agent` package for the intended release, distribution, and architecture. The default output directory is `out/` under the repository root; builds without `-c` can leave older packages there. On a leaf where you built the package, run the following from that repository root, replacing `AGENT_PACKAGE_FILENAME.deb` with the exact generated filename, not a wildcard:
 
 ```bash
-# From .deb package
-sudo apt-get install -y ./deviceupdate-agent_<version>_amd64.deb
-
-# Or if built from source, copy the binary to /usr/bin
-sudo cp out/bin/AducIotAgent /usr/bin/AducIotAgent
+sudo apt-get install -y "./out/AGENT_PACKAGE_FILENAME.deb"
 ```
+
+If you built elsewhere, transfer that selected package to the leaf device and replace the quoted path with the package's path on that device.
 
 ### 2. Configure du-config.json
 
@@ -478,7 +478,7 @@ services:
       "
 ```
 
-Before running, prepare the required files:
+Before running, prepare the required files. Use the agent package built for the leaf container's distribution and architecture as `packages/deviceupdate-agent.deb`:
 
 ```
 .
