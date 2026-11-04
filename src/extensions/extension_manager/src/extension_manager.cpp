@@ -428,6 +428,13 @@ void ExtensionManager::UnloadAllExtensions()
     }
 
     _libs.clear();
+
+    // The content downloader handle was one of the libraries just dlclose'd, so
+    // reset it. Otherwise a second UnloadAllExtensions would dlsym a freed handle
+    // and crash in the loader. Uninit runs twice on shutdown: once via
+    // AzureDeviceUpdateCoreInterface_Destroy and once via ExtensionManager_Uninit.
+    _contentDownloader = nullptr;
+    _contentDownloaderContractVersion = {};
 }
 
 void ExtensionManager::Uninit()
